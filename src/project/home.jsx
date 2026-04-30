@@ -1,0 +1,630 @@
+import React, { useState } from 'react';
+import { useLanguage } from './LanguageContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity } from 'lucide-react';
+import Header from './head_foot/head';
+import Footer from './head_foot/foot';
+
+const Home = () => {
+  const navigate = useNavigate();
+  const { lang, t } = useLanguage();
+
+  const [statusCaptcha, setStatusCaptcha] = useState('D7f2K');
+  const [loginCaptcha, setLoginCaptcha] = useState('m9QxP');
+
+  const [statusInput, setStatusInput] = useState('');
+  const [statusCaptchaInput, setStatusCaptchaInput] = useState('');
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginCaptchaInput, setLoginCaptchaInput] = useState('');
+  
+  const [openFaq, setOpenFaq] = useState(0);
+
+  const faqs = [
+    {
+        q: "How I can register the grievance?",
+        a: (
+            <ol className="list-decimal pl-5 space-y-1 text-gray-700">
+                <li>The citizen shall visit the <strong>"Department of Rural Development - A Grievance Redressal Portal."</strong></li>
+                <li>The citizen shall click on <strong>Citizen Registration</strong> and complete the registration form in all respects.</li>
+                <li>After successful registration, the citizen shall navigate to the <strong>Login</strong> page.</li>
+                <li>The citizen shall select the <strong>Citizen</strong> option and enter the registered mobile number.</li>
+                <li>The citizen shall enter the <strong>One-Time Password (OTP)</strong> received on the registered mobile number and click on <strong>Verify</strong>.</li>
+                <li>Upon successful login, the citizen shall click on <strong>Register Grievance</strong>, fill in the grievance details, and upload supporting documents, if any.</li>
+                <li>The citizen shall submit the grievance by clicking on the <strong>Submit</strong> button.</li>
+                <li>On successful submission, the grievance shall be registered in the system.</li>
+                <li>The citizen may download the <strong>acknowledgement PDF</strong> for future reference and tracking of the grievance.</li>
+            </ol>
+        )
+    },
+    { q: "How do I track my grievance status?", a: "You can track your grievance status by entering your Grievance ID / Mobile No. and captcha in the 'View Status' section on the homepage." },
+    { q: "How do I change the language using Bhashini?", a: "You can change the language using the translation widget available on the portal." }
+  ];
+
+  const generateCaptcha = () => {
+    const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+  };
+
+  const handleStatusSearch = () => {
+    if (!statusInput || !statusCaptchaInput) {
+      alert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.");
+      return;
+    }
+    if (statusCaptchaInput !== statusCaptcha) {
+      alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
+      setStatusCaptcha(generateCaptcha());
+      setStatusCaptchaInput('');
+      return;
+    }
+    alert(`${lang === 'hi' ? "स्थिति खोजी जा रही है:" : "Searching status for:"} ${statusInput}`);
+  };
+
+  const handleLogin = () => {
+    if (!username || !password || !loginCaptchaInput) {
+      alert(lang === 'hi' ? "लॉगिन के लिए सभी विवरण आवश्यक हैं।" : "All login details are required.");
+      return;
+    }
+    if (loginCaptchaInput !== loginCaptcha) {
+      alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
+      setLoginCaptcha(generateCaptcha());
+      setLoginCaptchaInput('');
+      return;
+    }
+    alert(`${lang === 'hi' ? "लॉगिन प्रयास:" : "Login attempt:"} ${username}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800">
+
+      <Header />
+
+      {/* News Flash (Marquee style) */}
+      <div className="bg-[#fff8e1] text-[13px] border-b border-orange-200 flex items-stretch shadow-sm relative z-10">
+        <div className="bg-[#cc0000] text-white font-bold px-6 py-2 whitespace-nowrap flex items-center">
+          <Bell size={16} className="mr-2" /> {t.newsFlash}
+        </div>
+        <div className="flex-1 py-2 px-4 text-red-700 font-semibold flex items-center">
+          <marquee scrollamount="5" className="hover:pause-marquee">नागरिक अब अपनी शिकायतें सीधे पोर्टल के माध्यम से दर्ज कर सकते हैं। | जनसुनवाई का नया कार्यक्रम जारी किया गया है।</marquee>
+        </div>
+      </div>
+
+      {/* Main Content Layout */}
+      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Left Column (Information & Links) */}
+        <div className="lg:col-span-3 flex flex-col gap-5">
+
+          {/* Quick Info Menu */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
+            <div className="bg-[#002b5e] text-white px-4 py-3 font-semibold text-[13px] flex items-center gap-2 border-b-[3px] border-[#e65100]">
+              <Info size={16} /> महत्वपूर्ण जानकारी / Info
+            </div>
+            <div className="flex flex-col">
+              {[
+                { icon: <PieChartIcon size={16} />, label: t.icons.cause },
+                { icon: <Scale size={16} />, label: t.icons.act },
+                { icon: <Book size={16} />, label: t.icons.manual },
+                { icon: <Bell size={16} />, label: t.icons.notification },
+                { icon: <FileText size={16} />, label: t.icons.circular },
+                { icon: <Newspaper size={16} />, label: t.icons.news }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors last:border-b-0">
+                  <div className="text-[#e65100]">{item.icon}</div>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#1e7b34] border border-[#145a24] shadow-sm p-4 rounded-md flex justify-between items-center text-white">
+            <div className="flex flex-col">
+              <span className="text-green-100 uppercase text-[11px] tracking-wider mb-0.5 font-bold">Helpline</span>
+              <span className="text-[13px] font-medium leading-tight">Toll-Free Support</span>
+            </div>
+            <div className="bg-white text-[#1e7b34] px-4 py-2 rounded shadow-sm flex items-center gap-2 border border-green-600">
+               <Phone size={18} />
+               <span className="text-xl font-bold tracking-wider">181</span>
+            </div>
+          </div>
+
+          {/* Useful Links */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-md p-4">
+            <h3 className="font-semibold text-[#002b5e] border-b-2 border-[#e65100] pb-2 mb-3 flex items-center gap-2">
+              <ExternalLink size={16} /> योजनाएं एवं सेवाएं
+            </h3>
+            <ul className="space-y-2.5 text-[12px] text-gray-700">
+              {t.links1.map((link, idx) => (
+                <li key={idx} className="flex items-start gap-2 hover:text-[#002b5e] cursor-pointer leading-tight transition-colors">
+                  <ChevronRight size={14} className="text-[#e65100] mt-0.5 flex-shrink-0" />
+                  <span className="font-medium">{link}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Middle Column (Process, Chart, Banner) */}
+        <div className="lg:col-span-6 flex flex-col gap-6">
+
+          {/* Hero Banner Image */}
+          <div className="bg-white p-1 shadow-sm border border-gray-200 rounded-md overflow-hidden">
+            <div className="h-48 bg-[#002b5e] relative flex items-center justify-center">
+              <img src="https://images.unsplash.com/photo-1541178735493-479c1a27ed24?auto=format&fit=crop&w=800&q=80" alt="Rajasthan Govt Building" className="w-full h-full object-cover opacity-50 mix-blend-overlay" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#002b5e]/90 to-transparent"></div>
+              <div className="absolute bottom-0 w-full p-6 text-left">
+                <h2 className="text-2xl font-bold text-white mb-1 uppercase tracking-wide">{t.bannerTitle}</h2>
+                <p className="text-gray-200 font-medium text-[13px]">Empowering citizens through transparent governance</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Boxes (Govt Style Process) */}
+          <div className="mt-2">
+            <h3 className="text-[15px] font-bold text-[#002b5e] mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
+              <span className="w-4 h-4 bg-[#e65100] inline-block"></span>
+              {t.complainTitle}
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div onClick={() => alert(t.process.citizen)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#002b5e] transition-colors rounded-md group">
+                <div className="w-12 h-12 mx-auto bg-blue-50 text-[#002b5e] border border-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#002b5e] group-hover:text-white transition-colors">
+                  <User size={20} />
+                </div>
+                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.citizen}</span>
+              </div>
+
+              <div onClick={() => navigate('/complain')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#e65100] transition-colors rounded-md group">
+                <div className="w-12 h-12 mx-auto bg-orange-50 text-[#e65100] border border-orange-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#e65100] group-hover:text-white transition-colors">
+                  <FileText size={20} />
+                </div>
+                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.grievance}</span>
+              </div>
+
+              <div onClick={() => alert(t.process.reminder)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-yellow-600 transition-colors rounded-md group">
+                <div className="w-12 h-12 mx-auto bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                  <Bell size={20} />
+                </div>
+                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.reminder}</span>
+              </div>
+
+              <div onClick={() => alert(t.process.action)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-green-600 transition-colors rounded-md group">
+                <div className="w-12 h-12 mx-auto bg-green-50 text-green-600 border border-green-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                  <Search size={20} />
+                </div>
+                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.action}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column (Forms & Direct Actions) */}
+        <div className="lg:col-span-3 flex flex-col gap-4">
+
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => navigate('/complain')} className="bg-[#1e7b34] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#145a24] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#145a24] transition-colors">
+              <AlertCircle size={18} /> <span className="text-center leading-tight">{t.btnNew}</span>
+            </button>
+            <button onClick={() => alert(t.btnAppeal)} className="bg-[#002b5e] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#001f44] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#001f44] transition-colors">
+              <Book size={18} /> <span className="text-center leading-tight">{t.btnAppeal}</span>
+            </button>
+          </div>
+
+          {/* Status Form (Official Box) */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
+            <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 font-semibold text-[#002b5e] text-[13px] flex items-center gap-2">
+              <Search size={16} className="text-[#002b5e]" /> {t.statusForm.title}
+            </div>
+            <div className="p-4">
+              <input
+                type="text"
+                placeholder={t.statusForm.input}
+                className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-[#002b5e] transition-colors bg-white"
+                value={statusInput}
+                onChange={(e) => setStatusInput(e.target.value)}
+              />
+
+              <label className="text-[11px] font-semibold text-gray-600 block mb-1">Security Code / कैप्चा</label>
+              <div className="flex gap-2 items-stretch mb-4">
+                <div className="border border-gray-300 rounded-sm bg-gray-50 text-gray-800 px-3 py-1.5 text-[14px] font-mono tracking-widest w-24 text-center select-none shadow-inner" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 10 L100 30 M0 30 L100 10\' stroke=\'rgba(0,0,0,0.1)\' stroke-width=\'2\'/%3E%3C/svg%3E")' }}>
+                  {statusCaptcha}
+                </div>
+                <button onClick={() => setStatusCaptcha(generateCaptcha())} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors">
+                  <RefreshCw size={14} />
+                </button>
+                <input
+                  type="text"
+                  placeholder={t.statusForm.captcha}
+                  className="flex-1 border border-gray-300 rounded-sm px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors"
+                  value={statusCaptchaInput}
+                  onChange={(e) => setStatusCaptchaInput(e.target.value)}
+                  maxLength={5}
+                />
+              </div>
+              <button onClick={handleStatusSearch} className="w-full bg-[#002b5e] text-white px-4 py-2 font-semibold text-[13px] rounded-sm hover:bg-[#001f44] transition-colors flex justify-center items-center gap-2 border border-[#001533]">
+                {t.statusForm.btn} <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Login Form (SSO Logic) */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
+            <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 font-semibold text-[#002b5e] text-[13px] flex items-center gap-2">
+              <Lock size={16} className="text-[#002b5e]" /> {t.loginForm.title}
+            </div>
+
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.id}</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-gray-400"><User size={14} /></span>
+                  <input
+                    type="text"
+                    placeholder={t.loginForm.userPh}
+                    className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.pass}</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-gray-400"><Lock size={14} /></span>
+                  <input
+                    type="password"
+                    placeholder={t.loginForm.passPh}
+                    className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-gray-600 block mb-1">Captcha</label>
+                <div className="flex gap-2 items-stretch">
+                  <div className="border border-gray-300 rounded-sm bg-gray-50 text-gray-800 px-3 py-1.5 text-[14px] font-mono tracking-widest w-24 text-center select-none shadow-inner" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 20 L100 20 M20 0 L20 40\' stroke=\'rgba(0,0,0,0.1)\' stroke-width=\'2\'/%3E%3C/svg%3E")' }}>
+                    {loginCaptcha}
+                  </div>
+                  <button onClick={() => setLoginCaptcha(generateCaptcha())} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors">
+                    <RefreshCw size={14} />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Enter Code"
+                    className="flex-1 border border-gray-300 rounded-sm px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors"
+                    value={loginCaptchaInput}
+                    onChange={(e) => setLoginCaptchaInput(e.target.value)}
+                    maxLength={5}
+                  />
+                </div>
+              </div>
+
+              <button onClick={handleLogin} className="w-full bg-[#1e7b34] text-white py-2 font-semibold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors border border-[#145a24] mt-1">
+                {t.loginForm.btn}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Our Schemes Section */}
+      <div className="bg-white py-10 shadow-sm relative z-10 border-b border-gray-200 overflow-hidden">
+        <style>{`
+          @keyframes slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-slide {
+            animation: slide 35s linear infinite;
+          }
+          .animate-slide:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-3">
+            <div>
+               <div className="flex items-center gap-3">
+                 <div className="w-1.5 h-6 bg-[#002b5e]"></div>
+                 <h2 className="text-2xl font-bold text-[#002b5e]">{lang === 'hi' ? 'हमारी योजनाएं' : 'Key Schemes & Programmes'}</h2>
+               </div>
+               <p className="text-gray-500 text-[13px] mt-1 ml-4">Explore major development initiatives</p>
+            </div>
+            <button className="text-[#e65100] text-[13px] font-bold hover:underline flex items-center gap-1">View All <ChevronRight size={16} /></button>
+          </div>
+        </div>
+
+        {/* Infinite Carousel */}
+        <div className="w-full overflow-hidden pb-4">
+          <div className="flex gap-5 animate-slide w-max px-4">
+            {[
+              "Deen Dayal Upadhyaya Grameen Kaushalya Yojana",
+              "Pradhan Mantri Awaas Yojana - Gramin",
+              "Pradhan Mantri Gram Sadak Yojana",
+              "Deendayal Antyodaya Yojana - NRLM",
+              "Saansad Adarsh Gram Yojana",
+              "National Social Assistance Programme",
+              "Rural Self Employment Training",
+              // DUPLICATES FOR SEAMLESS LOOP
+              "Deen Dayal Upadhyaya Grameen Kaushalya Yojana",
+              "Pradhan Mantri Awaas Yojana - Gramin",
+              "Pradhan Mantri Gram Sadak Yojana",
+              "Deendayal Antyodaya Yojana - NRLM",
+              "Saansad Adarsh Gram Yojana",
+              "National Social Assistance Programme",
+              "Rural Self Employment Training"
+            ].map((scheme, idx) => (
+              <div key={idx} className="w-[280px] h-[160px] bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-lg p-5 flex flex-col items-center justify-center text-center hover:border-[#002b5e] hover:shadow-md transition-all cursor-pointer group flex-shrink-0">
+                <div className="w-14 h-14 bg-white border border-gray-200 shadow-sm rounded-full flex items-center justify-center mb-4 text-[#002b5e] group-hover:bg-[#002b5e] group-hover:text-white transition-colors">
+                  <Landmark size={24} />
+                </div>
+                <span className="text-[12px] font-bold text-[#002b5e] leading-snug">{scheme}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Massive Statistics Dashboard (Formalized) */}
+      <div className="bg-[#002b5e] py-10 border-y border-[#001f44] mt-4">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Public Grievance Dashboard</h2>
+            <div className="w-16 h-1 bg-[#e65100] mx-auto mb-3"></div>
+            <p className="text-blue-200 text-[13px]">Monitoring and analytics of public grievances to ensure transparent governance.</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {/* Stat Cards */}
+            <div className="bg-white border-t-4 border-blue-600 p-5 rounded-sm text-center shadow-sm">
+              <div className="w-8 h-8 mx-auto bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-2">
+                <FileText size={16} />
+              </div>
+              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">{t.stats.total || 'Total Received'}</div>
+              <div className="text-2xl font-bold text-[#002b5e]">2,450,192</div>
+            </div>
+            
+            <div className="bg-white border-t-4 border-green-600 p-5 rounded-sm text-center shadow-sm">
+              <div className="w-8 h-8 mx-auto bg-green-50 text-green-700 rounded-full flex items-center justify-center mb-2">
+                <CheckCircle size={16} />
+              </div>
+              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">{t.stats.executed || 'Total Disposed'}</div>
+              <div className="text-2xl font-bold text-green-700">2,380,441</div>
+            </div>
+
+            <div className="bg-white border-t-4 border-orange-500 p-5 rounded-sm text-center shadow-sm">
+              <div className="w-8 h-8 mx-auto bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-2">
+                <RefreshCw size={16} />
+              </div>
+              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Pending Cases</div>
+              <div className="text-2xl font-bold text-orange-600">45,337</div>
+            </div>
+
+            <div className="bg-white border-t-4 border-purple-600 p-5 rounded-sm text-center shadow-sm">
+              <div className="w-8 h-8 mx-auto bg-purple-50 text-purple-700 rounded-full flex items-center justify-center mb-2">
+                <BarChart2 size={16} />
+              </div>
+              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Avg. Resolution</div>
+              <div className="text-2xl font-bold text-purple-700">14 Days</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Donut Chart Block */}
+            <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center justify-center border border-gray-200">
+              <h3 className="font-bold text-[#002b5e] text-[15px] mb-6 self-start border-b border-gray-200 w-full pb-2">Disposal Breakdown</h3>
+              <div className="w-40 h-40 rounded-full relative shadow-inner mb-6 border border-gray-100" style={{ background: 'conic-gradient(#1e88e5 0% 63.5%, #43a047 63.5% 83.5%, #fb8c00 83.5% 100%)' }}>
+                <div className="absolute inset-0 m-auto w-24 h-24 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
+                   <span className="text-2xl font-bold text-gray-800">97%</span>
+                   <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mt-0.5">Disposed</span>
+                </div>
+              </div>
+              <div className="w-full grid grid-cols-1 gap-2 text-[12px] font-medium px-2">
+                 <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#1e88e5]"></div><span className="text-gray-700">Accepted</span></div><span className="text-[#002b5e] font-bold">63.5%</span></div>
+                 <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#43a047]"></div><span className="text-gray-700">Alternate</span></div><span className="text-[#002b5e] font-bold">20.0%</span></div>
+                 <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#fb8c00]"></div><span className="text-gray-700">Rejected</span></div><span className="text-[#002b5e] font-bold">16.5%</span></div>
+              </div>
+            </div>
+
+            {/* Department Performance Bar Chart */}
+            <div className="bg-white rounded-md p-6 shadow-sm md:col-span-2 border border-gray-200">
+              <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
+                <h3 className="font-bold text-[#002b5e] text-[15px]">Top Performing Departments</h3>
+                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-gray-400 rounded-sm"></div><span className="text-gray-600">Total</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div><span className="text-green-700">Resolved</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-red-500 rounded-sm"></div><span className="text-red-600">Rejected</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-orange-400 rounded-sm"></div><span className="text-orange-600">Pending</span></div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                 {[
+                   {name: 'Panchayati Raj & Rural Development', total: 12450, resolved: 12201, rejected: 150, pending: 99, color: 'bg-[#1e7b34]', textColor: 'text-[#1e7b34]'},
+                   {name: 'Public Health Engineering (PHED)', total: 8920, resolved: 8384, rejected: 310, pending: 226, color: 'bg-[#0059b3]', textColor: 'text-[#0059b3]'},
+                   {name: 'Revenue & Colonization Department', total: 15600, resolved: 13884, rejected: 980, pending: 736, color: 'bg-[#002b5e]', textColor: 'text-[#002b5e]'},
+                   {name: 'Medical & Health Services', total: 6420, resolved: 5521, rejected: 400, pending: 499, color: 'bg-[#e65100]', textColor: 'text-[#e65100]'},
+                 ].map((dept, i) => {
+                   const resolvePercent = ((dept.resolved / dept.total) * 100).toFixed(1);
+                   return (
+                     <div key={i}>
+                       <div className="flex justify-between items-end text-[12px] font-bold text-gray-800 mb-1.5">
+                         <span>{dept.name}</span>
+                         <span className={`${dept.textColor} font-bold text-[13px]`}>{resolvePercent}% Resolved</span>
+                       </div>
+                       <div className="w-full bg-gray-100 h-2.5 rounded-sm overflow-hidden mb-2 flex">
+                         <div className="bg-green-500 h-full" style={{width: `${(dept.resolved / dept.total) * 100}%`}} title={`Resolved: ${dept.resolved}`}></div>
+                         <div className="bg-red-500 h-full" style={{width: `${(dept.rejected / dept.total) * 100}%`}} title={`Rejected: ${dept.rejected}`}></div>
+                         <div className="bg-orange-400 h-full" style={{width: `${(dept.pending / dept.total) * 100}%`}} title={`Pending: ${dept.pending}`}></div>
+                       </div>
+                       <div className="grid grid-cols-4 gap-2 text-[12px] font-bold text-center pt-1">
+                          <div className="text-gray-600">{dept.total.toLocaleString()}</div>
+                          <div className="text-green-600">{dept.resolved.toLocaleString()}</div>
+                          <div className="text-red-500">{dept.rejected.toLocaleString()}</div>
+                          <div className="text-orange-500">{dept.pending.toLocaleString()}</div>
+                       </div>
+                     </div>
+                   );
+                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ and Steps Layout (Formalized) */}
+      <div className="bg-gray-50 py-10 border-b border-gray-200">
+        <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* FAQs */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-6 flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-50 text-[#e65100] rounded-full flex items-center justify-center">
+                  <Info size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-[#002b5e] leading-tight">Help Center</h2>
+              </div>
+              <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-gray-200">FAQ</span>
+            </div>
+
+            <div className="space-y-2 flex-1">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className={`border rounded-md overflow-hidden transition-all duration-200 ${openFaq === idx ? 'border-[#002b5e] bg-gray-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <button 
+                    onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                    className="w-full text-left px-5 py-3.5 font-semibold text-[13px] flex justify-between items-center text-[#002b5e]"
+                  >
+                    <span className="pr-4">{faq.q}</span>
+                    <div className="text-gray-500 shrink-0">
+                      <ChevronRight size={16} className={`transform transition-transform ${openFaq === idx ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
+                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaq === idx ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="px-5 pb-5 pt-1 text-[12.5px] text-gray-700 leading-relaxed border-t border-gray-200 mt-2">
+                      {faq.a}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Registration Timeline (Circular & Vertical Dual Layout) */}
+          <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-6 overflow-hidden relative flex flex-col">
+            <div className="mb-6 pb-3 border-b border-gray-200 flex justify-between items-end relative z-30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 text-blue-700 rounded-full flex items-center justify-center">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#002b5e] leading-tight">Process Flow</h2>
+                  <p className="text-gray-500 text-[11px] uppercase tracking-wider font-semibold">Steps to register grievance</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile View: Vertical Timeline */}
+            <div className="lg:hidden relative overflow-y-auto pr-4 flex-1" style={{ scrollbarWidth: 'thin' }}>
+              <div className="absolute left-[19px] top-4 bottom-4 w-[2px] bg-blue-100"></div>
+              <div className="space-y-6 relative pb-4">
+                {[
+                  { title: "Open Portal", desc: "Visit the official rural development portal" },
+                  { title: "User Registration", desc: "Click and complete citizen registration" },
+                  { title: "Fill Details", desc: "Submit basic registration details" },
+                  { title: "Login", desc: "Go to 'Login With User' option" },
+                  { title: "Enter Mobile", desc: "Provide your registered number" },
+                  { title: "Verify OTP", desc: "Authenticate with the OTP received" },
+                  { title: "Register Grievance", desc: "Click the register grievance button" },
+                  { title: "Upload Docs", desc: "Fill form and attach evidence" },
+                  { title: "Submit", desc: "Finalize your complaint submission" },
+                  { title: "Track", desc: "Download PDF and note grievance ID" }
+                ].map((step, idx) => (
+                  <div key={idx} className="flex gap-4 items-start group cursor-default">
+                    <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-[14px] font-bold z-10 border-2 bg-white`} style={{borderColor: ['#f44336', '#ff9800', '#ffc107', '#8bc34a', '#4caf50', '#009688', '#00bcd4', '#03a9f4', '#3f51b5', '#9c27b0'][idx], color: ['#f44336', '#ff9800', '#ffc107', '#8bc34a', '#4caf50', '#009688', '#00bcd4', '#03a9f4', '#3f51b5', '#9c27b0'][idx]}}>
+                       {String(idx + 1).padStart(2, '0')}
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-lg p-3.5 flex-1 shadow-sm">
+                       <h4 className="text-[13px] font-bold text-[#002b5e] mb-0.5">{step.title}</h4>
+                       <p className="text-[11px] font-medium text-gray-500 leading-snug">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop View: Compact Circular Timeline */}
+            <div className="hidden lg:flex flex-col items-center justify-center flex-1 relative min-h-[500px]">
+              <div className="relative w-full h-full flex items-center justify-center scale-[0.80] xl:scale-[0.90] 2xl:scale-100 origin-center transition-transform">
+                 {/* Dashed Background Circle */}
+                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px] rounded-full border-2 border-gray-100 border-dashed z-0"></div>
+                 
+                 {/* Center Badge */}
+                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border-[6px] border-gray-50 flex flex-col items-center justify-center shadow-sm bg-white z-10">
+                    <span className="text-4xl font-black text-blue-500 mb-0 leading-none">10</span>
+                    <span className="text-[11px] font-bold text-[#002b5e] text-center leading-tight mt-1">Step Circular<br/>Process</span>
+                 </div>
+                 
+                 {/* 10 Nodes mapped circularly */}
+                 {[
+                    { title: "Open Portal", desc: "Visit official portal" },
+                    { title: "User Reg.", desc: "Complete citizen reg" },
+                    { title: "Fill Details", desc: "Submit basic details" },
+                    { title: "Login", desc: "Go to Login With User" },
+                    { title: "Enter Mobile", desc: "Provide registered #" },
+                    { title: "Verify OTP", desc: "Authenticate with OTP" },
+                    { title: "Reg Grievance", desc: "Click register button" },
+                    { title: "Upload Docs", desc: "Attach evidence" },
+                    { title: "Submit", desc: "Finalize submission" },
+                    { title: "Track", desc: "Note grievance ID" }
+                  ].map((step, idx) => {
+                    const angle = (idx * 36) - 90; // Start at top
+                    const normalized = (idx * 36);
+                    
+                    // Text placement depending on quadrant
+                    let textClasses = "";
+                    if (normalized === 0) textClasses = "bottom-[115%] left-1/2 -translate-x-1/2 text-center pb-1.5";
+                    else if (normalized === 180) textClasses = "top-[115%] left-1/2 -translate-x-1/2 text-center pt-1.5";
+                    else if (normalized > 0 && normalized < 180) textClasses = "left-[115%] top-1/2 -translate-y-1/2 text-left pl-2.5";
+                    else textClasses = "right-[115%] top-1/2 -translate-y-1/2 text-right pr-2.5";
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className="absolute w-12 h-12 rounded-full flex items-center justify-center font-bold text-[16px] text-white shadow-md border-[3px] border-white z-20 hover:scale-110 transition-transform cursor-default"
+                        style={{
+                          backgroundColor: ['#f44336', '#ff9800', '#ffc107', '#8bc34a', '#4caf50', '#009688', '#00bcd4', '#03a9f4', '#3f51b5', '#9c27b0'][idx],
+                          transform: `translate(-50%, -50%) rotate(${angle}deg) translate(130px) rotate(${-angle}deg)`,
+                          left: '50%',
+                          top: '50%'
+                        }}
+                      >
+                        {String(idx + 1).padStart(2, '0')}
+                        <div className={`absolute w-32 ${textClasses}`}>
+                           <h4 className="text-[12px] font-bold text-[#002b5e] leading-tight mb-0.5">{step.title}</h4>
+                           <p className="text-[10px] text-gray-500 leading-tight hidden xl:block">{step.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default Home;
