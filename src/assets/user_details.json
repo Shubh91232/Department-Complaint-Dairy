@@ -1,0 +1,11 @@
+{
+  "id": "admin",
+  "password": "password123",
+  "name": "Arvind Sharma",
+  "designation": "Data Entry Operator",
+  "department": "Rural Development (MGNREGA)",
+  "district": "Jaipur",
+  "lastLogin": "2026-04-30 09:15 AM",
+  "role": "Admin",
+  "status": "Active"
+}

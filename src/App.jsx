@@ -9,8 +9,9 @@ import Feedback from './project/navbar/Feedback';
 import PhotoGallery from './project/navbar/PhotoGallery';
 import VideoGallery from './project/navbar/VideoGallery';
 import ContactUs from './project/navbar/ContactUs';
-import ComplainHome from './project/complain_path/com_home';
 import ComplainForm from './project/complain_path/com_form';
+import Dashboard from './project/complain_path/dashboard';
+import Register from './project/complain_path/register';
 import { LanguageProvider } from './project/LanguageContext';
 
 function App() {
@@ -27,8 +28,10 @@ function App() {
         <Route path="/photo-gallery" element={<PhotoGallery />} />
         <Route path="/video-gallery" element={<VideoGallery />} />
         <Route path="/contact-us" element={<ContactUs />} />
-        <Route path="/complain" element={<ComplainHome />} />
+        <Route path="/complain" element={<ComplainForm />} />
         <Route path="/complain-form" element={<ComplainForm />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
     </LanguageProvider>

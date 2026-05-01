@@ -1,0 +1,17 @@
+{
+  "source": "HM",
+  "serialNumber": "HM-9981-TEST",
+  "departmentRef": "MIN/26/XYZ",
+  "financialYear": "2025-2026",
+  "dateReceived": "2026-05-01",
+  "district": "Udaipur",
+  "block": "Gogunda",
+  "panchayat": "Sayra",
+  "level": "Panchayat",
+  "complaintCategory": "Operational Delay",
+  "description": "Actual data parsed from JSON file: The construction of the boundary wall has been delayed by 6 months.",
+  "responsibleOfficer": "BDO Gogunda",
+  "currentStatus": "In Progress",
+  "actionTaken": "Warning issued to sarpanch.",
+  "remarks": "Monitor closely next week."
+}

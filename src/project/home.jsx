@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity } from 'lucide-react';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck } from 'lucide-react';
+import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
+import Captcha, { generateCaptchaString } from './complain_path/captcha';
 
 const Home = () => {
   const navigate = useNavigate();
   const { lang, t } = useLanguage();
 
-  const [statusCaptcha, setStatusCaptcha] = useState('D7f2K');
-  const [loginCaptcha, setLoginCaptcha] = useState('m9QxP');
+  const [statusCaptcha, setStatusCaptcha] = useState(generateCaptchaString());
+  const [loginCaptcha, setLoginCaptcha] = useState(generateCaptchaString());
 
   const [statusInput, setStatusInput] = useState('');
   const [statusCaptchaInput, setStatusCaptchaInput] = useState('');
@@ -18,6 +20,11 @@ const Home = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginCaptchaInput, setLoginCaptchaInput] = useState('');
+  const [notification, setNotification] = useState('');
+  
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('agentLogin') === 'true');
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -42,15 +49,6 @@ const Home = () => {
     { q: "How do I change the language using Bhashini?", a: "You can change the language using the translation widget available on the portal." }
   ];
 
-  const generateCaptcha = () => {
-    const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    let result = '';
-    for (let i = 0; i < 5; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return result;
-  };
-
   const handleStatusSearch = () => {
     if (!statusInput || !statusCaptchaInput) {
       alert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.");
@@ -58,7 +56,7 @@ const Home = () => {
     }
     if (statusCaptchaInput !== statusCaptcha) {
       alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
-      setStatusCaptcha(generateCaptcha());
+      setStatusCaptcha(generateCaptchaString());
       setStatusCaptchaInput('');
       return;
     }
@@ -70,17 +68,65 @@ const Home = () => {
       alert(lang === 'hi' ? "लॉगिन के लिए सभी विवरण आवश्यक हैं।" : "All login details are required.");
       return;
     }
+    if (username !== userDetails.id || password !== userDetails.password) {
+      alert(lang === 'hi' ? "अमान्य आईडी या पासवर्ड!" : "Invalid ID or Password!");
+      return;
+    }
     if (loginCaptchaInput !== loginCaptcha) {
       alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
-      setLoginCaptcha(generateCaptcha());
+      setLoginCaptcha(generateCaptchaString());
       setLoginCaptchaInput('');
       return;
     }
-    alert(`${lang === 'hi' ? "लॉगिन प्रयास:" : "Login attempt:"} ${username}`);
+    
+    localStorage.setItem('agentLogin', 'true');
+    setIsFlipping(true);
+    setTimeout(() => {
+      setIsLoggedIn(true);
+      setIsFlipping(false);
+      setUsername('');
+      setPassword('');
+      setLoginCaptchaInput('');
+      setLoginCaptcha(generateCaptchaString());
+    }, 300);
+  };
+
+  const handleLogout = () => {
+    setIsFlipping(true);
+    setTimeout(() => {
+      localStorage.removeItem('agentLogin');
+      setIsLoggedIn(false);
+      setIsFlipping(false);
+      setShowLogoutConfirm(false);
+    }, 300);
+  };
+
+  const handleComplainClick = () => {
+    const isLoggedIn = localStorage.getItem('agentLogin');
+    if (isLoggedIn === 'true') {
+      navigate('/complain');
+    } else {
+      setNotification(lang === 'hi' ? "मास्टर प्रविष्टि के लिए लॉगिन अनिवार्य है।" : "Login is mandatory for master entry.");
+      setTimeout(() => setNotification(''), 5000);
+      const loginSection = document.getElementById('login-section');
+      if (loginSection) {
+        loginSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        loginSection.classList.add('ring-4', 'ring-red-400', 'transition-all');
+        setTimeout(() => loginSection.classList.remove('ring-4', 'ring-red-400'), 1500);
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800">
+    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 relative">
+
+      {notification && (
+        <div className="fixed top-24 left-4 bg-red-600 text-white px-4 py-3 rounded-md shadow-lg z-50 flex items-center gap-3 border border-red-800 animate-bounce">
+          <AlertCircle size={20} />
+          <span className="font-bold text-[14px]">{notification}</span>
+          <button onClick={() => setNotification('')} className="ml-2 hover:text-red-200"><X size={16}/></button>
+        </div>
+      )}
 
       <Header />
 
@@ -180,7 +226,7 @@ const Home = () => {
                 <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.citizen}</span>
               </div>
 
-              <div onClick={() => navigate('/complain')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#e65100] transition-colors rounded-md group">
+              <div onClick={handleComplainClick} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#e65100] transition-colors rounded-md group">
                 <div className="w-12 h-12 mx-auto bg-orange-50 text-[#e65100] border border-orange-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#e65100] group-hover:text-white transition-colors">
                   <FileText size={20} />
                 </div>
@@ -209,7 +255,7 @@ const Home = () => {
         <div className="lg:col-span-3 flex flex-col gap-4">
 
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => navigate('/complain')} className="bg-[#1e7b34] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#145a24] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#145a24] transition-colors">
+            <button onClick={handleComplainClick} className="bg-[#1e7b34] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#145a24] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#145a24] transition-colors">
               <AlertCircle size={18} /> <span className="text-center leading-tight">{t.btnNew}</span>
             </button>
             <button onClick={() => alert(t.btnAppeal)} className="bg-[#002b5e] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#001f44] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#001f44] transition-colors">
@@ -231,21 +277,15 @@ const Home = () => {
                 onChange={(e) => setStatusInput(e.target.value)}
               />
 
-              <label className="text-[11px] font-semibold text-gray-600 block mb-1">Security Code / कैप्चा</label>
-              <div className="flex gap-2 items-stretch mb-4">
-                <div className="border border-gray-300 rounded-sm bg-gray-50 text-gray-800 px-3 py-1.5 text-[14px] font-mono tracking-widest w-24 text-center select-none shadow-inner" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 10 L100 30 M0 30 L100 10\' stroke=\'rgba(0,0,0,0.1)\' stroke-width=\'2\'/%3E%3C/svg%3E")' }}>
-                  {statusCaptcha}
-                </div>
-                <button onClick={() => setStatusCaptcha(generateCaptcha())} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors">
-                  <RefreshCw size={14} />
-                </button>
-                <input
-                  type="text"
-                  placeholder={t.statusForm.captcha}
-                  className="flex-1 border border-gray-300 rounded-sm px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors"
-                  value={statusCaptchaInput}
-                  onChange={(e) => setStatusCaptchaInput(e.target.value)}
-                  maxLength={5}
+              <div className="mb-4">
+                <Captcha 
+                  captcha={statusCaptcha} 
+                  onRefresh={() => {
+                    setStatusCaptcha(generateCaptchaString());
+                    setStatusCaptchaInput('');
+                  }} 
+                  value={statusCaptchaInput} 
+                  onChange={setStatusCaptchaInput} 
                 />
               </div>
               <button onClick={handleStatusSearch} className="w-full bg-[#002b5e] text-white px-4 py-2 font-semibold text-[13px] rounded-sm hover:bg-[#001f44] transition-colors flex justify-center items-center gap-2 border border-[#001533]">
@@ -254,66 +294,129 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Login Form (SSO Logic) */}
-          <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
-            <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 font-semibold text-[#002b5e] text-[13px] flex items-center gap-2">
-              <Lock size={16} className="text-[#002b5e]" /> {t.loginForm.title}
-            </div>
-
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.id}</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400"><User size={14} /></span>
-                  <input
-                    type="text"
-                    placeholder={t.loginForm.userPh}
-                    className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.pass}</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400"><Lock size={14} /></span>
-                  <input
-                    type="password"
-                    placeholder={t.loginForm.passPh}
-                    className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 block mb-1">Captcha</label>
-                <div className="flex gap-2 items-stretch">
-                  <div className="border border-gray-300 rounded-sm bg-gray-50 text-gray-800 px-3 py-1.5 text-[14px] font-mono tracking-widest w-24 text-center select-none shadow-inner" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 20 L100 20 M20 0 L20 40\' stroke=\'rgba(0,0,0,0.1)\' stroke-width=\'2\'/%3E%3C/svg%3E")' }}>
-                    {loginCaptcha}
+          {/* Login Form / User Profile (SSO Logic) */}
+          <div id="login-section" className="relative perspective-1000">
+            <div className={`transition-all duration-300 origin-center ${isFlipping ? 'opacity-0 scale-y-0' : 'opacity-100 scale-y-100'}`}>
+              {!isLoggedIn ? (
+                <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
+                  <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 font-semibold text-[#002b5e] text-[13px] flex items-center gap-2">
+                    <Lock size={16} className="text-[#002b5e]" /> {t.loginForm.title}
                   </div>
-                  <button onClick={() => setLoginCaptcha(generateCaptcha())} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors">
-                    <RefreshCw size={14} />
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="Enter Code"
-                    className="flex-1 border border-gray-300 rounded-sm px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors"
-                    value={loginCaptchaInput}
-                    onChange={(e) => setLoginCaptchaInput(e.target.value)}
-                    maxLength={5}
-                  />
-                </div>
-              </div>
 
-              <button onClick={handleLogin} className="w-full bg-[#1e7b34] text-white py-2 font-semibold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors border border-[#145a24] mt-1">
-                {t.loginForm.btn}
-              </button>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.id}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-400"><User size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder={t.loginForm.userPh}
+                          className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.pass}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-400"><Lock size={14} /></span>
+                        <input
+                          type="password"
+                          placeholder={t.loginForm.passPh}
+                          className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      <Captcha 
+                        captcha={loginCaptcha} 
+                        onRefresh={() => {
+                          setLoginCaptcha(generateCaptchaString());
+                          setLoginCaptchaInput('');
+                        }} 
+                        value={loginCaptchaInput} 
+                        onChange={setLoginCaptchaInput} 
+                      />
+                    </div>
+
+                    <button onClick={handleLogin} className="w-full bg-[#1e7b34] text-white py-2 font-semibold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors border border-[#145a24] mt-1">
+                      {t.loginForm.btn}
+                    </button>
+
+                    <div className="mt-3 pt-3 border-t border-gray-200 text-center">
+                      <p className="text-[11px] text-gray-500 mb-1.5">{lang === 'hi' ? 'विभाग प्रशासक?' : 'Department Admin?'}</p>
+                      <button onClick={() => navigate('/register')} className="cursor-pointer w-full bg-white text-[#002b5e] border border-[#002b5e] py-1.5 font-semibold text-[12px] rounded-sm hover:bg-gray-50 transition-colors flex justify-center items-center gap-1">
+                        <User size={14} /> {lang === 'hi' ? 'नया उपयोगकर्ता पंजीकृत करें' : 'Register New User'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white border border-green-200 shadow-sm rounded-md overflow-hidden ring-1 ring-green-100">
+                  <div className="bg-green-50 border-b border-green-200 px-4 py-2.5 font-semibold text-[#1e7b34] text-[13px] flex items-center justify-between">
+                    <span className="flex items-center gap-2"><UserCheck size={16} /> User Profile</span>
+                    <span className="text-[10px] bg-green-200 px-2 py-0.5 rounded-full text-green-800 border border-green-300 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span> Online
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-3 mb-2">
+                       <div className="w-12 h-12 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-sm">
+                          {userDetails.name.charAt(0)}
+                       </div>
+                       <div>
+                         <h4 className="font-bold text-[#002b5e] text-[15px] leading-tight">{userDetails.name}</h4>
+                         <p className="text-gray-500 text-[11px] font-medium">{userDetails.designation}</p>
+                       </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-sm border border-gray-200 text-[12px] space-y-2 shadow-inner">
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{userDetails.id}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{userDetails.department}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{userDetails.district}</span></div>
+                      <div className="flex justify-between pt-1"><span className="text-gray-500">Last Login:</span> <span className="font-medium text-blue-600">{userDetails.lastLogin}</span></div>
+                    </div>
+                    <style>{`
+                      @keyframes growPop {
+                        0% { transform: scale(0.9); opacity: 0; }
+                        100% { transform: scale(1); opacity: 1; }
+                      }
+                      .animate-grow-pop { animation: growPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+                    `}</style>
+                    {showLogoutConfirm ? (
+                      <div className="mt-2 bg-red-50 border border-red-200 p-3 rounded-sm animate-grow-pop">
+                        <p className="text-red-700 text-[13px] font-bold text-center mb-2">
+                          {lang === 'hi' ? 'क्या आप वाकई लॉगआउट करना चाहते हैं?' : 'Are you sure you want to logout?'}
+                        </p>
+                        <div className="flex gap-2">
+                          <button onClick={handleLogout} className="flex-1 bg-red-600 text-white py-1.5 rounded-sm font-bold text-[12px] hover:bg-red-700 transition-colors shadow-sm">
+                            {lang === 'hi' ? 'हाँ, लॉगआउट' : 'Yes, Logout'}
+                          </button>
+                          <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 bg-white text-gray-700 border border-gray-300 py-1.5 rounded-sm font-bold text-[12px] hover:bg-gray-50 transition-colors shadow-sm">
+                            {lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 mt-2">
+                        <button onClick={() => navigate('/dashboard')} className="cursor-pointer w-full bg-blue-50 text-blue-700 py-2 font-bold text-[13px] rounded-sm hover:bg-blue-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-blue-200 flex items-center justify-center gap-2">
+                          <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Dashboard'}
+                        </button>
+                        <button onClick={() => setShowLogoutConfirm(true)} className="w-full bg-red-50 text-red-700 py-2 font-bold text-[13px] rounded-sm hover:bg-red-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-red-200 flex items-center justify-center gap-2">
+                          <LogOut size={16} /> Secure Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+          
         </div>
       </div>
 
@@ -378,10 +481,17 @@ const Home = () => {
       {/* Massive Statistics Dashboard (Formalized) */}
       <div className="bg-[#002b5e] py-10 border-y border-[#001f44] mt-4">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 relative flex flex-col items-center">
             <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Public Grievance Dashboard</h2>
             <div className="w-16 h-1 bg-[#e65100] mx-auto mb-3"></div>
             <p className="text-blue-200 text-[13px]">Monitoring and analytics of public grievances to ensure transparent governance.</p>
+            {isLoggedIn && (
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden md:block">
+                 <button onClick={() => navigate('/dashboard')} className="cursor-pointer bg-[#1e7b34] text-white border border-[#145a24] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors flex items-center gap-2 shadow-sm">
+                   <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Dashboard'}
+                 </button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
