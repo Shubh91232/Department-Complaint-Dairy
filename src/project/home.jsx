@@ -5,21 +5,22 @@ import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Downloa
 import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
-import Captcha, { generateCaptchaString } from './complain_path/captcha';
+import Captcha, { verifyCaptcha } from './complain_path/captcha';
 
 const Home = () => {
   const navigate = useNavigate();
   const { lang, t } = useLanguage();
 
-  const [statusCaptcha, setStatusCaptcha] = useState(generateCaptchaString());
-  const [loginCaptcha, setLoginCaptcha] = useState(generateCaptchaString());
+  const statusCaptchaRef = React.useRef(null);
+  const loginCaptchaRef = React.useRef(null);
+
+  const [statusCaptchaData, setStatusCaptchaData] = useState({ code: '', token: '' });
+  const [loginCaptchaData, setLoginCaptchaData] = useState({ code: '', token: '' });
 
   const [statusInput, setStatusInput] = useState('');
-  const [statusCaptchaInput, setStatusCaptchaInput] = useState('');
-
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loginCaptchaInput, setLoginCaptchaInput] = useState('');
   const [notification, setNotification] = useState('');
   
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('agentLogin') === 'true');
@@ -49,22 +50,22 @@ const Home = () => {
     { q: "How do I change the language using Bhashini?", a: "You can change the language using the translation widget available on the portal." }
   ];
 
-  const handleStatusSearch = () => {
-    if (!statusInput || !statusCaptchaInput) {
+  const handleStatusSearch = async () => {
+    if (!statusInput || !statusCaptchaData.code) {
       alert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.");
       return;
     }
-    if (statusCaptchaInput !== statusCaptcha) {
+    const isValid = await verifyCaptcha(statusCaptchaData.token, statusCaptchaData.code);
+    if (!isValid) {
       alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
-      setStatusCaptcha(generateCaptchaString());
-      setStatusCaptchaInput('');
+      statusCaptchaRef.current?.refresh();
       return;
     }
     alert(`${lang === 'hi' ? "स्थिति खोजी जा रही है:" : "Searching status for:"} ${statusInput}`);
   };
 
-  const handleLogin = () => {
-    if (!username || !password || !loginCaptchaInput) {
+  const handleLogin = async () => {
+    if (!username || !password || !loginCaptchaData.code) {
       alert(lang === 'hi' ? "लॉगिन के लिए सभी विवरण आवश्यक हैं।" : "All login details are required.");
       return;
     }
@@ -72,10 +73,10 @@ const Home = () => {
       alert(lang === 'hi' ? "अमान्य आईडी या पासवर्ड!" : "Invalid ID or Password!");
       return;
     }
-    if (loginCaptchaInput !== loginCaptcha) {
+    const isValid = await verifyCaptcha(loginCaptchaData.token, loginCaptchaData.code);
+    if (!isValid) {
       alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
-      setLoginCaptcha(generateCaptchaString());
-      setLoginCaptchaInput('');
+      loginCaptchaRef.current?.refresh();
       return;
     }
     
@@ -86,8 +87,7 @@ const Home = () => {
       setIsFlipping(false);
       setUsername('');
       setPassword('');
-      setLoginCaptchaInput('');
-      setLoginCaptcha(generateCaptchaString());
+      loginCaptchaRef.current?.refresh();
     }, 300);
   };
 
@@ -279,13 +279,8 @@ const Home = () => {
 
               <div className="mb-4">
                 <Captcha 
-                  captcha={statusCaptcha} 
-                  onRefresh={() => {
-                    setStatusCaptcha(generateCaptchaString());
-                    setStatusCaptchaInput('');
-                  }} 
-                  value={statusCaptchaInput} 
-                  onChange={setStatusCaptchaInput} 
+                  ref={statusCaptchaRef}
+                  onCodeChange={(code, token) => setStatusCaptchaData({ code, token })}
                 />
               </div>
               <button onClick={handleStatusSearch} className="w-full bg-[#002b5e] text-white px-4 py-2 font-semibold text-[13px] rounded-sm hover:bg-[#001f44] transition-colors flex justify-center items-center gap-2 border border-[#001533]">
@@ -334,13 +329,8 @@ const Home = () => {
 
                     <div className="mb-2">
                       <Captcha 
-                        captcha={loginCaptcha} 
-                        onRefresh={() => {
-                          setLoginCaptcha(generateCaptchaString());
-                          setLoginCaptchaInput('');
-                        }} 
-                        value={loginCaptchaInput} 
-                        onChange={setLoginCaptchaInput} 
+                        ref={loginCaptchaRef}
+                        onCodeChange={(code, token) => setLoginCaptchaData({ code, token })}
                       />
                     </div>
 

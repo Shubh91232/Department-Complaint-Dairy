@@ -5,13 +5,15 @@ import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
+import Captcha, { verifyCaptcha } from './captcha';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
-  const [captcha, setCaptcha] = useState('8KFFV2');
+  const captchaRef = React.useRef(null);
+  const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [showPreview, setShowPreview] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -37,9 +39,9 @@ const ComplainForm = () => {
     description: '',
     responsibleOfficer: '',
     currentStatus: 'Pending',
+    currentStatus: 'Pending',
     actionTaken: '',
-    remarks: '',
-    captchaInput: ''
+    remarks: ''
   });
 
   const handleApplicantChange = (e) => {
@@ -103,20 +105,16 @@ const ComplainForm = () => {
     }, 2000);
   };
 
-  const generateCaptcha = () => {
-    const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
-    setCaptcha(result);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.captchaInput !== captcha) {
+    if (!captchaData.code) {
+      alert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha');
+      return;
+    }
+    const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
+    if (!isValid) {
       alert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!');
-      generateCaptcha();
+      captchaRef.current?.refresh();
       return;
     }
     setShowPreview(true);
@@ -441,14 +439,11 @@ const ComplainForm = () => {
               </div>
               
               <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="border border-gray-300 bg-gray-100 text-gray-800 px-4 py-2 font-mono tracking-widest font-bold text-[18px] select-none shadow-inner">
-                    {captcha}
-                  </div>
-                  <button type="button" onClick={generateCaptcha} className="text-[#1976d2] hover:text-[#115293] transition-colors p-2 rounded-full hover:bg-blue-50" title="Refresh Captcha">
-                    <RefreshCw size={20} />
-                  </button>
-                  <input type="text" name="captchaInput" value={formData.captchaInput} onChange={handleFormChange} required placeholder="Enter Captcha" className="border border-gray-300 px-4 py-2 w-40 focus:outline-none focus:border-[#1976d2] rounded-sm" />
+                <div className="w-full md:w-auto min-w-[250px]">
+                  <Captcha 
+                    ref={captchaRef}
+                    onCodeChange={(code, token) => setCaptchaData({ code, token })}
+                  />
                 </div>
                 
                 <div className="flex gap-4 w-full md:w-auto">
