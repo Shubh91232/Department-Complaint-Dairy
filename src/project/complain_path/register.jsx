@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown, Search } from 'lucide-react';
 import Captcha, { verifyCaptcha } from './captcha';
 import { fetchDepartmentsAPI } from '../../apiHandler/apis';
 
@@ -27,16 +27,43 @@ const Register = () => {
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [departments, setDepartments] = useState([]);
+  
+  // Custom Dropdown State
+  const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
+  const [deptSearchTerm, setDeptSearchTerm] = useState('');
+  const deptDropdownRef = React.useRef(null);
+  const fetchingDeptsRef = React.useRef(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target)) {
+        setIsDeptDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredDepartments = React.useMemo(() => {
+    return departments.filter(dept => 
+      dept.label.toLowerCase().includes(deptSearchTerm.toLowerCase()) ||
+      dept.value.toLowerCase().includes(deptSearchTerm.toLowerCase())
+    );
+  }, [departments, deptSearchTerm]);
 
   useEffect(() => {
     const loadDepartments = async () => {
+      if (fetchingDeptsRef.current) return;
+      fetchingDeptsRef.current = true;
       try {
         const response = await fetchDepartmentsAPI();
-        if (response.success) {
+        if (response && response.success) {
           setDepartments(response.data);
         }
       } catch (err) {
         console.error('Failed to load departments');
+      } finally {
+        fetchingDeptsRef.current = false;
       }
     };
     loadDepartments();
@@ -126,17 +153,54 @@ const Register = () => {
               </div>
 
               {/* Department */}
-              <div>
+              <div ref={deptDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Department <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400"><Building size={16} /></span>
-                  <select required name="department" value={formData.department} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
-                    <option value="">Select Department</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.value}>{dept.label}</option>
-                    ))}
-                  </select>
-                  <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  <div 
+                    onClick={() => setIsDeptDropdownOpen(!isDeptDropdownOpen)}
+                    className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
+                  >
+                    <span className="absolute left-3 top-2.5 text-gray-400"><Building size={16} /></span>
+                    <span className={`text-[13px] ${formData.department ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {formData.department ? departments.find(d => d.value === formData.department)?.label : 'Select Department'}
+                    </span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  </div>
+
+                  {isDeptDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                      <div className="p-2 border-b border-gray-200 relative">
+                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder="Search department..."
+                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                          value={deptSearchTerm}
+                          onChange={(e) => setDeptSearchTerm(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredDepartments.length > 0 ? (
+                          filteredDepartments.map((dept) => (
+                            <div 
+                              key={dept.id} 
+                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.department === dept.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                              onClick={() => {
+                                setFormData({ ...formData, department: dept.value });
+                                setIsDeptDropdownOpen(false);
+                                setDeptSearchTerm('');
+                              }}
+                            >
+                              {dept.label}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No departments found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
