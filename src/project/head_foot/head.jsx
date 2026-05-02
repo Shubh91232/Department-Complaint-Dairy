@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
+import { Bell } from 'lucide-react';
 
 const Header = () => {
   const location = useLocation();
