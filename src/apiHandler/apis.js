@@ -1,5 +1,54 @@
 import { URLS } from './urls';
 
+// In-memory cache for API responses
+const apiCache = new Map();
+
+/**
+ * Global GET handler with optional caching
+ */
+export const getAPI = async (url, useCache = false) => {
+  if (useCache && apiCache.has(url)) {
+    return apiCache.get(url);
+  }
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    
+    if (useCache) {
+      apiCache.set(url, data);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Error in GET ${url}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Global POST handler
+ */
+export const postAPI = async (url, payload = {}) => {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    // We try to parse JSON even if status is not ok, to catch server error messages
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in POST ${url}:`, error);
+    throw error;
+  }
+};
+
+// --- SPECIFIC IMPLEMENTATIONS ---
+
 export const fetchCaptchaImageAPI = async () => {
   try {
     const res = await fetch(URLS.AUTH.CAPTCHA);
@@ -20,16 +69,11 @@ export const fetchCaptchaImageAPI = async () => {
 };
 
 export const verifyCaptchaCodeAPI = async (token, code) => {
-  try {
-    const res = await fetch(URLS.AUTH.VERIFY_CAPTCHA, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ captcha_jwt: token, captcha_code: code })
-    });
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error('Error verifying captcha:', error);
-    throw error;
-  }
+  // Uses global POST handler
+  return await postAPI(URLS.AUTH.VERIFY_CAPTCHA, { captcha_jwt: token, captcha_code: code });
+};
+
+export const fetchDepartmentsAPI = async () => {
+  // Uses global GET handler with CACHE enabled (true)
+  return await getAPI(URLS.META.DEPARTMENT_LIST, true);
 };

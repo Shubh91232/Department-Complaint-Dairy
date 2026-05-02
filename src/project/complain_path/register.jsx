@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown } from 'lucide-react';
 import Captcha, { verifyCaptcha } from './captcha';
+import { fetchDepartmentsAPI } from '../../apiHandler/apis';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -25,6 +26,21 @@ const Register = () => {
 
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const response = await fetchDepartmentsAPI();
+        if (response.success) {
+          setDepartments(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load departments');
+      }
+    };
+    loadDepartments();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -102,10 +118,10 @@ const Register = () => {
 
               {/* Employee ID */}
               <div>
-                <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Employee ID (SSO) <span className="text-red-500">*</span></label>
+                <label htmlFor="empId" className="text-[12px] font-semibold text-gray-700 block mb-1.5">Employee ID (SSO) <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-gray-400"><Briefcase size={16} /></span>
-                  <input required type="text" name="empId" value={formData.empId} onChange={handleChange} placeholder="Enter Employee ID" className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white uppercase" />
+                  <input required id="empId" type="text" name="empId" autoComplete="username" value={formData.empId} onChange={handleChange} placeholder="Enter Employee ID" className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white uppercase" />
                 </div>
               </div>
 
@@ -116,10 +132,9 @@ const Register = () => {
                   <span className="absolute left-3 top-2.5 text-gray-400"><Building size={16} /></span>
                   <select required name="department" value={formData.department} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
                     <option value="">Select Department</option>
-                    <option value="Panchayati Raj">Panchayati Raj</option>
-                    <option value="PHED">Public Health Engineering</option>
-                    <option value="Revenue">Revenue</option>
-                    <option value="Medical">Medical & Health</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.value}>{dept.label}</option>
+                    ))}
                   </select>
                   <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
                 </div>
