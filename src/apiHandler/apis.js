@@ -77,3 +77,15 @@ export const fetchDepartmentsAPI = async () => {
   // Uses global GET handler with CACHE enabled (true)
   return await getAPI(URLS.META.DEPARTMENT_LIST, true);
 };
+
+export const fetchDistrictsAPI = async () => {
+  return await getAPI(URLS.META.DISTRICTS, true); // Cache true as districts rarely change
+};
+
+export const fetchBlocksAPI = async (districtId) => {
+  return await getAPI(URLS.META.BLOCKS(districtId), true);
+};
+
+export const fetchGPsAPI = async (blockId) => {
+  return await getAPI(URLS.META.GPS(blockId), true);
+};

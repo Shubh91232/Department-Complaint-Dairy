@@ -6,6 +6,9 @@ export const URLS = {
     VERIFY_CAPTCHA: `${BASE_URL}/auth/captcha/verify`,
   },
   META: {
-    DEPARTMENT_LIST: `${BASE_URL}/department_list`
+    DEPARTMENT_LIST: `${BASE_URL}/department_list`,
+    DISTRICTS: `${BASE_URL}/locations/districts`,
+    BLOCKS: (districtId) => `${BASE_URL}/locations/blocks/${districtId}`,
+    GPS: (blockId) => `${BASE_URL}/locations/gps/${blockId}`
   }
 };

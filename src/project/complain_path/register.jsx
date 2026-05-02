@@ -4,7 +4,7 @@ import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown, Search } from 'lucide-react';
 import Captcha, { verifyCaptcha } from './captcha';
-import { fetchDepartmentsAPI } from '../../apiHandler/apis';
+import { fetchDepartmentsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI } from '../../apiHandler/apis';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -27,6 +27,9 @@ const Register = () => {
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [departments, setDepartments] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [gps, setGps] = useState([]);
   
   // Custom Dropdown State
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
@@ -34,10 +37,31 @@ const Register = () => {
   const deptDropdownRef = React.useRef(null);
   const fetchingDeptsRef = React.useRef(false);
 
+  const [isDistrictDropdownOpen, setIsDistrictDropdownOpen] = useState(false);
+  const [districtSearchTerm, setDistrictSearchTerm] = useState('');
+  const districtDropdownRef = React.useRef(null);
+
+  const [isBlockDropdownOpen, setIsBlockDropdownOpen] = useState(false);
+  const [blockSearchTerm, setBlockSearchTerm] = useState('');
+  const blockDropdownRef = React.useRef(null);
+
+  const [isGpDropdownOpen, setIsGpDropdownOpen] = useState(false);
+  const [gpSearchTerm, setGpSearchTerm] = useState('');
+  const gpDropdownRef = React.useRef(null);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target)) {
         setIsDeptDropdownOpen(false);
+      }
+      if (districtDropdownRef.current && !districtDropdownRef.current.contains(event.target)) {
+        setIsDistrictDropdownOpen(false);
+      }
+      if (blockDropdownRef.current && !blockDropdownRef.current.contains(event.target)) {
+        setIsBlockDropdownOpen(false);
+      }
+      if (gpDropdownRef.current && !gpDropdownRef.current.contains(event.target)) {
+        setIsGpDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -50,6 +74,18 @@ const Register = () => {
       dept.value.toLowerCase().includes(deptSearchTerm.toLowerCase())
     );
   }, [departments, deptSearchTerm]);
+
+  const filteredDistricts = React.useMemo(() => {
+    return districts.filter(d => d.label.toLowerCase().includes(districtSearchTerm.toLowerCase()));
+  }, [districts, districtSearchTerm]);
+
+  const filteredBlocks = React.useMemo(() => {
+    return blocks.filter(b => b.label.toLowerCase().includes(blockSearchTerm.toLowerCase()));
+  }, [blocks, blockSearchTerm]);
+
+  const filteredGps = React.useMemo(() => {
+    return gps.filter(g => g.label.toLowerCase().includes(gpSearchTerm.toLowerCase()));
+  }, [gps, gpSearchTerm]);
 
   useEffect(() => {
     const loadDepartments = async () => {
@@ -66,11 +102,69 @@ const Register = () => {
         fetchingDeptsRef.current = false;
       }
     };
+    const loadDistricts = async () => {
+      try {
+        const response = await fetchDistrictsAPI();
+        if (response && response.success) {
+          setDistricts(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load districts');
+      }
+    };
     loadDepartments();
+    loadDistricts();
   }, []);
+
+  useEffect(() => {
+    const loadBlocks = async () => {
+      if (!formData.officeDistrict) return;
+      try {
+        const response = await fetchBlocksAPI(formData.officeDistrict);
+        if (response && response.success) {
+          setBlocks(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load blocks');
+      }
+    };
+    loadBlocks();
+  }, [formData.officeDistrict]);
+
+  useEffect(() => {
+    const loadGPs = async () => {
+      if (!formData.officeBlock) return;
+      try {
+        const response = await fetchGPsAPI(formData.officeBlock);
+        if (response && response.success) {
+          setGps(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load gps');
+      }
+    };
+    loadGPs();
+  }, [formData.officeBlock]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLocationChange = (name, value) => {
+    let newFormData = { ...formData, [name]: value };
+    
+    // Cascading resets
+    if (name === 'officeDistrict') {
+      newFormData.officeBlock = '';
+      newFormData.officeGp = '';
+      setBlocks([]);
+      setGps([]);
+    } else if (name === 'officeBlock') {
+      newFormData.officeGp = '';
+      setGps([]);
+    }
+    
+    setFormData(newFormData);
   };
 
   const handleSubmit = async (e) => {
@@ -264,48 +358,162 @@ const Register = () => {
               </div>
 
               {/* District */}
-              <div>
+              <div ref={districtDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">District <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                  <select required name="officeDistrict" value={formData.officeDistrict} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
-                    <option value="">Select District</option>
-                    <option value="Jaipur">Jaipur</option>
-                    <option value="Jodhpur">Jodhpur</option>
-                    <option value="Udaipur">Udaipur</option>
-                    <option value="Ajmer">Ajmer</option>
-                  </select>
-                  <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  <div 
+                    onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
+                    className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
+                  >
+                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                    <span className={`text-[13px] ${formData.officeDistrict ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {formData.officeDistrict ? districts.find(d => d.value === formData.officeDistrict)?.label : 'Select District'}
+                    </span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  </div>
+
+                  {isDistrictDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                      <div className="p-2 border-b border-gray-200 relative">
+                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder="Search district..."
+                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                          value={districtSearchTerm}
+                          onChange={(e) => setDistrictSearchTerm(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredDistricts.length > 0 ? (
+                          filteredDistricts.map((d) => (
+                            <div 
+                              key={d.value} 
+                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeDistrict === d.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                              onClick={() => {
+                                handleLocationChange('officeDistrict', d.value);
+                                setIsDistrictDropdownOpen(false);
+                                setDistrictSearchTerm('');
+                              }}
+                            >
+                              {d.label}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No districts found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Block */}
-              <div>
+              <div ref={blockDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Block/Tehsil <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                  <select required name="officeBlock" value={formData.officeBlock} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
-                    <option value="">Select Block</option>
-                    <option value="Block A">Block A</option>
-                    <option value="Block B">Block B</option>
-                    <option value="Block C">Block C</option>
-                  </select>
-                  <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  <div 
+                    onClick={() => {
+                      if (formData.officeDistrict && blocks.length > 0) setIsBlockDropdownOpen(!isBlockDropdownOpen);
+                    }}
+                    className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeDistrict || blocks.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
+                  >
+                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                    <span className={`text-[13px] ${formData.officeBlock ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {formData.officeBlock ? blocks.find(b => b.value === formData.officeBlock)?.label : 'Select Block'}
+                    </span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  </div>
+
+                  {isBlockDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                      <div className="p-2 border-b border-gray-200 relative">
+                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder="Search block..."
+                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                          value={blockSearchTerm}
+                          onChange={(e) => setBlockSearchTerm(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredBlocks.length > 0 ? (
+                          filteredBlocks.map((b) => (
+                            <div 
+                              key={b.value} 
+                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeBlock === b.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                              onClick={() => {
+                                handleLocationChange('officeBlock', b.value);
+                                setIsBlockDropdownOpen(false);
+                                setBlockSearchTerm('');
+                              }}
+                            >
+                              {b.label}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No blocks found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Gram Panchayat (GP) */}
-              <div>
+              <div ref={gpDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Gram Panchayat (GP) <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                  <select required name="officeGp" value={formData.officeGp} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
-                    <option value="">Select GP</option>
-                    <option value="GP 1">GP 1</option>
-                    <option value="GP 2">GP 2</option>
-                    <option value="GP 3">GP 3</option>
-                  </select>
-                  <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  <div 
+                    onClick={() => {
+                      if (formData.officeBlock && gps.length > 0) setIsGpDropdownOpen(!isGpDropdownOpen);
+                    }}
+                    className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeBlock || gps.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
+                  >
+                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                    <span className={`text-[13px] ${formData.officeGp ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {formData.officeGp ? gps.find(g => g.value === formData.officeGp)?.label : 'Select GP'}
+                    </span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  </div>
+
+                  {isGpDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                      <div className="p-2 border-b border-gray-200 relative">
+                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder="Search GP..."
+                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                          value={gpSearchTerm}
+                          onChange={(e) => setGpSearchTerm(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredGps.length > 0 ? (
+                          filteredGps.map((g) => (
+                            <div 
+                              key={g.value} 
+                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeGp === g.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                              onClick={() => {
+                                handleLocationChange('officeGp', g.value);
+                                setIsGpDropdownOpen(false);
+                                setGpSearchTerm('');
+                              }}
+                            >
+                              {g.label}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No GPs found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
