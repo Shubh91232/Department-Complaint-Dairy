@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown } from 'lucide-react';
-import Captcha, { generateCaptchaString } from './captcha';
+import Captcha, { verifyCaptcha } from './captcha';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -23,19 +23,23 @@ const Register = () => {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [captcha, setCaptcha] = useState(generateCaptchaString());
-  const [captchaInput, setCaptchaInput] = useState('');
+  const captchaRef = React.useRef(null);
+  const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (captchaInput !== captcha) {
+    if (!captchaData.code) {
+      alert("Please enter captcha code.");
+      return;
+    }
+    const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
+    if (!isValid) {
       alert("Invalid Captcha code! Please try again.");
-      setCaptcha(generateCaptchaString());
-      setCaptchaInput('');
+      captchaRef.current?.refresh();
       return;
     }
     // In a real app, send data to backend here.
@@ -229,13 +233,8 @@ const Register = () => {
               {/* Captcha */}
               <div className="md:col-span-2 mt-2">
                 <Captcha 
-                  captcha={captcha} 
-                  onRefresh={() => {
-                    setCaptcha(generateCaptchaString());
-                    setCaptchaInput('');
-                  }} 
-                  value={captchaInput} 
-                  onChange={setCaptchaInput} 
+                  ref={captchaRef}
+                  onCodeChange={(code, token) => setCaptchaData({ code, token })}
                 />
               </div>
 

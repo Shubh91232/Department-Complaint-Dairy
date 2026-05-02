@@ -14,19 +14,34 @@ export const verifyCaptcha = async (token, code) => {
 const Captcha = forwardRef(({ onCodeChange }, ref) => {
   const [captchaData, setCaptchaData] = useState({ token: '', image: '' });
   const [inputValue, setInputValue] = useState('');
+  const [error, setError] = useState(false);
+  const isFetchingRef = React.useRef(false);
+  const onCodeChangeRef = React.useRef(onCodeChange);
 
-  const fetchCaptcha = async () => {
+  useEffect(() => {
+    onCodeChangeRef.current = onCodeChange;
+  }, [onCodeChange]);
+
+  const fetchCaptcha = React.useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
+      setError(false);
       const data = await fetchCaptchaImageAPI();
-      if (data.success) {
+      if (data && data.success) {
         setCaptchaData({ token: data.token, image: data.image });
         setInputValue('');
-        if (onCodeChange) onCodeChange('', data.token);
+        if (onCodeChangeRef.current) onCodeChangeRef.current('', data.token);
+      } else {
+        setError(true);
       }
     } catch (e) {
       console.error(e);
+      setError(true);
+    } finally {
+      isFetchingRef.current = false;
     }
-  };
+  }, []);
 
   useImperativeHandle(ref, () => ({
     refresh: fetchCaptcha,
@@ -35,7 +50,7 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
 
   useEffect(() => {
     fetchCaptcha();
-  }, []);
+  }, [fetchCaptcha]);
 
   const handleChange = (e) => {
     const val = e.target.value.toUpperCase();
@@ -47,8 +62,14 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
     <div className="w-full">
       <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Security Code / Captcha <span className="text-red-500">*</span></label>
       <div className="flex gap-2 items-stretch max-w-sm">
-        <div className="border border-gray-300 rounded-sm bg-gray-50 flex items-center justify-center p-0.5 w-24 overflow-hidden h-[34px]">
-          {captchaData.image ? <img src={captchaData.image} alt="captcha" className="h-full mix-blend-multiply" /> : '...'}
+        <div className="border border-gray-300 rounded-sm bg-gray-50 flex items-center justify-center p-0.5 w-32 overflow-hidden h-[34px]">
+          {error ? (
+            <span className="text-[10px] text-red-500 font-bold text-center leading-tight">Load Error</span>
+          ) : captchaData.image ? (
+            <img src={captchaData.image} alt="captcha" className="h-full mix-blend-multiply" />
+          ) : (
+            <span className="text-gray-400 text-xs">...</span>
+          )}
         </div>
         <button type="button" onClick={fetchCaptcha} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors cursor-pointer h-[34px]">
           <RefreshCw size={14} />

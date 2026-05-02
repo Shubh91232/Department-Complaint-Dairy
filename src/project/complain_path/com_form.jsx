@@ -39,7 +39,6 @@ const ComplainForm = () => {
     description: '',
     responsibleOfficer: '',
     currentStatus: 'Pending',
-    currentStatus: 'Pending',
     actionTaken: '',
     remarks: ''
   });
