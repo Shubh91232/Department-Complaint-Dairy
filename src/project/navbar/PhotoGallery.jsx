@@ -8,12 +8,12 @@ const PhotoGallery = () => {
   const { lang, t } = useLanguage();
 
   const photos = [
-    { url: 'https://images.unsplash.com/photo-1541178735493-479c1a27ed24?w=400', caption: lang === 'hi' ? 'सरकारी भवन का उद्घाटन' : 'Government Building Inauguration' },
-    { url: 'https://images.unsplash.com/photo-1582650517303-b4c659f131a4?w=400', caption: lang === 'hi' ? 'जन सुनवाई सत्र' : 'Public Hearing Session' },
-    { url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400', caption: lang === 'hi' ? 'विभागीय बैठक' : 'Departmental Meeting' },
-    { url: 'https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?w=400', caption: lang === 'hi' ? 'जागरूकता अभियान' : 'Awareness Campaign' },
-    { url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400', caption: lang === 'hi' ? 'कार्यालय का बुनियादी ढांचा' : 'Office Infrastructure' },
-    { url: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=400', caption: lang === 'hi' ? 'पंचायत सत्र' : 'Panchayat Session' }
+    { url: '/assets/gallery/govt_inauguration.png', caption: lang === 'hi' ? 'सरकारी भवन का उद्घाटन' : 'Government Building Inauguration' },
+    { url: '/assets/gallery/public_hearing.png', caption: lang === 'hi' ? 'जन सुनवाई सत्र' : 'Public Hearing Session' },
+    { url: '/assets/gallery/dept_meeting.png', caption: lang === 'hi' ? 'विभागीय बैठक' : 'Departmental Meeting' },
+    { url: '/assets/gallery/awareness_campaign.png', caption: lang === 'hi' ? 'जागरूकता अभियान' : 'Awareness Campaign' },
+    { url: '/assets/gallery/office_infra.png', caption: lang === 'hi' ? 'कार्यालय का बुनियादी ढांचा' : 'Office Infrastructure' },
+    { url: '/assets/gallery/panchayat_session.png', caption: lang === 'hi' ? 'पंचायत सत्र' : 'Panchayat Session' }
   ];
 
   return (

@@ -33,6 +33,8 @@ const ComplainForm = () => {
     block: '',
     panchayat: '',
     level: 'District',
+    department: '',
+    scheme: '',
     complaintCategory: '',
     description: '',
     responsibleOfficer: '',
@@ -48,7 +50,13 @@ const ComplainForm = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      if (name === 'department') {
+        newData.scheme = ''; // Reset scheme when department changes
+      }
+      return newData;
+    });
   };
 
   const handleProceed = () => {
@@ -91,6 +99,8 @@ const ComplainForm = () => {
         dateReceived: '2026-04-28',
         district: 'Jaipur',
         level: 'District',
+        department: 'Rural Development',
+        scheme: 'PMAY-G (Awas)',
         complaintCategory: 'Financial Irregularity',
         description: 'Fund misuse reported in the recent road construction project. Attached evidence suggests a discrepancy of Rs. 4,50,000 in material costs.',
         responsibleOfficer: 'Zila Parishad CEO',
@@ -130,6 +140,13 @@ const ComplainForm = () => {
   const districts = ['Ajmer', 'Alwar', 'Banswara', 'Baran', 'Barmer', 'Bharatpur', 'Bhilwara', 'Bikaner', 'Bundi', 'Chittorgarh', 'Churu', 'Dausa', 'Dholpur', 'Dungarpur', 'Hanumangarh', 'Jaipur', 'Jaisalmer', 'Jalore', 'Jhalawar', 'Jhunjhunu', 'Jodhpur', 'Karauli', 'Kota', 'Nagaur', 'Pali', 'Pratapgarh', 'Rajsamand', 'Sawai Madhopur', 'Sikar', 'Sirohi', 'Sri Ganganagar', 'Tonk', 'Udaipur'];
   const blocks = formData.district ? ['Block 1', 'Block 2', 'Block 3'] : [];
   const panchayats = formData.block ? ['Panchayat 1', 'Panchayat 2', 'Panchayat 3'] : [];
+
+  const deptSchemes = {
+    'Rajveeka': ['SHG Formation', 'Revolving Fund', 'CIF Disbursement', 'Startup Fund'],
+    'Rural Development': ['PMAY-G (Awas)', 'SBM-G (Toilets)', 'Sansad Adarsh Gram Yojana', 'MPLAD/MLALAD'],
+    'MGNREGA': ['Wage Payment Issue', 'Work Demand', 'Muster Roll Irregularity', 'Individual Asset Construction'],
+    'Panchayati Raj': ['Section 38 (Panchayati Raj Act)', 'Encroachment', 'Tender Irregularity', 'Gram Panchayat Fund']
+  };
 
   const labelClass = "text-[12px] font-bold text-gray-700 block mb-1";
   const inputClass = "w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-[#1976d2] focus:ring-1 focus:ring-[#1976d2] bg-white transition-all";
@@ -378,13 +395,32 @@ const ComplainForm = () => {
                       <h2 className="font-bold text-[15px] text-[#002b5e]">{lang === 'hi' ? 'प्रकरण का विवरण' : 'Case Specifics'}</h2>
                     </div>
                     <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelClass}>{lang === 'hi' ? 'विभाग (Department)' : 'Department'} {requiredSpan}</label>
+                          <select name="department" value={formData.department} onChange={handleFormChange} required className={inputClass}>
+                            <option value="">-- Select Department --</option>
+                            {Object.keys(deptSchemes).map(dept => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelClass}>{lang === 'hi' ? 'योजना (Scheme)' : 'Scheme'} {requiredSpan}</label>
+                          <select name="scheme" value={formData.scheme} onChange={handleFormChange} required disabled={!formData.department} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}>
+                            <option value="">-- Select Scheme --</option>
+                            {formData.department && deptSchemes[formData.department].map(scheme => (
+                              <option key={scheme} value={scheme}>{scheme}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत की श्रेणी' : 'Complaint Category'} {requiredSpan}</label>
                         <select name="complaintCategory" value={formData.complaintCategory} onChange={handleFormChange} required className={`${inputClass} font-semibold text-[#002b5e]`}>
                           <option value="">-- Select Category --</option>
                           <option value="Financial Irregularity">Financial Irregularity / Fund Misuse</option>
                           <option value="Operational Delay">Operational Delay in Work</option>
-                          <option value="Section 38">Section 38 (Panchayati Raj Act 1994)</option>
                           <option value="Quality Issue">Quality Issue in Construction</option>
                           <option value="Payment Pending">Payment Pending / Wage Issue</option>
                           <option value="Other">Other</option>
@@ -509,6 +545,16 @@ const ComplainForm = () => {
 
                     <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
                       <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-[#2e7d32]"/> Complaint Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <span className="text-gray-500 font-medium block mb-1">Department</span>
+                          <p className="font-semibold text-[#002b5e]">{formData.department}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 font-medium block mb-1">Scheme</span>
+                          <p className="font-semibold text-[#002b5e]">{formData.scheme}</p>
+                        </div>
+                      </div>
                       <div className="mb-4">
                         <span className="text-gray-500 font-medium block mb-1">Category</span>
                         <p className="font-semibold text-lg text-[#002b5e]">{formData.complaintCategory}</p>
