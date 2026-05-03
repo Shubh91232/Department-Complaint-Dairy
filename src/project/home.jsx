@@ -197,13 +197,29 @@ const Home = () => {
                 { icon: <PieChartIcon size={16} />, label: t.icons.cause },
                 { icon: <Scale size={16} />, label: t.icons.act },
                 { icon: <Book size={16} />, label: t.icons.manual },
-                { icon: <Bell size={16} />, label: t.icons.notification },
+                { 
+                  icon: <Bell size={16} />, 
+                  label: t.icons.notification, 
+                  path: '/notifications', 
+                  badge: '3' 
+                },
                 { icon: <FileText size={16} />, label: t.icons.circular },
                 { icon: <Newspaper size={16} />, label: t.icons.news }
               ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors last:border-b-0">
-                  <div className="text-[#e65100]">{item.icon}</div>
-                  <span>{item.label}</span>
+                <div 
+                  key={idx} 
+                  onClick={() => item.path ? navigate(item.path) : null}
+                  className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors last:border-b-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-[#e65100]">{item.icon}</div>
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                      {item.badge}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -392,9 +408,15 @@ const Home = () => {
                 <div className="bg-white border border-green-200 shadow-sm rounded-md overflow-hidden ring-1 ring-green-100">
                   <div className="bg-green-50 border-b border-green-200 px-4 py-2.5 font-semibold text-[#1e7b34] text-[13px] flex items-center justify-between">
                     <span className="flex items-center gap-2"><UserCheck size={16} /> User Profile</span>
-                    <span className="text-[10px] bg-green-200 px-2 py-0.5 rounded-full text-green-800 border border-green-300 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span> Online
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <Link to="/notifications" className="relative group p-1.5 rounded-full hover:bg-white transition-colors" title="Notifications">
+                        <Bell size={20} className="text-[#002b5e] group-hover:scale-110 transition-transform" />
+                        <span className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-bold px-1 rounded-full border border-white shadow-sm">3</span>
+                      </Link>
+                      <span className="text-[10px] bg-green-200 px-2 py-0.5 rounded-full text-green-800 border border-green-300 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span> Online
+                      </span>
+                    </div>
                   </div>
                   <div className="p-4 space-y-3">
                     <div className="flex items-center gap-3 mb-2">

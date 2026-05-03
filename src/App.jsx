@@ -12,6 +12,7 @@ import ContactUs from './project/navbar/ContactUs';
 import ComplainForm from './project/complain_path/com_form';
 import Dashboard from './project/complain_path/dashboard';
 import Register from './project/complain_path/register';
+import Notification from './project/complain_path/notification';
 import { LanguageProvider } from './project/LanguageContext';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         <Route path="/complain-form" element={<ComplainForm />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/notifications" element={<Notification />} />
       </Routes>
     </Router>
     </LanguageProvider>
