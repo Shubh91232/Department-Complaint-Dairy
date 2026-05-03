@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck } from 'lucide-react';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, Shield, Loader2 } from 'lucide-react';
 import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
 import Captcha, { verifyCaptcha } from './complain_path/captcha';
+import { loginDepartmentAPI } from '../apiHandler/apis';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -23,10 +24,24 @@ const Home = () => {
   const [password, setPassword] = useState('');
   const [notification, setNotification] = useState('');
   
+  const [loggedInUserData, setLoggedInUserData] = useState(() => {
+    const data = localStorage.getItem('agentUserData');
+    return data ? JSON.parse(data) : null;
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('agentLogin') === 'true');
   const [isFlipping, setIsFlipping] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
   
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
+
+  const showAlert = (message, type = 'error') => {
+    setCustomAlert({ show: true, message, type });
+    setTimeout(() => {
+      setCustomAlert(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
+
   const [openFaq, setOpenFaq] = useState(0);
 
   const faqs = [
@@ -52,49 +67,64 @@ const Home = () => {
 
   const handleStatusSearch = async () => {
     if (!statusInput || !statusCaptchaData.code) {
-      alert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.");
+      showAlert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.", 'error');
       return;
     }
     const isValid = await verifyCaptcha(statusCaptchaData.token, statusCaptchaData.code);
     if (!isValid) {
-      alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
+      showAlert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!", 'error');
       statusCaptchaRef.current?.refresh();
       return;
     }
-    alert(`${lang === 'hi' ? "स्थिति खोजी जा रही है:" : "Searching status for:"} ${statusInput}`);
+    showAlert(`${lang === 'hi' ? "स्थिति खोजी जा रही है:" : "Searching status for:"} ${statusInput}`, 'success');
   };
 
   const handleLogin = async () => {
     if (!username || !password || !loginCaptchaData.code) {
-      alert(lang === 'hi' ? "लॉगिन के लिए सभी विवरण आवश्यक हैं।" : "All login details are required.");
-      return;
-    }
-    if (username !== userDetails.id || password !== userDetails.password) {
-      alert(lang === 'hi' ? "अमान्य आईडी या पासवर्ड!" : "Invalid ID or Password!");
-      return;
-    }
-    const isValid = await verifyCaptcha(loginCaptchaData.token, loginCaptchaData.code);
-    if (!isValid) {
-      alert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!");
-      loginCaptchaRef.current?.refresh();
+      showAlert(lang === 'hi' ? "लॉगिन के लिए सभी विवरण आवश्यक हैं।" : "All login details are required.", 'error');
       return;
     }
     
-    localStorage.setItem('agentLogin', 'true');
-    setIsFlipping(true);
-    setTimeout(() => {
-      setIsLoggedIn(true);
-      setIsFlipping(false);
-      setUsername('');
-      setPassword('');
+    setIsLoginLoading(true);
+    
+    try {
+      const isValid = await verifyCaptcha(loginCaptchaData.token, loginCaptchaData.code);
+      if (!isValid) {
+        showAlert(lang === 'hi' ? "कैप्चा कोड अमान्य है!" : "Invalid Captcha code!", 'error');
+        loginCaptchaRef.current?.refresh();
+        setIsLoginLoading(false);
+        return;
+      }
+
+      const response = await loginDepartmentAPI({ username, password });
+      if (response && response.success) {
+        localStorage.setItem('agentLogin', 'true');
+        localStorage.setItem('agentUserData', JSON.stringify(response.data));
+        setLoggedInUserData(response.data);
+        setIsFlipping(true);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+          setIsFlipping(false);
+          setUsername('');
+          setPassword('');
+          loginCaptchaRef.current?.refresh();
+        }, 300);
+        showAlert(lang === 'hi' ? "सफलतापूर्वक प्रवेश किया!" : "Logged in successfully!", 'success');
+      }
+    } catch (err) {
+      showAlert(err.message || "Invalid Login Details!", 'error');
       loginCaptchaRef.current?.refresh();
-    }, 300);
+    } finally {
+      setIsLoginLoading(false);
+    }
   };
 
   const handleLogout = () => {
     setIsFlipping(true);
     setTimeout(() => {
       localStorage.removeItem('agentLogin');
+      localStorage.removeItem('agentUserData');
+      setLoggedInUserData(null);
       setIsLoggedIn(false);
       setIsFlipping(false);
       setShowLogoutConfirm(false);
@@ -119,6 +149,17 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 relative">
+
+      {/* Custom Alert Toast */}
+      {customAlert.show && (
+        <div className={`fixed top-6 right-6 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-sm shadow-xl border-l-4 transform transition-all animate-slide-in-right ${customAlert.type === 'error' ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-green-500 text-gray-800'}`}>
+          {customAlert.type === 'error' ? <div className="text-red-500 bg-red-50 p-1 rounded-full"><Shield size={16} /></div> : <div className="text-green-500 bg-green-50 p-1 rounded-full"><CheckCircle size={16} /></div>}
+          <p className="text-[13px] font-semibold">{customAlert.message}</p>
+          <button onClick={() => setCustomAlert(prev => ({ ...prev, show: false }))} className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none text-xl leading-none">
+             &times;
+          </button>
+        </div>
+      )}
 
       {notification && (
         <div className="fixed top-24 left-4 bg-red-600 text-white px-4 py-3 rounded-md shadow-lg z-50 flex items-center gap-3 border border-red-800 animate-bounce">
@@ -219,7 +260,7 @@ const Home = () => {
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              <div onClick={() => alert(t.process.citizen)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#002b5e] transition-colors rounded-md group">
+              <div onClick={() => showAlert(t.process.citizen, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#002b5e] transition-colors rounded-md group">
                 <div className="w-12 h-12 mx-auto bg-blue-50 text-[#002b5e] border border-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#002b5e] group-hover:text-white transition-colors">
                   <User size={20} />
                 </div>
@@ -233,14 +274,14 @@ const Home = () => {
                 <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.grievance}</span>
               </div>
 
-              <div onClick={() => alert(t.process.reminder)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-yellow-600 transition-colors rounded-md group">
+              <div onClick={() => showAlert(t.process.reminder, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-yellow-600 transition-colors rounded-md group">
                 <div className="w-12 h-12 mx-auto bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
                   <Bell size={20} />
                 </div>
                 <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.reminder}</span>
               </div>
 
-              <div onClick={() => alert(t.process.action)} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-green-600 transition-colors rounded-md group">
+              <div onClick={() => showAlert(t.process.action, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-green-600 transition-colors rounded-md group">
                 <div className="w-12 h-12 mx-auto bg-green-50 text-green-600 border border-green-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
                   <Search size={20} />
                 </div>
@@ -258,7 +299,7 @@ const Home = () => {
             <button onClick={handleComplainClick} className="bg-[#1e7b34] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#145a24] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#145a24] transition-colors">
               <AlertCircle size={18} /> <span className="text-center leading-tight">{t.btnNew}</span>
             </button>
-            <button onClick={() => alert(t.btnAppeal)} className="bg-[#002b5e] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#001f44] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#001f44] transition-colors">
+            <button onClick={() => showAlert(t.btnAppeal, 'success')} className="bg-[#002b5e] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#001f44] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#001f44] transition-colors">
               <Book size={18} /> <span className="text-center leading-tight">{t.btnAppeal}</span>
             </button>
           </div>
@@ -298,7 +339,7 @@ const Home = () => {
                     <Lock size={16} className="text-[#002b5e]" /> {t.loginForm.title}
                   </div>
 
-                  <div className="p-4 space-y-3">
+                  <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="p-4 space-y-3">
                     <div>
                       <label className="text-[11px] font-semibold text-gray-600 block mb-1">{t.loginForm.id}</label>
                       <div className="relative">
@@ -334,17 +375,18 @@ const Home = () => {
                       />
                     </div>
 
-                    <button onClick={handleLogin} className="w-full bg-[#1e7b34] text-white py-2 font-semibold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors border border-[#145a24] mt-1">
-                      {t.loginForm.btn}
+                    <button type="submit" disabled={isLoginLoading} className="w-full bg-[#1e7b34] text-white py-2 font-semibold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors border border-[#145a24] mt-1 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                      {isLoginLoading && <Loader2 size={16} className="animate-spin" />}
+                      {isLoginLoading ? (lang === 'hi' ? 'प्रवेश हो रहा है...' : 'Logging in...') : t.loginForm.btn}
                     </button>
 
                     <div className="mt-3 pt-3 border-t border-gray-200 text-center">
                       <p className="text-[11px] text-gray-500 mb-1.5">{lang === 'hi' ? 'विभाग प्रशासक?' : 'Department Admin?'}</p>
-                      <button onClick={() => navigate('/register')} className="cursor-pointer w-full bg-white text-[#002b5e] border border-[#002b5e] py-1.5 font-semibold text-[12px] rounded-sm hover:bg-gray-50 transition-colors flex justify-center items-center gap-1">
+                      <button type="button" onClick={() => navigate('/register')} className="cursor-pointer w-full bg-white text-[#002b5e] border border-[#002b5e] py-1.5 font-semibold text-[12px] rounded-sm hover:bg-gray-50 transition-colors flex justify-center items-center gap-1">
                         <User size={14} /> {lang === 'hi' ? 'नया उपयोगकर्ता पंजीकृत करें' : 'Register New User'}
                       </button>
                     </div>
-                  </div>
+                  </form>
                 </div>
               ) : (
                 <div className="bg-white border border-green-200 shadow-sm rounded-md overflow-hidden ring-1 ring-green-100">
@@ -356,19 +398,24 @@ const Home = () => {
                   </div>
                   <div className="p-4 space-y-3">
                     <div className="flex items-center gap-3 mb-2">
-                       <div className="w-12 h-12 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-sm">
-                          {userDetails.name.charAt(0)}
+                       <div className="w-12 h-12 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-sm uppercase">
+                          {loggedInUserData?.name?.charAt(0) || 'U'}
                        </div>
                        <div>
-                         <h4 className="font-bold text-[#002b5e] text-[15px] leading-tight">{userDetails.name}</h4>
-                         <p className="text-gray-500 text-[11px] font-medium">{userDetails.designation}</p>
+                         <h4 className="font-bold text-[#002b5e] text-[15px] leading-tight">{loggedInUserData?.name || 'User'}</h4>
+                         <p className="text-gray-500 text-[11px] font-medium">{loggedInUserData?.designation || 'N/A'}</p>
                        </div>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-sm border border-gray-200 text-[12px] space-y-2 shadow-inner">
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{userDetails.id}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{userDetails.department}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{userDetails.district}</span></div>
-                      <div className="flex justify-between pt-1"><span className="text-gray-500">Last Login:</span> <span className="font-medium text-blue-600">{userDetails.lastLogin}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{loggedInUserData?.id || 'N/A'}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{loggedInUserData?.department || 'N/A'}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{loggedInUserData?.district || 'N/A'}</span></div>
+                      <div className="flex justify-between pt-1">
+                        <span className="text-gray-500">Status:</span> 
+                        <span className={`font-medium text-[11px] px-2 py-0.5 rounded-sm ${loggedInUserData?.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {loggedInUserData?.status === 'approved' ? 'Active' : 'Pending Approval'}
+                        </span>
+                      </div>
                     </div>
                     <style>{`
                       @keyframes growPop {
@@ -723,6 +770,16 @@ const Home = () => {
       </div>
 
       <Footer />
+      <style>{`
+        @keyframes slide-in-right {
+          0% { transform: translateX(100%); opacity: 0; }
+          10% { transform: translateX(-5%); opacity: 1; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.4s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

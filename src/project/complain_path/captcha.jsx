@@ -61,24 +61,26 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
   return (
     <div className="w-full">
       <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Security Code / Captcha <span className="text-red-500">*</span></label>
-      <div className="flex gap-2 items-stretch max-w-sm">
-        <div className="border border-gray-300 rounded-sm bg-gray-50 flex items-center justify-center p-0.5 w-32 overflow-hidden h-[34px]">
-          {error ? (
-            <span className="text-[10px] text-red-500 font-bold text-center leading-tight">Load Error</span>
-          ) : captchaData.image ? (
-            <img src={captchaData.image} alt="captcha" className="h-full mix-blend-multiply" />
-          ) : (
-            <span className="text-gray-400 text-xs">...</span>
-          )}
+      <div className="flex gap-2 items-stretch flex-wrap sm:flex-nowrap">
+        <div className="flex gap-2 shrink-0">
+          <div className="border border-gray-300 rounded-sm bg-gray-50 flex items-center justify-center w-[110px] overflow-hidden h-[38px]">
+            {error ? (
+              <span className="text-[10px] text-red-500 font-bold text-center leading-tight">Load Error</span>
+            ) : captchaData.image ? (
+              <img src={captchaData.image} alt="captcha" className="w-full h-full object-cover mix-blend-multiply" />
+            ) : (
+              <span className="text-gray-400 text-xs">...</span>
+            )}
+          </div>
+          <button type="button" onClick={fetchCaptcha} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2.5 text-gray-600 transition-colors cursor-pointer h-[38px]">
+            <RefreshCw size={16} />
+          </button>
         </div>
-        <button type="button" onClick={fetchCaptcha} className="bg-white border border-gray-300 rounded-sm hover:bg-gray-100 px-2 text-gray-600 transition-colors cursor-pointer h-[34px]">
-          <RefreshCw size={14} />
-        </button>
         <input
           required
           type="text"
-          placeholder="Enter Code"
-          className="flex-1 border border-gray-300 rounded-sm px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors h-[34px]"
+          placeholder="ENTER CODE"
+          className="flex-1 min-w-0 w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-[#002b5e] uppercase transition-colors h-[38px]"
           value={inputValue}
           onChange={handleChange}
           maxLength={6}

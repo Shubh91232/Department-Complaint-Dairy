@@ -5,6 +5,7 @@ export const URLS = {
     CAPTCHA: `${BASE_URL}/auth/captcha/generate`,
     VERIFY_CAPTCHA: `${BASE_URL}/auth/captcha/verify`,
     DEPARTMENT_REGISTER: `${BASE_URL}/auth/department-register`,
+    DEPARTMENT_LOGIN: `${BASE_URL}/auth/department-login`,
   },
   META: {
     DEPARTMENT_LIST: `${BASE_URL}/department_list`,

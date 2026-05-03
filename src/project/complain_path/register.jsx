@@ -11,6 +11,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     empId: '',
+    password: '',
     department: '',
     designation: '',
     email: '',
@@ -23,6 +24,14 @@ const Register = () => {
     officeGp: ''
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
+
+  const showAlert = (message, type = 'error') => {
+    setCustomAlert({ show: true, message, type });
+    setTimeout(() => {
+      setCustomAlert(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
 
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
@@ -31,7 +40,7 @@ const Register = () => {
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [gps, setGps] = useState([]);
-  
+
   // Custom Dropdown State
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
@@ -83,14 +92,14 @@ const Register = () => {
   }, []);
 
   const filteredDepartments = React.useMemo(() => {
-    return departments.filter(dept => 
+    return departments.filter(dept =>
       dept.label.toLowerCase().includes(deptSearchTerm.toLowerCase()) ||
       dept.value.toLowerCase().includes(deptSearchTerm.toLowerCase())
     );
   }, [departments, deptSearchTerm]);
 
   const filteredLevels = React.useMemo(() => {
-    return levels.filter(lvl => 
+    return levels.filter(lvl =>
       lvl.label.toLowerCase().includes(levelSearchTerm.toLowerCase())
     );
   }, [levels, levelSearchTerm]);
@@ -190,12 +199,16 @@ const Register = () => {
   }, [formData.officeBlock]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let value = e.target.value;
+    if (e.target.name === 'email') {
+      value = value.toLowerCase();
+    }
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleLocationChange = (name, value) => {
     let newFormData = { ...formData, [name]: value };
-    
+
     // Cascading resets
     if (name === 'officeDistrict') {
       newFormData.officeBlock = '';
@@ -206,33 +219,60 @@ const Register = () => {
       newFormData.officeGp = '';
       setGps([]);
     }
-    
+
     setFormData(newFormData);
   };
 
+  const isStateLevel = formData.level && (formData.level.includes('1') || formData.level.toLowerCase().includes('state'));
+  const isDistrictLevel = formData.level && formData.level.includes('2');
+  const isBlockLevel = formData.level && formData.level.includes('3');
+  const isGpLevel = formData.level && formData.level.includes('4');
+
+  const showDistrict = isDistrictLevel || isBlockLevel || isGpLevel;
+  const showBlock = isBlockLevel || isGpLevel;
+  const showGp = isGpLevel;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.department || !formData.level) {
+      showAlert("Please ensure Department and Access Role Level are selected.");
+      return;
+    }
+    if (showDistrict && !formData.officeDistrict) {
+      showAlert("Please select a District for this role level.");
+      return;
+    }
+    if (showBlock && !formData.officeBlock) {
+      showAlert("Please select a Block/Tehsil for this role level.");
+      return;
+    }
+    if (showGp && !formData.officeGp) {
+      showAlert("Please select a Gram Panchayat for this role level.");
+      return;
+    }
+
     if (!captchaData.code) {
-      alert("Please enter captcha code.");
+      showAlert("Please enter captcha code.");
       return;
     }
     const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
     if (!isValid) {
-      alert("Invalid Captcha code! Please try again.");
+      showAlert("Invalid Captcha code! Please try again.");
       captchaRef.current?.refresh();
       return;
     }
-    
+
     try {
       const response = await registerDepartmentAPI(formData);
       if (response && response.success) {
         setShowSuccess(true);
       } else {
-        alert(response?.message || "Registration failed. Please try again.");
+        showAlert(response?.message || "Registration failed. Please try again.");
         captchaRef.current?.refresh();
       }
     } catch (err) {
-      alert(err.message || "An error occurred during registration. Please try again.");
+      showAlert(err.message || "An error occurred during registration. Please try again.");
       captchaRef.current?.refresh();
     }
   };
@@ -243,7 +283,19 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col relative">
+    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col relative overflow-hidden">
+
+      {/* Custom Alert Toast */}
+      {customAlert.show && (
+        <div className={`fixed top-6 right-6 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-sm shadow-xl border-l-4 transform transition-all animate-slide-in-right ${customAlert.type === 'error' ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-green-500 text-gray-800'}`}>
+          {customAlert.type === 'error' ? <div className="text-red-500 bg-red-50 p-1 rounded-full"><Shield size={16} /></div> : <div className="text-green-500 bg-green-50 p-1 rounded-full"><CheckCircle size={16} /></div>}
+          <p className="text-[13px] font-semibold">{customAlert.message}</p>
+          <button onClick={() => setCustomAlert(prev => ({ ...prev, show: false }))} className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none text-xl leading-none">
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Success Modal Overlay */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -255,7 +307,7 @@ const Register = () => {
             <p className="text-gray-600 text-[14px] mb-6">
               Your information has been sent to the admin. The department will approve your request in a few days.
             </p>
-            <button 
+            <button
               onClick={closeSuccess}
               className="w-full bg-[#1e7b34] text-white py-2.5 rounded-sm font-bold shadow-sm hover:bg-[#145a24] transition-colors"
             >
@@ -281,7 +333,7 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
+
               {/* Full Name */}
               <div>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Full Name <span className="text-red-500">*</span></label>
@@ -300,11 +352,20 @@ const Register = () => {
                 </div>
               </div>
 
+              {/* Password */}
+              <div>
+                <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Login Password <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400"><Shield size={16} /></span>
+                  <input required type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Enter secure password" minLength={6} className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white" />
+                </div>
+              </div>
+
               {/* Department */}
               <div ref={deptDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Department <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <div 
+                  <div
                     onClick={() => setIsDeptDropdownOpen(!isDeptDropdownOpen)}
                     className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
                   >
@@ -331,8 +392,8 @@ const Register = () => {
                       <div className="max-h-48 overflow-y-auto">
                         {filteredDepartments.length > 0 ? (
                           filteredDepartments.map((dept) => (
-                            <div 
-                              key={dept.id} 
+                            <div
+                              key={dept.id}
                               className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.department === dept.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
                               onClick={() => {
                                 setFormData({ ...formData, department: dept.value });
@@ -383,7 +444,7 @@ const Register = () => {
               <div ref={levelDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Access Role Level <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <div 
+                  <div
                     onClick={() => setIsLevelDropdownOpen(!isLevelDropdownOpen)}
                     className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
                   >
@@ -412,11 +473,17 @@ const Register = () => {
                       <div className="max-h-48 overflow-y-auto">
                         {filteredLevels.length > 0 ? (
                           filteredLevels.map((lvl) => (
-                            <div 
-                              key={lvl.value} 
+                            <div
+                              key={lvl.value}
                               className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.level === lvl.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
                               onClick={() => {
-                                setFormData({ ...formData, level: lvl.value });
+                                setFormData({
+                                  ...formData,
+                                  level: lvl.value,
+                                  officeDistrict: '',
+                                  officeBlock: '',
+                                  officeGp: ''
+                                });
                                 setIsLevelDropdownOpen(false);
                                 setLevelSearchTerm('');
                               }}
@@ -450,174 +517,180 @@ const Register = () => {
               </div>
 
               {/* District */}
-              <div ref={districtDropdownRef}>
-                <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">District <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <div 
-                    onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
-                    className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
-                  >
-                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                    <span className={`text-[13px] ${formData.officeDistrict ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeDistrict ? districts.find(d => d.value === formData.officeDistrict)?.label : (isLoadingDistricts ? 'Loading...' : 'Select District')}
-                    </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
-                      {isLoadingDistricts ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-                    </span>
-                  </div>
-
-                  {isDistrictDropdownOpen && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
-                      <div className="p-2 border-b border-gray-200 relative">
-                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
-                        <input
-                          type="text"
-                          placeholder="Search district..."
-                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
-                          value={districtSearchTerm}
-                          onChange={(e) => setDistrictSearchTerm(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredDistricts.length > 0 ? (
-                          filteredDistricts.map((d) => (
-                            <div 
-                              key={d.value} 
-                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeDistrict === d.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
-                              onClick={() => {
-                                handleLocationChange('officeDistrict', d.value);
-                                setIsDistrictDropdownOpen(false);
-                                setDistrictSearchTerm('');
-                              }}
-                            >
-                              {d.label}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No districts found</div>
-                        )}
-                      </div>
+              {showDistrict && (
+                <div ref={districtDropdownRef}>
+                  <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">District <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <div
+                      onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
+                      className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
+                    >
+                      <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                      <span className={`text-[13px] ${formData.officeDistrict ? 'text-gray-800' : 'text-gray-500'}`}>
+                        {formData.officeDistrict ? districts.find(d => d.value === formData.officeDistrict)?.label : (isLoadingDistricts ? 'Loading...' : 'Select District')}
+                      </span>
+                      <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                        {isLoadingDistricts ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                      </span>
                     </div>
-                  )}
+
+                    {isDistrictDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                        <div className="p-2 border-b border-gray-200 relative">
+                          <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                          <input
+                            type="text"
+                            placeholder="Search district..."
+                            className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                            value={districtSearchTerm}
+                            onChange={(e) => setDistrictSearchTerm(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredDistricts.length > 0 ? (
+                            filteredDistricts.map((d) => (
+                              <div
+                                key={d.value}
+                                className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeDistrict === d.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                                onClick={() => {
+                                  handleLocationChange('officeDistrict', d.value);
+                                  setIsDistrictDropdownOpen(false);
+                                  setDistrictSearchTerm('');
+                                }}
+                              >
+                                {d.label}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No districts found</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Block */}
-              <div ref={blockDropdownRef}>
-                <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Block/Tehsil <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <div 
-                    onClick={() => {
-                      if (formData.officeDistrict && blocks.length > 0) setIsBlockDropdownOpen(!isBlockDropdownOpen);
-                    }}
-                    className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeDistrict || blocks.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
-                  >
-                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                    <span className={`text-[13px] ${formData.officeBlock ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeBlock ? blocks.find(b => b.value === formData.officeBlock)?.label : (isLoadingBlocks ? 'Loading...' : 'Select Block')}
-                    </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
-                      {isLoadingBlocks ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-                    </span>
-                  </div>
-
-                  {isBlockDropdownOpen && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
-                      <div className="p-2 border-b border-gray-200 relative">
-                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
-                        <input
-                          type="text"
-                          placeholder="Search block..."
-                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
-                          value={blockSearchTerm}
-                          onChange={(e) => setBlockSearchTerm(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredBlocks.length > 0 ? (
-                          filteredBlocks.map((b) => (
-                            <div 
-                              key={b.value} 
-                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeBlock === b.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
-                              onClick={() => {
-                                handleLocationChange('officeBlock', b.value);
-                                setIsBlockDropdownOpen(false);
-                                setBlockSearchTerm('');
-                              }}
-                            >
-                              {b.label}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No blocks found</div>
-                        )}
-                      </div>
+              {showBlock && (
+                <div ref={blockDropdownRef}>
+                  <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Block/Tehsil <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <div
+                      onClick={() => {
+                        if (formData.officeDistrict && blocks.length > 0) setIsBlockDropdownOpen(!isBlockDropdownOpen);
+                      }}
+                      className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeDistrict || blocks.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
+                    >
+                      <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                      <span className={`text-[13px] ${formData.officeBlock ? 'text-gray-800' : 'text-gray-500'}`}>
+                        {formData.officeBlock ? blocks.find(b => b.value === formData.officeBlock)?.label : (isLoadingBlocks ? 'Loading...' : 'Select Block')}
+                      </span>
+                      <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                        {isLoadingBlocks ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                      </span>
                     </div>
-                  )}
+
+                    {isBlockDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                        <div className="p-2 border-b border-gray-200 relative">
+                          <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                          <input
+                            type="text"
+                            placeholder="Search block..."
+                            className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                            value={blockSearchTerm}
+                            onChange={(e) => setBlockSearchTerm(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredBlocks.length > 0 ? (
+                            filteredBlocks.map((b) => (
+                              <div
+                                key={b.value}
+                                className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeBlock === b.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                                onClick={() => {
+                                  handleLocationChange('officeBlock', b.value);
+                                  setIsBlockDropdownOpen(false);
+                                  setBlockSearchTerm('');
+                                }}
+                              >
+                                {b.label}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No blocks found</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Gram Panchayat (GP) */}
-              <div ref={gpDropdownRef}>
-                <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Gram Panchayat (GP) <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <div 
-                    onClick={() => {
-                      if (formData.officeBlock && gps.length > 0) setIsGpDropdownOpen(!isGpDropdownOpen);
-                    }}
-                    className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeBlock || gps.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
-                  >
-                    <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
-                    <span className={`text-[13px] ${formData.officeGp ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeGp ? gps.find(g => g.value === formData.officeGp)?.label : (isLoadingGps ? 'Loading...' : 'Select GP')}
-                    </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
-                      {isLoadingGps ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-                    </span>
-                  </div>
-
-                  {isGpDropdownOpen && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
-                      <div className="p-2 border-b border-gray-200 relative">
-                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
-                        <input
-                          type="text"
-                          placeholder="Search GP..."
-                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
-                          value={gpSearchTerm}
-                          onChange={(e) => setGpSearchTerm(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredGps.length > 0 ? (
-                          filteredGps.map((g) => (
-                            <div 
-                              key={g.value} 
-                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeGp === g.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
-                              onClick={() => {
-                                handleLocationChange('officeGp', g.value);
-                                setIsGpDropdownOpen(false);
-                                setGpSearchTerm('');
-                              }}
-                            >
-                              {g.label}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No GPs found</div>
-                        )}
-                      </div>
+              {showGp && (
+                <div ref={gpDropdownRef}>
+                  <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Gram Panchayat (GP) <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <div
+                      onClick={() => {
+                        if (formData.officeBlock && gps.length > 0) setIsGpDropdownOpen(!isGpDropdownOpen);
+                      }}
+                      className={`w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all min-h-[38px] flex items-center ${(!formData.officeBlock || gps.length === 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 hover:bg-white cursor-pointer'}`}
+                    >
+                      <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
+                      <span className={`text-[13px] ${formData.officeGp ? 'text-gray-800' : 'text-gray-500'}`}>
+                        {formData.officeGp ? gps.find(g => g.value === formData.officeGp)?.label : (isLoadingGps ? 'Loading...' : 'Select GP')}
+                      </span>
+                      <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                        {isLoadingGps ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                      </span>
                     </div>
-                  )}
+
+                    {isGpDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                        <div className="p-2 border-b border-gray-200 relative">
+                          <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                          <input
+                            type="text"
+                            placeholder="Search GP..."
+                            className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                            value={gpSearchTerm}
+                            onChange={(e) => setGpSearchTerm(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredGps.length > 0 ? (
+                            filteredGps.map((g) => (
+                              <div
+                                key={g.value}
+                                className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.officeGp === g.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                                onClick={() => {
+                                  handleLocationChange('officeGp', g.value);
+                                  setIsGpDropdownOpen(false);
+                                  setGpSearchTerm('');
+                                }}
+                              >
+                                {g.label}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No GPs found</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Captcha */}
               <div className="md:col-span-2 mt-2">
-                <Captcha 
+                <Captcha
                   ref={captchaRef}
                   onCodeChange={(code, token) => setCaptchaData({ code, token })}
                 />
@@ -642,7 +715,7 @@ const Register = () => {
       </div>
 
       <Footer />
-      
+
       <style>{`
         @keyframes bounce-in {
           0% { transform: scale(0.8); opacity: 0; }
@@ -651,6 +724,14 @@ const Register = () => {
         }
         .animate-bounce-in {
           animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes slide-in-right {
+          0% { transform: translateX(100%); opacity: 0; }
+          10% { transform: translateX(-5%); opacity: 1; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.4s ease-out forwards;
         }
       `}</style>
     </div>

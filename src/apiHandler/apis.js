@@ -77,6 +77,10 @@ export const registerDepartmentAPI = async (formData) => {
   return await postAPI(URLS.AUTH.DEPARTMENT_REGISTER, formData);
 };
 
+export const loginDepartmentAPI = async (credentials) => {
+  return await postAPI(URLS.AUTH.DEPARTMENT_LOGIN, credentials);
+};
+
 export const fetchDepartmentsAPI = async () => {
   // Uses global GET handler with CACHE enabled (true)
   return await getAPI(URLS.META.DEPARTMENT_LIST, true);
