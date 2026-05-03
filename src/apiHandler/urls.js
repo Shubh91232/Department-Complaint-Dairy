@@ -17,5 +17,6 @@ export const URLS = {
   COMPLAINTS: {
     SUBMIT: `${BASE_URL}/complaints/submit`,
     DRAFT: `${BASE_URL}/complaints/draft`,
+    DRAFTS: `${BASE_URL}/complaints/drafts`
   }
 };

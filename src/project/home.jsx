@@ -462,9 +462,14 @@ const Home = () => {
                       </div>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        <button onClick={() => navigate('/dashboard')} className="cursor-pointer w-full bg-blue-50 text-blue-700 py-2 font-bold text-[13px] rounded-sm hover:bg-blue-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-blue-200 flex items-center justify-center gap-2">
-                          <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Dashboard'}
-                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={() => navigate('/dashboard')} className="cursor-pointer bg-blue-50 text-blue-700 py-2 font-bold text-[12px] rounded-sm hover:bg-blue-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-blue-200 flex items-center justify-center gap-1">
+                            <BarChart2 size={14} /> {lang === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+                          </button>
+                          <button onClick={() => navigate('/drafts')} className="cursor-pointer bg-yellow-50 text-yellow-700 py-2 font-bold text-[12px] rounded-sm hover:bg-yellow-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-yellow-200 flex items-center justify-center gap-1">
+                            <FileText size={14} /> {lang === 'hi' ? 'मेरे ड्राफ्ट्स' : 'My Drafts'}
+                          </button>
+                        </div>
                         <button onClick={() => setShowLogoutConfirm(true)} className="w-full bg-red-50 text-red-700 py-2 font-bold text-[13px] rounded-sm hover:bg-red-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-red-200 flex items-center justify-center gap-2">
                           <LogOut size={16} /> Secure Logout
                         </button>

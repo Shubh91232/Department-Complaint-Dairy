@@ -28,6 +28,27 @@ export const getAPI = async (url, useCache = false) => {
 };
 
 /**
+ * Global GET handler with Authorization (Bearer token)
+ */
+export const getAuthAPI = async (url) => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, { method: 'GET', headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in Auth GET ${url}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Global POST handler
  */
 export const postAPI = async (url, payload = {}) => {
@@ -133,4 +154,8 @@ export const submitComplaintAPI = async (payload) => {
 
 export const draftComplaintAPI = async (payload) => {
   return await postAuthAPI(URLS.COMPLAINTS.DRAFT, payload);
+};
+
+export const fetchDraftsAPI = async () => {
+  return await getAuthAPI(URLS.COMPLAINTS.DRAFTS);
 };

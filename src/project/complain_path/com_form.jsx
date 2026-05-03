@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../LanguageContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2 } from 'lucide-react';
+import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
 import { draftComplaintAPI, submitComplaintAPI } from '../../apiHandler/apis';
@@ -11,6 +11,7 @@ import { draftComplaintAPI, submitComplaintAPI } from '../../apiHandler/apis';
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [step, setStep] = useState(1);
   const captchaRef = React.useRef(null);
@@ -20,6 +21,24 @@ const ComplainForm = () => {
   const [draftId, setDraftId] = useState(null);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [fileType, setFileType] = useState(null);
+  const [isDocFullscreen, setIsDocFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
 
   const loggedInUserData = React.useMemo(() => {
     const data = localStorage.getItem('agentUserData');
@@ -55,6 +74,44 @@ const ComplainForm = () => {
     actionTaken: '',
     remarks: ''
   });
+
+  // Load from Draft if navigated via "Resume"
+  React.useEffect(() => {
+    if (location.state?.draftData) {
+      const draft = location.state.draftData;
+      setDraftId(draft._id);
+      
+      setApplicantData({
+        name: draft.applicantName || '',
+        mobile: draft.mobile || '',
+        address: draft.address || ''
+      });
+      
+      setFormData(prev => ({
+        ...prev,
+        source: draft.source || 'PR',
+        serialNumber: draft.serialNumber || '',
+        departmentRef: draft.departmentRef || '',
+        financialYear: draft.financialYear || '2025-2026',
+        dateReceived: draft.dateReceived || '',
+        district: draft.district || '',
+        block: draft.block || '',
+        panchayat: draft.panchayat || '',
+        level: draft.level || 'District',
+        department: draft.department || '',
+        scheme: draft.scheme || '',
+        complaintCategory: draft.complaintCategory || '',
+        description: draft.description || '',
+        responsibleOfficer: draft.responsibleOfficer || '',
+        currentStatus: draft.currentStatus || 'Pending',
+        actionTaken: draft.actionTaken || '',
+        remarks: draft.remarks || ''
+      }));
+
+      // Automatically jump to Step 2 if we are resuming a draft that already had step 1 completed
+      setStep(2);
+    }
+  }, [location.state]);
 
   const handleApplicantChange = (e) => {
     setApplicantData({...applicantData, [e.target.name]: e.target.value});
@@ -98,27 +155,26 @@ const ComplainForm = () => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    setIsUploading(true);
 
-    if (file.name.endsWith('.json') || file.type === 'application/json') {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const extractedData = JSON.parse(event.target.result);
-          setTimeout(() => {
-            setFormData(prev => ({ ...prev, ...extractedData }));
-            setIsUploading(false);
-            alert(lang === 'hi' ? 'फ़ाइल से डेटा सफलतापूर्वक पढ़ा गया!' : 'Data successfully extracted from uploaded file!');
-          }, 1500);
-        } catch (error) {
-          setIsUploading(false);
-          alert(lang === 'hi' ? 'अमान्य फ़ाइल स्वरूप!' : 'Invalid file format!');
-        }
-      };
-      reader.readAsText(file);
+    // 1. Validate File Size (Max 5MB)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > MAX_SIZE) {
+      alert(lang === 'hi' ? 'फ़ाइल का आकार 5MB से अधिक नहीं होना चाहिए!' : 'File size must not exceed 5MB!');
+      e.target.value = ''; // Reset input
       return;
     }
+
+    // 2. Validate File Type (PDF or Image)
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert(lang === 'hi' ? 'केवल PDF, JPG या PNG फ़ाइलें ही अनुमत हैं!' : 'Only PDF, JPG, or PNG files are allowed!');
+      e.target.value = ''; // Reset input
+      return;
+    }
+    
+    setFileType(file.type);
+    setPreviewUrl(URL.createObjectURL(file));
+    setIsUploading(true);
 
     setTimeout(() => {
       setFormData(prev => ({
@@ -314,7 +370,7 @@ const ComplainForm = () => {
           </div>
         ) : (
           // --- STEP 2: CASE SPECIFICS FORM ---
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+          <div className={`animate-in fade-in slide-in-from-right-8 duration-500 ${isFullscreen ? 'fixed inset-0 z-50 bg-white overflow-y-auto p-8' : ''}`}>
             <div className="mb-8 border-b-2 border-[#1976d2] pb-4 flex items-end justify-between">
               <div>
                 <h1 className="text-3xl font-extrabold text-[#002b5e] mb-2 flex items-center gap-3">
@@ -325,28 +381,80 @@ const ComplainForm = () => {
                   {lang === 'hi' ? 'विभागीय एक्सेल शीट से प्राप्त डेटा को पोर्टल में दर्ज करें।' : 'Digitize and enter offline departmental records into the central database.'}
                 </p>
               </div>
-              <div className="hidden md:flex items-center gap-2 text-sm font-bold text-[#1976d2] bg-blue-50 px-4 py-2 rounded-sm border border-blue-100">
-                 <LayoutList size={18}/>
-                 {lang === 'hi' ? 'रिकॉर्ड प्रारूप: मानक' : 'Record Format: Standard'}
+              <div className="flex items-center gap-3">
+                <button onClick={toggleFullscreen} className="hidden md:flex items-center gap-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-sm border border-gray-200 transition-colors">
+                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                  {isFullscreen ? (lang === 'hi' ? 'बाहर निकलें' : 'Exit Fullscreen') : (lang === 'hi' ? 'फुल स्क्रीन' : 'Fullscreen')}
+                </button>
+                <div className="hidden md:flex items-center gap-2 text-sm font-bold text-[#1976d2] bg-blue-50 px-4 py-2 rounded-sm border border-blue-100">
+                   <LayoutList size={18}/>
+                   {lang === 'hi' ? 'रिकॉर्ड प्रारूप: मानक' : 'Record Format: Standard'}
+                </div>
               </div>
             </div>
 
             {/* OCR File Upload Section */}
-            <div className="mb-6 bg-[#e3f2fd] border-2 border-dashed border-[#90caf9] p-6 rounded-sm text-center flex flex-col items-center justify-center transition-colors hover:bg-[#bbdefb]">
-              <input type="file" id="ocr-upload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.json" onChange={handleFileUpload} />
-              {isUploading ? (
-                <div className="flex flex-col items-center gap-2 text-[#1565c0]">
-                  <Loader2 size={32} className="animate-spin" />
-                  <p className="font-bold text-[14px]">{lang === 'hi' ? 'दस्तावेज़ से डेटा निकाला जा रहा है (OCR)...' : 'Extracting Data from Document (OCR)...'}</p>
-                </div>
-              ) : (
-                <label htmlFor="ocr-upload" className="cursor-pointer flex flex-col items-center gap-2 text-[#1565c0]">
-                  <UploadCloud size={32} />
-                  <p className="font-bold text-[14px]">{lang === 'hi' ? 'ऑटो-फिल के लिए दस्तावेज़ अपलोड करें (OCR/JSON)' : 'Upload Document for Auto-fill (OCR/JSON)'}</p>
-                  <p className="text-[12px] font-medium opacity-80">{lang === 'hi' ? 'समर्थित फ़ाइलें: PDF, JPG, PNG, Excel, JSON' : 'Supported files: PDF, JPG, PNG, Excel, JSON'}</p>
-                </label>
+            <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch">
+              <div className="flex-grow bg-[#e3f2fd] border-2 border-dashed border-[#90caf9] p-6 rounded-sm text-center flex flex-col items-center justify-center transition-colors hover:bg-[#bbdefb]">
+                <input type="file" id="ocr-upload" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
+                {isUploading ? (
+                  <div className="flex flex-col items-center gap-2 text-[#1565c0]">
+                    <Loader2 size={32} className="animate-spin" />
+                    <p className="font-bold text-[14px]">{lang === 'hi' ? 'दस्तावेज़ से डेटा निकाला जा रहा है (OCR)...' : 'Extracting Data from Document (OCR)...'}</p>
+                  </div>
+                ) : (
+                  <label htmlFor="ocr-upload" className="cursor-pointer flex flex-col items-center gap-2 text-[#1565c0] w-full h-full">
+                    <UploadCloud size={32} />
+                    <p className="font-bold text-[14px]">{lang === 'hi' ? 'ऑटो-फिल के लिए दस्तावेज़ अपलोड करें (OCR)' : 'Upload Document for Auto-fill (OCR)'}</p>
+                    <p className="text-[12px] font-medium opacity-80">{lang === 'hi' ? 'समर्थित फ़ाइलें: PDF, JPG, PNG (Max 5MB)' : 'Supported files: PDF, JPG, PNG (Max 5MB)'}</p>
+                  </label>
+                )}
+              </div>
+              
+              {previewUrl && !isUploading && (
+                <button 
+                  onClick={() => setIsDocFullscreen(true)}
+                  className="md:w-48 bg-white border-2 border-[#1976d2] text-[#1976d2] p-4 rounded-sm flex flex-col items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-sm"
+                >
+                  <Eye size={32} />
+                  <span className="font-bold text-[13px]">{lang === 'hi' ? 'दस्तावेज़ देखें' : 'View Document'}</span>
+                  <span className="text-[10px] opacity-70 uppercase font-bold">{fileType?.split('/')[1]}</span>
+                </button>
               )}
             </div>
+
+            {/* Document Fullscreen Modal */}
+            {isDocFullscreen && previewUrl && (
+              <div className="fixed inset-0 z-[100] bg-black bg-opacity-90 flex flex-col">
+                <div className="p-4 flex justify-between items-center bg-gray-900 text-white">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <FileText size={20} />
+                    {lang === 'hi' ? 'अपलोड किया गया दस्तावेज़' : 'Uploaded Document'}
+                  </h3>
+                  <button 
+                    onClick={() => setIsDocFullscreen(false)}
+                    className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="flex-grow overflow-auto flex items-center justify-center p-4">
+                  {fileType?.includes('pdf') ? (
+                    <iframe 
+                      src={previewUrl} 
+                      className="w-full h-full max-w-5xl bg-white" 
+                      title="Document Preview"
+                    />
+                  ) : (
+                    <img 
+                      src={previewUrl} 
+                      alt="Uploaded Document" 
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
