@@ -23,11 +23,11 @@ const Footer = () => {
             <div className="flex items-center gap-3">
               <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem" className="h-14 opacity-80" />
               <div>
-                <h3 className="font-bold text-lg text-yellow-500 leading-tight">{isEn ? 'Government of Rajasthan' : 'राजस्थान सरकार'}</h3>
-                <p className="text-[12px] text-blue-200 mt-1 leading-snug">{t.subtitle}</p>
+                <h3 className="font-bold text-lg text-white leading-tight">{isEn ? 'Government of Rajasthan' : 'राजस्थान सरकार'}</h3>
+                <p className="text-[12px] text-white mt-1 leading-snug">{t.subtitle}</p>
               </div>
             </div>
-            <p className="text-[12px] text-gray-300 leading-relaxed mt-2 pr-4">
+            <p className="text-[12px] text-white leading-relaxed mt-2 pr-4">
               {isEn ? 'This is the official Public Grievance Redressal Portal for the Rural Development and Panchayati Raj Department, aimed at ensuring timely resolution of citizen grievances.' : 'यह ग्रामीण विकास एवं पंचायती राज विभाग का आधिकारिक लोक शिकायत निवारण पोर्टल है, जिसका उद्देश्य नागरिक शिकायतों का समयबद्ध समाधान सुनिश्चित करना है।'}
             </p>
           </div>

@@ -6,6 +6,7 @@ import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
+import { draftComplaintAPI, submitComplaintAPI } from '../../apiHandler/apis';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
@@ -16,6 +17,16 @@ const ComplainForm = () => {
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [showPreview, setShowPreview] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [draftId, setDraftId] = useState(null);
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loggedInUserData = React.useMemo(() => {
+    const data = localStorage.getItem('agentUserData');
+    return data ? JSON.parse(data) : null;
+  }, []);
+
+  const activeUser = loggedInUserData || userDetails;
 
   // Step 1 State
   const [applicantData, setApplicantData] = useState({
@@ -60,9 +71,28 @@ const ComplainForm = () => {
     });
   };
 
-  const handleProceed = () => {
-    setStep(2);
-    window.scrollTo(0, 0);
+  const handleProceed = async () => {
+    setIsDrafting(true);
+    try {
+      const payload = {
+        applicantName: applicantData.name,
+        mobile: applicantData.mobile,
+        address: applicantData.address,
+        ...formData
+      };
+      if (draftId) payload.draftId = draftId;
+      
+      const res = await draftComplaintAPI(payload);
+      if (res.success) {
+        setDraftId(res.data._id);
+        setStep(2);
+        window.scrollTo(0, 0);
+      }
+    } catch (err) {
+      alert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message);
+    } finally {
+      setIsDrafting(false);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -129,9 +159,27 @@ const ComplainForm = () => {
     setShowPreview(true);
   };
 
-  const confirmSubmit = () => {
-    alert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.');
-    navigate('/');
+  const confirmSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        applicantName: applicantData.name,
+        mobile: applicantData.mobile,
+        address: applicantData.address,
+        ...formData
+      };
+      if (draftId) payload.draftId = draftId;
+      
+      const res = await submitComplaintAPI(payload);
+      if (res.success) {
+        alert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.');
+        navigate('/');
+      }
+    } catch (err) {
+      alert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const districts = ['Ajmer', 'Alwar', 'Banswara', 'Baran', 'Barmer', 'Bharatpur', 'Bhilwara', 'Bikaner', 'Bundi', 'Chittorgarh', 'Churu', 'Dausa', 'Dholpur', 'Dungarpur', 'Hanumangarh', 'Jaipur', 'Jaisalmer', 'Jalore', 'Jhalawar', 'Jhunjhunu', 'Jodhpur', 'Karauli', 'Kota', 'Nagaur', 'Pali', 'Pratapgarh', 'Rajsamand', 'Sawai Madhopur', 'Sikar', 'Sirohi', 'Sri Ganganagar', 'Tonk', 'Udaipur'];
@@ -190,19 +238,19 @@ const ComplainForm = () => {
                   </div>
                   <div className="p-5 space-y-4">
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="w-14 h-14 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-sm">
-                          {userDetails.name.charAt(0)}
+                       <div className="w-14 h-14 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-sm uppercase">
+                          {activeUser?.name?.charAt(0) || 'U'}
                        </div>
                        <div>
-                         <h4 className="font-bold text-[#002b5e] text-[16px] leading-tight">{userDetails.name}</h4>
-                         <p className="text-gray-500 text-[12px] font-medium">{userDetails.designation}</p>
+                         <h4 className="font-bold text-[#002b5e] text-[16px] leading-tight">{activeUser?.name || 'User'}</h4>
+                         <p className="text-gray-500 text-[12px] font-medium">{activeUser?.designation || 'N/A'}</p>
                        </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-sm border border-gray-200 text-[13px] space-y-3 shadow-inner">
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{userDetails.id}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{userDetails.department}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{userDetails.district}</span></div>
-                      <div className="flex justify-between pt-1"><span className="text-gray-500">Session Start:</span> <span className="font-medium text-blue-600">{userDetails.lastLogin}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{activeUser?.id || 'N/A'}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{activeUser?.department || 'N/A'}</span></div>
+                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{activeUser?.district || 'N/A'}</span></div>
+                      <div className="flex justify-between pt-1"><span className="text-gray-500">Status:</span> <span className={`font-medium ${activeUser?.status === 'approved' ? 'text-green-600' : 'text-orange-600'}`}>{activeUser?.status === 'approved' ? 'Active' : 'Pending Approval'}</span></div>
                     </div>
                   </div>
                 </div>
@@ -254,9 +302,10 @@ const ComplainForm = () => {
                   </div>
 
                   <div className="mt-8 pt-5 border-t border-gray-200 flex justify-end">
-                    <button type="button" onClick={handleProceed} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
-                      {lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details'}
-                      <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    <button type="button" onClick={handleProceed} disabled={isDrafting} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] disabled:opacity-70 text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
+                      {isDrafting && <Loader2 size={16} className="animate-spin" />}
+                      {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details')}
+                      {!isDrafting && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
                     </button>
                   </div>
                 </div>
@@ -595,11 +644,12 @@ const ComplainForm = () => {
                     
                   </div>
                   <div className="bg-white p-4 border-t border-gray-200 flex justify-end gap-4 shadow-md z-10">
-                    <button onClick={() => setShowPreview(false)} className="px-6 py-2 border border-gray-300 hover:bg-gray-50 font-bold text-gray-700 transition-colors rounded-sm">
+                    <button onClick={() => setShowPreview(false)} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 disabled:opacity-70 hover:bg-gray-50 font-bold text-gray-700 transition-colors rounded-sm">
                       {lang === 'hi' ? 'संशोधन करें' : 'Edit Info'}
                     </button>
-                    <button onClick={confirmSubmit} className="px-8 py-2 bg-[#1976d2] hover:bg-[#115293] font-bold text-white shadow-md flex items-center gap-2 transition-colors rounded-sm">
-                      <Check size={18}/> {lang === 'hi' ? 'मास्टर सूची में सहेजें' : 'Save to Master List'}
+                    <button onClick={confirmSubmit} disabled={isSubmitting} className="px-8 py-2 bg-[#1976d2] hover:bg-[#115293] disabled:opacity-70 font-bold text-white shadow-md flex items-center gap-2 transition-colors rounded-sm">
+                      {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18}/>}
+                      {isSubmitting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'मास्टर सूची में सहेजें' : 'Save to Master List')}
                     </button>
                   </div>
                 </div>

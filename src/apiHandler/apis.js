@@ -47,6 +47,31 @@ export const postAPI = async (url, payload = {}) => {
   }
 };
 
+/**
+ * Global POST handler with Authorization (Bearer token)
+ */
+export const postAuthAPI = async (url, payload = {}) => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in Auth POST ${url}:`, error);
+    throw error;
+  }
+};
+
 // --- SPECIFIC IMPLEMENTATIONS ---
 
 export const fetchCaptchaImageAPI = async () => {
@@ -100,4 +125,12 @@ export const fetchBlocksAPI = async (districtId) => {
 
 export const fetchGPsAPI = async (blockId) => {
   return await getAPI(URLS.META.GPS(blockId), true);
+};
+
+export const submitComplaintAPI = async (payload) => {
+  return await postAuthAPI(URLS.COMPLAINTS.SUBMIT, payload);
+};
+
+export const draftComplaintAPI = async (payload) => {
+  return await postAuthAPI(URLS.COMPLAINTS.DRAFT, payload);
 };

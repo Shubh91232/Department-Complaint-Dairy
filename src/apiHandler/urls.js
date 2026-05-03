@@ -13,5 +13,9 @@ export const URLS = {
     DISTRICTS: `${BASE_URL}/locations/districts`,
     BLOCKS: (districtId) => `${BASE_URL}/locations/blocks/${districtId}`,
     GPS: (blockId) => `${BASE_URL}/locations/gps/${blockId}`
+  },
+  COMPLAINTS: {
+    SUBMIT: `${BASE_URL}/complaints/submit`,
+    DRAFT: `${BASE_URL}/complaints/draft`,
   }
 };
