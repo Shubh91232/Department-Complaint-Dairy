@@ -73,6 +73,10 @@ export const verifyCaptchaCodeAPI = async (token, code) => {
   return await postAPI(URLS.AUTH.VERIFY_CAPTCHA, { captcha_jwt: token, captcha_code: code });
 };
 
+export const registerDepartmentAPI = async (formData) => {
+  return await postAPI(URLS.AUTH.DEPARTMENT_REGISTER, formData);
+};
+
 export const fetchDepartmentsAPI = async () => {
   // Uses global GET handler with CACHE enabled (true)
   return await getAPI(URLS.META.DEPARTMENT_LIST, true);

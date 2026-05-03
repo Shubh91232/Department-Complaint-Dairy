@@ -4,7 +4,7 @@ import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown, Search, Loader2 } from 'lucide-react';
 import Captcha, { verifyCaptcha } from './captcha';
-import { fetchDepartmentsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, fetchLevelsAPI } from '../../apiHandler/apis';
+import { fetchDepartmentsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, fetchLevelsAPI, registerDepartmentAPI } from '../../apiHandler/apis';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -222,8 +222,19 @@ const Register = () => {
       captchaRef.current?.refresh();
       return;
     }
-    // In a real app, send data to backend here.
-    setShowSuccess(true);
+    
+    try {
+      const response = await registerDepartmentAPI(formData);
+      if (response && response.success) {
+        setShowSuccess(true);
+      } else {
+        alert(response?.message || "Registration failed. Please try again.");
+        captchaRef.current?.refresh();
+      }
+    } catch (err) {
+      alert(err.message || "An error occurred during registration. Please try again.");
+      captchaRef.current?.refresh();
+    }
   };
 
   const closeSuccess = () => {
