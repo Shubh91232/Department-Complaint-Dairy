@@ -7,6 +7,7 @@ export const URLS = {
   },
   META: {
     DEPARTMENT_LIST: `${BASE_URL}/department_list`,
+    LEVEL_LIST: `${BASE_URL}/level_list`,
     DISTRICTS: `${BASE_URL}/locations/districts`,
     BLOCKS: (districtId) => `${BASE_URL}/locations/blocks/${districtId}`,
     GPS: (blockId) => `${BASE_URL}/locations/gps/${blockId}`

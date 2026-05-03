@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown, Search } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, MapPin, Building, CheckCircle, ArrowLeft, Shield, ChevronDown, Search, Loader2 } from 'lucide-react';
 import Captcha, { verifyCaptcha } from './captcha';
-import { fetchDepartmentsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI } from '../../apiHandler/apis';
+import { fetchDepartmentsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, fetchLevelsAPI } from '../../apiHandler/apis';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ const Register = () => {
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [departments, setDepartments] = useState([]);
+  const [levels, setLevels] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [gps, setGps] = useState([]);
@@ -41,6 +42,10 @@ const Register = () => {
   const [districtSearchTerm, setDistrictSearchTerm] = useState('');
   const districtDropdownRef = React.useRef(null);
 
+  const [isLevelDropdownOpen, setIsLevelDropdownOpen] = useState(false);
+  const [levelSearchTerm, setLevelSearchTerm] = useState('');
+  const levelDropdownRef = React.useRef(null);
+
   const [isBlockDropdownOpen, setIsBlockDropdownOpen] = useState(false);
   const [blockSearchTerm, setBlockSearchTerm] = useState('');
   const blockDropdownRef = React.useRef(null);
@@ -49,10 +54,19 @@ const Register = () => {
   const [gpSearchTerm, setGpSearchTerm] = useState('');
   const gpDropdownRef = React.useRef(null);
 
+  // Loading states
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
+  const [isLoadingBlocks, setIsLoadingBlocks] = useState(false);
+  const [isLoadingGps, setIsLoadingGps] = useState(false);
+  const [isLoadingLevels, setIsLoadingLevels] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target)) {
         setIsDeptDropdownOpen(false);
+      }
+      if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target)) {
+        setIsLevelDropdownOpen(false);
       }
       if (districtDropdownRef.current && !districtDropdownRef.current.contains(event.target)) {
         setIsDistrictDropdownOpen(false);
@@ -74,6 +88,12 @@ const Register = () => {
       dept.value.toLowerCase().includes(deptSearchTerm.toLowerCase())
     );
   }, [departments, deptSearchTerm]);
+
+  const filteredLevels = React.useMemo(() => {
+    return levels.filter(lvl => 
+      lvl.label.toLowerCase().includes(levelSearchTerm.toLowerCase())
+    );
+  }, [levels, levelSearchTerm]);
 
   const filteredDistricts = React.useMemo(() => {
     return districts.filter(d => d.label.toLowerCase().includes(districtSearchTerm.toLowerCase()));
@@ -103,6 +123,7 @@ const Register = () => {
       }
     };
     const loadDistricts = async () => {
+      setIsLoadingDistricts(true);
       try {
         const response = await fetchDistrictsAPI();
         if (response && response.success) {
@@ -110,15 +131,32 @@ const Register = () => {
         }
       } catch (err) {
         console.error('Failed to load districts');
+      } finally {
+        setIsLoadingDistricts(false);
+      }
+    };
+    const loadLevels = async () => {
+      setIsLoadingLevels(true);
+      try {
+        const response = await fetchLevelsAPI();
+        if (response && response.success) {
+          setLevels(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load levels');
+      } finally {
+        setIsLoadingLevels(false);
       }
     };
     loadDepartments();
+    loadLevels();
     loadDistricts();
   }, []);
 
   useEffect(() => {
     const loadBlocks = async () => {
       if (!formData.officeDistrict) return;
+      setIsLoadingBlocks(true);
       try {
         const response = await fetchBlocksAPI(formData.officeDistrict);
         if (response && response.success) {
@@ -126,6 +164,8 @@ const Register = () => {
         }
       } catch (err) {
         console.error('Failed to load blocks');
+      } finally {
+        setIsLoadingBlocks(false);
       }
     };
     loadBlocks();
@@ -134,6 +174,7 @@ const Register = () => {
   useEffect(() => {
     const loadGPs = async () => {
       if (!formData.officeBlock) return;
+      setIsLoadingGps(true);
       try {
         const response = await fetchGPsAPI(formData.officeBlock);
         if (response && response.success) {
@@ -141,6 +182,8 @@ const Register = () => {
         }
       } catch (err) {
         console.error('Failed to load gps');
+      } finally {
+        setIsLoadingGps(false);
       }
     };
     loadGPs();
@@ -326,18 +369,56 @@ const Register = () => {
               </div>
 
               {/* Access Level */}
-              <div>
+              <div ref={levelDropdownRef}>
                 <label className="text-[12px] font-semibold text-gray-700 block mb-1.5">Access Role Level <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400"><Shield size={16} /></span>
-                  <select required name="level" value={formData.level} onChange={handleChange} className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer">
-                    <option value="">Select Level</option>
-                    <option value="Level 1">Level 1 - State Admin</option>
-                    <option value="Level 2">Level 2 - District Admin</option>
-                    <option value="Level 3">Level 3 - Nodal Officer</option>
-                    <option value="Level 4">Level 4 - Executive/Clerk</option>
-                  </select>
-                  <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                  <div 
+                    onClick={() => setIsLevelDropdownOpen(!isLevelDropdownOpen)}
+                    className="w-full border border-gray-300 rounded-sm pl-9 pr-8 py-2 focus:outline-none focus:border-[#002b5e] focus:ring-1 focus:ring-[#002b5e] transition-all bg-gray-50 hover:bg-white cursor-pointer min-h-[38px] flex items-center"
+                  >
+                    <span className="absolute left-3 top-2.5 text-gray-400"><Shield size={16} /></span>
+                    <span className={`text-[13px] ${formData.level ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {formData.level ? levels.find(l => l.value === formData.level)?.label : (isLoadingLevels ? 'Loading...' : 'Select Level')}
+                    </span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                      {isLoadingLevels ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                    </span>
+                  </div>
+
+                  {isLevelDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg">
+                      <div className="p-2 border-b border-gray-200 relative">
+                        <span className="absolute left-4 top-4 text-gray-400"><Search size={14} /></span>
+                        <input
+                          type="text"
+                          placeholder="Search level..."
+                          className="w-full pl-8 pr-2 py-1.5 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:border-[#002b5e]"
+                          value={levelSearchTerm}
+                          onChange={(e) => setLevelSearchTerm(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredLevels.length > 0 ? (
+                          filteredLevels.map((lvl) => (
+                            <div 
+                              key={lvl.value} 
+                              className={`px-3 py-2 text-[13px] cursor-pointer hover:bg-[#f0f4f8] transition-colors ${formData.level === lvl.value ? 'bg-[#e6f0ff] font-semibold text-[#002b5e]' : 'text-gray-700'}`}
+                              onClick={() => {
+                                setFormData({ ...formData, level: lvl.value });
+                                setIsLevelDropdownOpen(false);
+                                setLevelSearchTerm('');
+                              }}
+                            >
+                              {lvl.label}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-[12px] text-gray-500 text-center">No levels found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -367,9 +448,11 @@ const Register = () => {
                   >
                     <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
                     <span className={`text-[13px] ${formData.officeDistrict ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeDistrict ? districts.find(d => d.value === formData.officeDistrict)?.label : 'Select District'}
+                      {formData.officeDistrict ? districts.find(d => d.value === formData.officeDistrict)?.label : (isLoadingDistricts ? 'Loading...' : 'Select District')}
                     </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                      {isLoadingDistricts ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                    </span>
                   </div>
 
                   {isDistrictDropdownOpen && (
@@ -421,9 +504,11 @@ const Register = () => {
                   >
                     <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
                     <span className={`text-[13px] ${formData.officeBlock ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeBlock ? blocks.find(b => b.value === formData.officeBlock)?.label : 'Select Block'}
+                      {formData.officeBlock ? blocks.find(b => b.value === formData.officeBlock)?.label : (isLoadingBlocks ? 'Loading...' : 'Select Block')}
                     </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                      {isLoadingBlocks ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                    </span>
                   </div>
 
                   {isBlockDropdownOpen && (
@@ -475,9 +560,11 @@ const Register = () => {
                   >
                     <span className="absolute left-3 top-2.5 text-gray-400"><MapPin size={16} /></span>
                     <span className={`text-[13px] ${formData.officeGp ? 'text-gray-800' : 'text-gray-500'}`}>
-                      {formData.officeGp ? gps.find(g => g.value === formData.officeGp)?.label : 'Select GP'}
+                      {formData.officeGp ? gps.find(g => g.value === formData.officeGp)?.label : (isLoadingGps ? 'Loading...' : 'Select GP')}
                     </span>
-                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none"><ChevronDown size={14} /></span>
+                    <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
+                      {isLoadingGps ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                    </span>
                   </div>
 
                   {isGpDropdownOpen && (

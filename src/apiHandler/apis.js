@@ -78,6 +78,10 @@ export const fetchDepartmentsAPI = async () => {
   return await getAPI(URLS.META.DEPARTMENT_LIST, true);
 };
 
+export const fetchLevelsAPI = async () => {
+  return await getAPI(URLS.META.LEVEL_LIST, true);
+};
+
 export const fetchDistrictsAPI = async () => {
   return await getAPI(URLS.META.DISTRICTS, true); // Cache true as districts rarely change
 };
