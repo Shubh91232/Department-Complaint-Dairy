@@ -159,3 +159,7 @@ export const draftComplaintAPI = async (payload) => {
 export const fetchDraftsAPI = async () => {
   return await getAuthAPI(URLS.COMPLAINTS.DRAFTS);
 };
+
+export const fetchDeptSchemesAPI = async () => {
+  return await getAPI(URLS.COMPLAINTS.DEPARTMENTS_LIST, true); // Cache true as schemes rarely change
+};

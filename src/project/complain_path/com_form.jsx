@@ -3,16 +3,16 @@ import { useLanguage } from '../LanguageContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye } from 'lucide-react';
+import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
-import { draftComplaintAPI, submitComplaintAPI } from '../../apiHandler/apis';
+import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI } from '../../apiHandler/apis';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [step, setStep] = useState(1);
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
@@ -25,6 +25,19 @@ const ComplainForm = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [fileType, setFileType] = useState(null);
   const [isDocFullscreen, setIsDocFullscreen] = useState(false);
+  const [deptData, setDeptData] = useState(null);
+  const [deptSearch, setDeptSearch] = useState('');
+  const [schemeSearch, setSchemeSearch] = useState('');
+  const [showDeptOptions, setShowDeptOptions] = useState(false);
+  const [showSchemeOptions, setShowSchemeOptions] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
+
+  const showAlert = (message, type = 'error') => {
+    setCustomAlert({ show: true, message, type });
+    setTimeout(() => {
+      setCustomAlert(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -80,13 +93,13 @@ const ComplainForm = () => {
     if (location.state?.draftData) {
       const draft = location.state.draftData;
       setDraftId(draft._id);
-      
+
       setApplicantData({
         name: draft.applicantName || '',
         mobile: draft.mobile || '',
         address: draft.address || ''
       });
-      
+
       setFormData(prev => ({
         ...prev,
         source: draft.source || 'PR',
@@ -113,8 +126,64 @@ const ComplainForm = () => {
     }
   }, [location.state]);
 
+  // Fetch Departments on Mount
+  React.useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const res = await fetchDeptSchemesAPI();
+        if (res.success) {
+          setDeptData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load departments:", err);
+      }
+    };
+    loadDepts();
+  }, []);
+
+  // Derived Departments & Schemes
+  const departments = deptData?.departments || [];
+
+  // All schemes for cross-department search
+  const allSchemes = React.useMemo(() => {
+    return departments.flatMap(d => d.schemes.map(s => ({
+      ...s,
+      deptId: d.department_id,
+      deptNameEn: d.department_name_en,
+      deptNameHi: d.department_name_hi,
+      fy: deptData?.data_as_of || '2024-25'
+    })));
+  }, [departments, deptData]);
+
+  const selectedDept = departments.find(d => d.department_name_en === formData.department || d.department_name_hi === formData.department);
+  const currentSchemes = selectedDept ? selectedDept.schemes : allSchemes;
+
+  const filteredDepts = departments.filter(d =>
+    d.department_name_en.toLowerCase().includes(deptSearch.toLowerCase()) ||
+    d.department_name_hi.includes(deptSearch)
+  );
+
+  const filteredSchemes = currentSchemes.filter(s =>
+    s.scheme_name_en.toLowerCase().includes(schemeSearch.toLowerCase()) ||
+    s.scheme_name_hi.includes(schemeSearch)
+  );
+
+  // Auto-category mapping based on scheme type
+  const autoSelectCategory = (type) => {
+    const mapping = {
+      'Rural Employment': 'Payment Pending / Wage Issue',
+      'Infrastructure Development': 'Quality Issue in Construction',
+      'Rural Housing': 'Operational Delay in Work',
+      'Self Employment & SHG Promotion': 'Financial Irregularity',
+      'Livelihood Support': 'Financial Irregularity',
+      'Village Development': 'Operational Delay in Work',
+      'Women Empowerment': 'Other'
+    };
+    return mapping[type] || 'Other';
+  };
+
   const handleApplicantChange = (e) => {
-    setApplicantData({...applicantData, [e.target.name]: e.target.value});
+    setApplicantData({ ...applicantData, [e.target.name]: e.target.value });
   };
 
   const handleFormChange = (e) => {
@@ -138,7 +207,7 @@ const ComplainForm = () => {
         ...formData
       };
       if (draftId) payload.draftId = draftId;
-      
+
       const res = await draftComplaintAPI(payload);
       if (res.success) {
         setDraftId(res.data._id);
@@ -146,7 +215,7 @@ const ComplainForm = () => {
         window.scrollTo(0, 0);
       }
     } catch (err) {
-      alert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message);
+      showAlert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message, 'error');
     } finally {
       setIsDrafting(false);
     }
@@ -159,7 +228,7 @@ const ComplainForm = () => {
     // 1. Validate File Size (Max 5MB)
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > MAX_SIZE) {
-      alert(lang === 'hi' ? 'फ़ाइल का आकार 5MB से अधिक नहीं होना चाहिए!' : 'File size must not exceed 5MB!');
+      showAlert(lang === 'hi' ? 'फ़ाइल का आकार 5MB से अधिक नहीं होना चाहिए!' : 'File size must not exceed 5MB!', 'error');
       e.target.value = ''; // Reset input
       return;
     }
@@ -167,11 +236,11 @@ const ComplainForm = () => {
     // 2. Validate File Type (PDF or Image)
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
-      alert(lang === 'hi' ? 'केवल PDF, JPG या PNG फ़ाइलें ही अनुमत हैं!' : 'Only PDF, JPG, or PNG files are allowed!');
+      showAlert(lang === 'hi' ? 'केवल PDF, JPG या PNG फ़ाइलें ही अनुमत हैं!' : 'Only PDF, JPG, or PNG files are allowed!', 'error');
       e.target.value = ''; // Reset input
       return;
     }
-    
+
     setFileType(file.type);
     setPreviewUrl(URL.createObjectURL(file));
     setIsUploading(true);
@@ -196,19 +265,19 @@ const ComplainForm = () => {
         remarks: 'Requires immediate audit.'
       }));
       setIsUploading(false);
-      alert(lang === 'hi' ? 'दस्तावेज़ से डेटा सफलतापूर्वक निकाला गया!' : 'Data successfully extracted from document!');
+      showAlert(lang === 'hi' ? 'दस्तावेज़ से डेटा सफलतापूर्वक निकाला गया!' : 'Data successfully extracted from document!', 'success');
     }, 2000);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!captchaData.code) {
-      alert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha');
+      showAlert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha', 'error');
       return;
     }
     const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
     if (!isValid) {
-      alert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!');
+      showAlert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!', 'error');
       captchaRef.current?.refresh();
       return;
     }
@@ -225,14 +294,14 @@ const ComplainForm = () => {
         ...formData
       };
       if (draftId) payload.draftId = draftId;
-      
+
       const res = await submitComplaintAPI(payload);
       if (res.success) {
-        alert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.');
-        navigate('/');
+        showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.', 'success');
+        setTimeout(() => navigate('/'), 2000);
       }
     } catch (err) {
-      alert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message);
+      showAlert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -242,23 +311,28 @@ const ComplainForm = () => {
   const blocks = formData.district ? ['Block 1', 'Block 2', 'Block 3'] : [];
   const panchayats = formData.block ? ['Panchayat 1', 'Panchayat 2', 'Panchayat 3'] : [];
 
-  const deptSchemes = {
-    'Rajveeka': ['SHG Formation', 'Revolving Fund', 'CIF Disbursement', 'Startup Fund'],
-    'Rural Development': ['PMAY-G (Awas)', 'SBM-G (Toilets)', 'Sansad Adarsh Gram Yojana', 'MPLAD/MLALAD'],
-    'MGNREGA': ['Wage Payment Issue', 'Work Demand', 'Muster Roll Irregularity', 'Individual Asset Construction'],
-    'Panchayati Raj': ['Section 38 (Panchayati Raj Act)', 'Encroachment', 'Tender Irregularity', 'Gram Panchayat Fund']
-  };
-
   const labelClass = "text-[12px] font-bold text-gray-700 block mb-1";
   const inputClass = "w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-[#1976d2] focus:ring-1 focus:ring-[#1976d2] bg-white transition-all";
   const requiredSpan = <span className="text-red-500 ml-1">*</span>;
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col relative">
+
+      {/* Custom Alert Toast */}
+      {customAlert.show && (
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-sm shadow-xl border-l-4 transform transition-all animate-slide-in-right ${customAlert.type === 'error' ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-green-500 text-gray-800'}`}>
+          {customAlert.type === 'error' ? <div className="text-red-500 bg-red-50 p-1 rounded-full"><Shield size={16} /></div> : <div className="text-green-500 bg-green-50 p-1 rounded-full"><CheckCircle size={16} /></div>}
+          <p className="text-[13px] font-bold">{customAlert.message}</p>
+          <button onClick={() => setCustomAlert(prev => ({ ...prev, show: false }))} className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none text-xl leading-none">
+            &times;
+          </button>
+        </div>
+      )}
+
       <Header />
-      
+
       <div className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
-        
+
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center text-[12px] font-semibold text-gray-500">
           <Link to="/" className="hover:text-[#1976d2] transition-colors flex items-center gap-1"><Home size={14} /> {lang === 'hi' ? 'होम' : 'Home'}</Link>
@@ -294,13 +368,13 @@ const ComplainForm = () => {
                   </div>
                   <div className="p-5 space-y-4">
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="w-14 h-14 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-sm uppercase">
-                          {activeUser?.name?.charAt(0) || 'U'}
-                       </div>
-                       <div>
-                         <h4 className="font-bold text-[#002b5e] text-[16px] leading-tight">{activeUser?.name || 'User'}</h4>
-                         <p className="text-gray-500 text-[12px] font-medium">{activeUser?.designation || 'N/A'}</p>
-                       </div>
+                      <div className="w-14 h-14 bg-[#002b5e] text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-sm uppercase">
+                        {activeUser?.name?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-[#002b5e] text-[16px] leading-tight">{activeUser?.name || 'User'}</h4>
+                        <p className="text-gray-500 text-[12px] font-medium">{activeUser?.designation || 'N/A'}</p>
+                      </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-sm border border-gray-200 text-[13px] space-y-3 shadow-inner">
                       <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{activeUser?.id || 'N/A'}</span></div>
@@ -324,8 +398,8 @@ const ComplainForm = () => {
                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-sm mb-6 text-blue-800 text-[13px] flex gap-3 items-start">
                     <FileText size={18} className="flex-shrink-0 mt-0.5 text-blue-600" />
                     <p>
-                      {lang === 'hi' 
-                        ? 'यह अनुभाग वैकल्पिक है। यदि आपके पास परिवादी का विवरण उपलब्ध नहीं है, तो आप इसे खाली छोड़ कर आगे बढ़ सकते हैं।' 
+                      {lang === 'hi'
+                        ? 'यह अनुभाग वैकल्पिक है। यदि आपके पास परिवादी का विवरण उपलब्ध नहीं है, तो आप इसे खाली छोड़ कर आगे बढ़ सकते हैं।'
                         : 'This section is optional. If you do not have the complainant details from the physical record, you may leave these fields empty and proceed to the grievance form.'}
                     </p>
                   </div>
@@ -387,8 +461,8 @@ const ComplainForm = () => {
                   {isFullscreen ? (lang === 'hi' ? 'बाहर निकलें' : 'Exit Fullscreen') : (lang === 'hi' ? 'फुल स्क्रीन' : 'Fullscreen')}
                 </button>
                 <div className="hidden md:flex items-center gap-2 text-sm font-bold text-[#1976d2] bg-blue-50 px-4 py-2 rounded-sm border border-blue-100">
-                   <LayoutList size={18}/>
-                   {lang === 'hi' ? 'रिकॉर्ड प्रारूप: मानक' : 'Record Format: Standard'}
+                  <LayoutList size={18} />
+                  {lang === 'hi' ? 'रिकॉर्ड प्रारूप: मानक' : 'Record Format: Standard'}
                 </div>
               </div>
             </div>
@@ -410,9 +484,9 @@ const ComplainForm = () => {
                   </label>
                 )}
               </div>
-              
+
               {previewUrl && !isUploading && (
-                <button 
+                <button
                   onClick={() => setIsDocFullscreen(true)}
                   className="md:w-48 bg-white border-2 border-[#1976d2] text-[#1976d2] p-4 rounded-sm flex flex-col items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-sm"
                 >
@@ -431,7 +505,7 @@ const ComplainForm = () => {
                     <FileText size={20} />
                     {lang === 'hi' ? 'अपलोड किया गया दस्तावेज़' : 'Uploaded Document'}
                   </h3>
-                  <button 
+                  <button
                     onClick={() => setIsDocFullscreen(false)}
                     className="p-2 hover:bg-gray-700 rounded-full transition-colors"
                   >
@@ -440,15 +514,15 @@ const ComplainForm = () => {
                 </div>
                 <div className="flex-grow overflow-auto flex items-center justify-center p-4">
                   {fileType?.includes('pdf') ? (
-                    <iframe 
-                      src={previewUrl} 
-                      className="w-full h-full max-w-5xl bg-white" 
+                    <iframe
+                      src={previewUrl}
+                      className="w-full h-full max-w-5xl bg-white"
                       title="Document Preview"
                     />
                   ) : (
-                    <img 
-                      src={previewUrl} 
-                      alt="Uploaded Document" 
+                    <img
+                      src={previewUrl}
+                      alt="Uploaded Document"
                       className="max-w-full max-h-full object-contain"
                     />
                   )}
@@ -459,7 +533,7 @@ const ComplainForm = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-5 space-y-6">
-                  
+
                   {/* Origin & Reference */}
                   <div className="bg-white p-5 rounded-sm shadow-sm border-t-4 border-t-[#002b5e] border border-gray-200">
                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
@@ -552,21 +626,142 @@ const ComplainForm = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'विभाग (Department)' : 'Department'} {requiredSpan}</label>
-                          <select name="department" value={formData.department} onChange={handleFormChange} required className={inputClass}>
-                            <option value="">-- Select Department --</option>
-                            {Object.keys(deptSchemes).map(dept => (
-                              <option key={dept} value={dept}>{dept}</option>
-                            ))}
-                          </select>
+                          <div className="relative">
+                            <div
+                              className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.department ? 'text-gray-400' : ''}`}
+                              onClick={() => setShowDeptOptions(!showDeptOptions)}
+                            >
+                              {selectedDept ? `${selectedDept.department_name_en} (${selectedDept.department_name_hi})` : (lang === 'hi' ? '-- विभाग चुनें --' : '-- Select Department --')}
+                              <ChevronRight size={16} className={`transform transition-transform ${showDeptOptions ? 'rotate-90' : ''}`} />
+                            </div>
+
+                            {showDeptOptions && (
+                              <div className="absolute z-[70] mt-1 w-full bg-white border border-gray-200 shadow-2xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                                <div className="p-3 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
+                                  <div className="relative">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                                    <input
+                                      type="text"
+                                      placeholder={lang === 'hi' ? 'विभाग खोजें...' : 'Search department...'}
+                                      className="w-full pl-10 pr-3 py-2 text-[13px] border border-blue-100 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
+                                      value={deptSearch}
+                                      onChange={(e) => setDeptSearch(e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                  {filteredDepts.length > 0 ? filteredDepts.map(dept => (
+                                    <div
+                                      key={dept.department_id}
+                                      className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
+                                      onClick={() => {
+                                        setFormData(prev => ({ ...prev, department: dept.department_name_en, scheme: '' }));
+                                        setShowDeptOptions(false);
+                                        setDeptSearch('');
+                                      }}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{dept.department_name_en}</div>
+                                          <div className="text-[12px] text-gray-500 font-medium mt-0.5">{dept.department_name_hi}</div>
+                                        </div>
+                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-bold uppercase rounded border border-gray-200 tracking-tighter">
+                                          {dept.department_id}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )) : (
+                                    <div className="py-8 flex flex-col items-center justify-center text-gray-400 gap-2">
+                                      <Search size={24} className="opacity-20" />
+                                      <p className="text-[12px] italic">{lang === 'hi' ? 'कोई विभाग नहीं मिला' : 'No departments found'}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
+
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'योजना (Scheme)' : 'Scheme'} {requiredSpan}</label>
-                          <select name="scheme" value={formData.scheme} onChange={handleFormChange} required disabled={!formData.department} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}>
-                            <option value="">-- Select Scheme --</option>
-                            {formData.department && deptSchemes[formData.department].map(scheme => (
-                              <option key={scheme} value={scheme}>{scheme}</option>
-                            ))}
-                          </select>
+                          <div className="relative">
+                            <div
+                              className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.scheme ? 'text-gray-400' : ''}`}
+                              onClick={() => setShowSchemeOptions(!showSchemeOptions)}
+                            >
+                              {formData.scheme || (lang === 'hi' ? '-- योजना चुनें --' : '-- Select Scheme --')}
+                              <ChevronRight size={16} className={`transform transition-transform ${showSchemeOptions ? 'rotate-90' : ''}`} />
+                            </div>
+
+                            {showSchemeOptions && (
+                              <div className="absolute z-[70] mt-1 w-full bg-white border border-gray-200 shadow-2xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                                <div className="p-3 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
+                                  <div className="relative">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                                    <input
+                                      type="text"
+                                      placeholder={lang === 'hi' ? 'योजना खोजें...' : 'Search for a scheme...'}
+                                      className="w-full pl-10 pr-3 py-2 text-[13px] border border-blue-100 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
+                                      value={schemeSearch}
+                                      onChange={(e) => setSchemeSearch(e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                                  {filteredSchemes.length > 0 ? filteredSchemes.map((scheme, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
+                                      onClick={() => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          department: scheme.deptNameEn || prev.department,
+                                          scheme: scheme.scheme_name_en,
+                                          complaintCategory: autoSelectCategory(scheme.type)
+                                        }));
+                                        setShowSchemeOptions(false);
+                                        setSchemeSearch('');
+                                      }}
+                                    >
+                                      <div className="flex flex-col gap-1.5">
+                                        <div className="flex justify-between items-start gap-4">
+                                          <div className="font-bold text-[14px] text-gray-800 group-hover:text-blue-700 transition-colors leading-tight">
+                                            {scheme.scheme_name_en}
+                                          </div>
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[8px] font-black rounded border border-gray-200 uppercase tracking-tighter">
+                                              {scheme.fy || 'FY 24-25'}
+                                            </span>
+                                            {!selectedDept && (
+                                              <span className="px-2 py-0.5 bg-[#002b5e] text-white text-[9px] font-bold rounded-sm shadow-sm">
+                                                {scheme.deptNameEn}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px]">
+                                          <span className="text-gray-500 font-medium">{scheme.scheme_name_hi}</span>
+                                          <span className="text-gray-300">•</span>
+                                          <span className="text-blue-600 font-bold uppercase tracking-tight text-[10px]">
+                                            {scheme.type}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )) : (
+                                    <div className="py-12 flex flex-col items-center justify-center text-gray-400 gap-3">
+                                      <Search size={32} className="opacity-20" />
+                                      <p className="text-[13px] font-medium italic">{lang === 'hi' ? 'कोई योजना नहीं मिली' : 'No matching schemes found'}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div>
@@ -601,10 +796,9 @@ const ComplainForm = () => {
                         </div>
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'वर्तमान स्थिति' : 'Current Status'} {requiredSpan}</label>
-                          <select name="currentStatus" value={formData.currentStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${
-                              formData.currentStatus === 'Pending' ? 'text-red-600' :
+                          <select name="currentStatus" value={formData.currentStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.currentStatus === 'Pending' ? 'text-red-600' :
                               formData.currentStatus === 'Resolved' ? 'text-green-600' :
-                              'text-blue-600'
+                                'text-blue-600'
                             }`}>
                             <option value="Pending">{lang === 'hi' ? 'लंबित (Pending)' : 'Pending'}</option>
                             <option value="In Progress">{lang === 'hi' ? 'प्रक्रिया में (In Progress)' : 'In Progress'}</option>
@@ -629,17 +823,17 @@ const ComplainForm = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="w-full md:w-auto min-w-[250px]">
-                  <Captcha 
+                  <Captcha
                     ref={captchaRef}
                     onCodeChange={(code, token) => setCaptchaData({ code, token })}
                   />
                 </div>
-                
+
                 <div className="flex gap-4 w-full md:w-auto">
-                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0,0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
+                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
                   </button>
                   <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">
@@ -655,10 +849,10 @@ const ComplainForm = () => {
               <div className="fixed inset-0 bg-[#002b5e]/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                 <div className="bg-white rounded-md shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
                   <div className="bg-gray-100 border-b border-gray-300 p-4 flex justify-between items-center z-10">
-                    <h2 className="text-lg font-bold text-[#002b5e] flex items-center gap-2"><FileText size={20}/> {lang === 'hi' ? 'डेटा प्रविष्टि सारांश' : 'Data Entry Summary'}</h2>
-                    <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-red-500 transition-colors"><X size={24}/></button>
+                    <h2 className="text-lg font-bold text-[#002b5e] flex items-center gap-2"><FileText size={20} /> {lang === 'hi' ? 'डेटा प्रविष्टि सारांश' : 'Data Entry Summary'}</h2>
+                    <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-red-500 transition-colors"><X size={24} /></button>
                   </div>
-                  
+
                   <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-grow bg-gray-50">
                     {applicantData.name && (
                       <div className="bg-blue-50 border border-blue-200 p-4 rounded-sm shadow-sm text-[14px]">
@@ -667,10 +861,10 @@ const ComplainForm = () => {
                         {applicantData.address && <p><strong>Address:</strong> {applicantData.address}</p>}
                       </div>
                     )}
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[14px]">
                       <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Calendar size={16} className="text-[#1976d2]"/> Metadata</h3>
+                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Calendar size={16} className="text-[#1976d2]" /> Metadata</h3>
                         <table className="w-full text-left border-collapse">
                           <tbody>
                             <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium w-1/3">Source</th><td className="py-2 font-semibold">{formData.source}</td></tr>
@@ -680,9 +874,9 @@ const ComplainForm = () => {
                           </tbody>
                         </table>
                       </div>
-                      
+
                       <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><MapPin size={16} className="text-[#e65100]"/> Location</h3>
+                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><MapPin size={16} className="text-[#e65100]" /> Location</h3>
                         <table className="w-full text-left border-collapse">
                           <tbody>
                             <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium w-1/3">Level</th><td className="py-2 font-semibold">{formData.level}</td></tr>
@@ -695,7 +889,7 @@ const ComplainForm = () => {
                     </div>
 
                     <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-[#2e7d32]"/> Complaint Details</h3>
+                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-[#2e7d32]" /> Complaint Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <span className="text-gray-500 font-medium block mb-1">Department</span>
@@ -717,7 +911,7 @@ const ComplainForm = () => {
                     </div>
 
                     <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Activity size={16} className="text-[#6a1b9a]"/> Enforcement</h3>
+                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Activity size={16} className="text-[#6a1b9a]" /> Enforcement</h3>
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <span className="text-gray-500 font-medium block mb-1">Responsible Officer</span>
@@ -725,10 +919,9 @@ const ComplainForm = () => {
                         </div>
                         <div>
                           <span className="text-gray-500 font-medium block mb-1">Status</span>
-                          <span className={`inline-block px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wide ${
-                              formData.currentStatus === 'Pending' ? 'bg-red-100 text-red-800 border border-red-200' :
+                          <span className={`inline-block px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wide ${formData.currentStatus === 'Pending' ? 'bg-red-100 text-red-800 border border-red-200' :
                               formData.currentStatus === 'Resolved' ? 'bg-green-100 text-green-800 border border-green-200' :
-                              'bg-blue-100 text-blue-800 border border-blue-200'
+                                'bg-blue-100 text-blue-800 border border-blue-200'
                             }`}>{formData.currentStatus}</span>
                         </div>
                       </div>
@@ -749,14 +942,14 @@ const ComplainForm = () => {
                         </div>
                       )}
                     </div>
-                    
+
                   </div>
                   <div className="bg-white p-4 border-t border-gray-200 flex justify-end gap-4 shadow-md z-10">
                     <button onClick={() => setShowPreview(false)} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 disabled:opacity-70 hover:bg-gray-50 font-bold text-gray-700 transition-colors rounded-sm">
                       {lang === 'hi' ? 'संशोधन करें' : 'Edit Info'}
                     </button>
                     <button onClick={confirmSubmit} disabled={isSubmitting} className="px-8 py-2 bg-[#1976d2] hover:bg-[#115293] disabled:opacity-70 font-bold text-white shadow-md flex items-center gap-2 transition-colors rounded-sm">
-                      {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18}/>}
+                      {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
                       {isSubmitting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'मास्टर सूची में सहेजें' : 'Save to Master List')}
                     </button>
                   </div>
@@ -768,6 +961,29 @@ const ComplainForm = () => {
 
       </div>
       <Footer />
+      <style>{`
+        @keyframes slide-in-right {
+          0% { transform: translateX(100%); opacity: 0; }
+          10% { transform: translateX(-5%); opacity: 1; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.4s ease-out forwards;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </div>
   );
 };
