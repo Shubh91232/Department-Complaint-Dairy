@@ -18,6 +18,7 @@ export const URLS = {
     SUBMIT: `${BASE_URL}/complaints/submit`,
     DRAFT: `${BASE_URL}/complaints/draft`,
     DRAFTS: `${BASE_URL}/complaints/drafts`,
-    DEPARTMENTS_LIST: `${BASE_URL}/complaints/departments`
+    DEPARTMENTS_LIST: `${BASE_URL}/complaints/departments`,
+    CATEGORIES_LIST: `${BASE_URL}/complaints/categories`
   }
 };

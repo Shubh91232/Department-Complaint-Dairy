@@ -6,7 +6,7 @@ import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
-import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI } from '../../apiHandler/apis';
+import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI } from '../../apiHandler/apis';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
@@ -30,6 +30,7 @@ const ComplainForm = () => {
   const [schemeSearch, setSchemeSearch] = useState('');
   const [showDeptOptions, setShowDeptOptions] = useState(false);
   const [showSchemeOptions, setShowSchemeOptions] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
 
   const showAlert = (message, type = 'error') => {
@@ -138,7 +139,20 @@ const ComplainForm = () => {
         console.error("Failed to load departments:", err);
       }
     };
+
+    const loadCategories = async () => {
+      try {
+        const res = await fetchComplaintCategoriesAPI();
+        if (res.success) {
+          setCategories(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      }
+    };
+
     loadDepts();
+    loadCategories();
   }, []);
 
   // Derived Departments & Schemes
@@ -768,11 +782,9 @@ const ComplainForm = () => {
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत की श्रेणी' : 'Complaint Category'} {requiredSpan}</label>
                         <select name="complaintCategory" value={formData.complaintCategory} onChange={handleFormChange} required className={`${inputClass} font-semibold text-[#002b5e]`}>
                           <option value="">-- Select Category --</option>
-                          <option value="Financial Irregularity">Financial Irregularity / Fund Misuse</option>
-                          <option value="Operational Delay">Operational Delay in Work</option>
-                          <option value="Quality Issue">Quality Issue in Construction</option>
-                          <option value="Payment Pending">Payment Pending / Wage Issue</option>
-                          <option value="Other">Other</option>
+                          {categories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
