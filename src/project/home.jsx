@@ -122,8 +122,7 @@ const Home = () => {
   const handleLogout = () => {
     setIsFlipping(true);
     setTimeout(() => {
-      localStorage.removeItem('agentLogin');
-      localStorage.removeItem('agentUserData');
+      localStorage.clear();
       setLoggedInUserData(null);
       setIsLoggedIn(false);
       setIsFlipping(false);

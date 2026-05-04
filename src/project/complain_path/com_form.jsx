@@ -190,13 +190,15 @@ const ComplainForm = () => {
 
   // All schemes for cross-department search
   const allSchemes = React.useMemo(() => {
-    return departments.flatMap(d => d.schemes.map(s => ({
-      ...s,
-      deptId: d.department_id,
-      deptNameEn: d.department_name_en,
-      deptNameHi: d.department_name_hi,
-      fy: deptData?.data_as_of || '2024-25'
-    })));
+    return departments.flatMap(d => (d.schemes || [])
+      .filter(s => s.isActive !== false)
+      .map(s => ({
+        ...s,
+        deptId: d.department_id,
+        deptNameEn: d.department_name_en,
+        deptNameHi: d.department_name_hi,
+        fy: s.data_as_of || deptData?.data_as_of || '2024-25'
+      })));
   }, [departments, deptData]);
 
   const selectedDept = departments.find(d => d.department_name_en === formData.department || d.department_name_hi === formData.department);
