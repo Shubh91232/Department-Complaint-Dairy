@@ -281,7 +281,7 @@ const WorkHistory = () => {
                 <tbody>
                   {filteredHistory.length > 0 ? (
                     filteredHistory.map((item, index) => (
-                      <tr key={item.id} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                      <tr key={item._id || index} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
                         <td className="px-4 py-4 text-center font-bold text-gray-400">
                           {index + 1}
                         </td>
@@ -373,7 +373,7 @@ const WorkHistory = () => {
                 <tbody>
                   {drafts.length > 0 ? (
                     drafts.map((draft, index) => (
-                      <tr key={draft.id} className="border-b border-gray-100 hover:bg-orange-50/50 transition-colors">
+                      <tr key={draft._id || index} className="border-b border-gray-100 hover:bg-orange-50/50 transition-colors">
                         <td className="px-4 py-4 text-center font-bold text-gray-400">
                           {index + 1}
                         </td>
