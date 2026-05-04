@@ -23,7 +23,8 @@ import {
   Trash2,
   X,
   Shield,
-  Loader2
+  Loader2,
+  Activity
 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import { fetchDraftsAPI, fetchGrievanceHistoryAPI, deleteDraftAPI } from '../../apiHandler/apis';
@@ -323,6 +324,7 @@ const WorkHistory = () => {
                     <th className="px-4 py-4 min-w-[180px]">Case Details</th>
                     <th className="px-4 py-4 text-center">Status</th>
                     <th className="px-4 py-4 text-center">Date Filed</th>
+                    <th className="px-4 py-4 text-center">Tracking</th>
                     <th className="px-4 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -370,14 +372,22 @@ const WorkHistory = () => {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-center">
+                          <button 
+                            onClick={() => navigate('/track', { state: { query: '2210' } })}
+                            className="bg-[#002b5e] text-white px-3 py-1.5 rounded-sm font-bold text-[10px] hover:bg-[#001f44] transition-colors flex items-center gap-1.5 shadow-sm uppercase mx-auto border border-[#001533]"
+                          >
+                            <Activity size={12} /> {lang === 'hi' ? 'ट्रैकिंग' : 'Track Status'}
+                          </button>
+                        </td>
+                        <td className="px-4 py-4 text-center">
                           <div className="flex justify-center gap-2">
-                             <button 
+                             {/* <button 
                                onClick={() => showAlert(lang === 'hi' ? 'विवरण देखने की सुविधा जल्द आ रही है!' : 'View details functionality coming soon!', 'info')}
                                className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-sm transition-colors"
                                title="View Details"
                              >
                                <MoreVertical size={18} />
-                             </button>
+                             </button> */}
                              <button 
                                onClick={() => handleDeleteRecord(item.id || item._id)}
                                className={`px-3 py-1.5 rounded-sm font-bold text-[11px] transition-all flex items-center gap-1 shadow-sm uppercase border ${

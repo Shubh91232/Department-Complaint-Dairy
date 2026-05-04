@@ -21,6 +21,7 @@ import Act from './project/info/Act';
 import Manual from './project/info/Manual';
 import Circular from './project/info/Circular';
 import NewsClippings from './project/info/NewsClippings';
+import ComplainSummary from './project/complain_path/com_summary';
 import { LanguageProvider } from './project/LanguageContext';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
         <Route path="/info/manual" element={<Manual />} />
         <Route path="/info/circular" element={<Circular />} />
         <Route path="/info/news-clippings" element={<NewsClippings />} />
+        <Route path="/complain-summary" element={<ComplainSummary />} />
       </Routes>
     </Router>
     </LanguageProvider>
