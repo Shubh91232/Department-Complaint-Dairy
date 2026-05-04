@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2 } from 'lucide-react';
+import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Clock } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [step, setStep] = useState(1);
   const [captcha, setCaptcha] = useState('8KFFV2');
@@ -43,6 +44,46 @@ const ComplainForm = () => {
     remarks: '',
     captchaInput: ''
   });
+
+  useEffect(() => {
+    if (location.state && location.state.resumeDraft) {
+      const draft = location.state.resumeDraft;
+      setApplicantData(draft.applicantData);
+      setFormData(draft.formData);
+      setStep(draft.step);
+      
+      // If it's a resume, remove it from drafts so it doesn't stay there if submitted
+      // (Optional: can also keep it until final submission)
+    }
+  }, [location.state]);
+
+  const saveAsDraft = () => {
+    const drafts = JSON.parse(localStorage.getItem('grievanceDrafts') || '[]');
+    
+    // If we are resuming a draft, we might want to update it instead of creating new
+    // For simplicity, let's just add new one or update by ID if available
+    const draftId = location.state?.resumeDraft?.id || `DRAFT-${Date.now()}`;
+    const existingIndex = drafts.findIndex(d => d.id === draftId);
+
+    const newDraft = {
+      id: draftId,
+      applicantData,
+      formData,
+      step,
+      timestamp: new Date().toISOString(),
+      lastModified: new Date().toLocaleString()
+    };
+
+    if (existingIndex > -1) {
+      drafts[existingIndex] = newDraft;
+    } else {
+      drafts.unshift(newDraft);
+    }
+
+    localStorage.setItem('grievanceDrafts', JSON.stringify(drafts));
+    alert(lang === 'hi' ? 'ड्राफ्ट सफलतापूर्वक सहेजा गया।' : 'Draft successfully saved to your work history.');
+    navigate('/history');
+  };
 
   const handleApplicantChange = (e) => {
     setApplicantData({...applicantData, [e.target.name]: e.target.value});
@@ -133,8 +174,26 @@ const ComplainForm = () => {
   };
 
   const confirmSubmit = () => {
+    // Save to localStorage
+    const history = JSON.parse(localStorage.getItem('grievanceHistory') || '[]');
+    const newRecord = {
+      ...formData,
+      ...applicantData,
+      id: `GRV-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      submittedBy: userDetails.name
+    };
+    localStorage.setItem('grievanceHistory', JSON.stringify([newRecord, ...history]));
+
+    // If it was a resume, remove it from drafts
+    if (location.state?.resumeDraft) {
+      const drafts = JSON.parse(localStorage.getItem('grievanceDrafts') || '[]');
+      const filteredDrafts = drafts.filter(d => d.id !== location.state.resumeDraft.id);
+      localStorage.setItem('grievanceDrafts', JSON.stringify(filteredDrafts));
+    }
+
     alert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.');
-    navigate('/');
+    navigate('/history'); // Navigate to history to show it was added
   };
 
   const districts = ['Ajmer', 'Alwar', 'Banswara', 'Baran', 'Barmer', 'Bharatpur', 'Bhilwara', 'Bikaner', 'Bundi', 'Chittorgarh', 'Churu', 'Dausa', 'Dholpur', 'Dungarpur', 'Hanumangarh', 'Jaipur', 'Jaisalmer', 'Jalore', 'Jhalawar', 'Jhunjhunu', 'Jodhpur', 'Karauli', 'Kota', 'Nagaur', 'Pali', 'Pratapgarh', 'Rajsamand', 'Sawai Madhopur', 'Sikar', 'Sirohi', 'Sri Ganganagar', 'Tonk', 'Udaipur'];
@@ -256,7 +315,11 @@ const ComplainForm = () => {
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-5 border-t border-gray-200 flex justify-end">
+                  <div className="mt-8 pt-5 border-t border-gray-200 flex justify-end gap-4">
+                    <button type="button" onClick={saveAsDraft} className="cursor-pointer bg-white text-gray-700 border border-gray-300 px-6 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2">
+                       <Clock size={16} className="text-gray-400" />
+                       {lang === 'hi' ? 'ड्राफ्ट के रूप में सहेजें' : 'Save as Draft'}
+                    </button>
                     <button type="button" onClick={handleProceed} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
                       {lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details'}
                       <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -488,6 +551,10 @@ const ComplainForm = () => {
                 </div>
                 
                 <div className="flex gap-4 w-full md:w-auto">
+                  <button type="button" onClick={saveAsDraft} className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100">
+                    <Clock size={18} />
+                    {lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft'}
+                  </button>
                   <button type="button" onClick={() => { setStep(1); window.scrollTo(0,0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
                   </button>

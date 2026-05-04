@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { FileText, CheckCircle, RefreshCw, BarChart2, Download, Filter } from 'lucide-react';
+import { FileText, CheckCircle, RefreshCw, BarChart2, Download, Filter, History } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [filterDist, setFilterDist] = useState('All');
   const [filterBlock, setFilterBlock] = useState('All');
   const [filterGp, setFilterGp] = useState('All');
@@ -169,6 +171,9 @@ const Dashboard = () => {
                 </button>
                 <button onClick={handleDownloadPdf} className="cursor-pointer bg-[#d32f2f] text-white border border-[#b71c1c] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#b71c1c] transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
                   <FileText size={16} /> Download PDF
+                </button>
+                <button onClick={() => navigate('/history')} className="cursor-pointer bg-[#002b5e] text-white border border-[#001f44] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#001f44] transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
+                  <History size={16} /> View Work History
                 </button>
               </div>
 
