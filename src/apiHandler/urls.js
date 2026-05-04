@@ -1,6 +1,6 @@
-// export const BASE_URL = 'http://localhost:5000/api';
+export const BASE_URL = 'http://localhost:5000/api';
 // export const BASE_URL = 'http://192.168.1.43:5000/api'; 
-export const BASE_URL = 'https://geotag-api.geoplanetsolution.in/api'; 
+// export const BASE_URL = 'https://geotag-api.geoplanetsolution.in/api'; 
 
 export const URLS = {
   AUTH: {
@@ -22,6 +22,8 @@ export const URLS = {
     DRAFTS: `${BASE_URL}/complaints/drafts`,
     DEPARTMENTS_LIST: `${BASE_URL}/complaints/departments`,
     SCHEMES_LIST: `${BASE_URL}/complaints/schemes`,
-    CATEGORIES_LIST: `${BASE_URL}/complaints/categories`
+    CATEGORIES_LIST: `${BASE_URL}/complaints/categories`,
+    HISTORY: `${BASE_URL}/complaints/history`,
+    DELETE_DRAFT: (id) => `${BASE_URL}/complaints/draft/${id}`
   }
 };

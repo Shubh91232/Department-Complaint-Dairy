@@ -20,10 +20,13 @@ import {
   ArrowUpDown,
   Landmark,
   RefreshCw,
-  Trash2
+  Trash2,
+  X,
+  Shield,
+  Loader2
 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
-import { fetchDraftsAPI } from '../../apiHandler/apis';
+import { fetchDraftsAPI, fetchGrievanceHistoryAPI, deleteDraftAPI } from '../../apiHandler/apis';
 
 const WorkHistory = () => {
   const { lang, t } = useLanguage();
@@ -34,18 +37,30 @@ const WorkHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [sortOrder, setSortOrder] = useState('newest');
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const showAlert = (message, type = 'error') => {
+    setCustomAlert({ show: true, message, type });
+    setTimeout(() => {
+      setCustomAlert(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load history from local storage (until API is ready)
-        const savedHistory = JSON.parse(localStorage.getItem('grievanceHistory') || '[]');
-        setHistory(savedHistory);
+        // Load history from API
+        const histRes = await fetchGrievanceHistoryAPI();
+        if (histRes.success) {
+          setHistory(histRes.data || []);
+        }
 
         // Load drafts from API
-        const res = await fetchDraftsAPI();
-        if (res.success) {
-          setDrafts(res.data || []);
+        const draftRes = await fetchDraftsAPI();
+        if (draftRes.success) {
+          setDrafts(draftRes.data || []);
         }
       } catch (err) {
         console.error('Error loading history data:', err);
@@ -71,22 +86,43 @@ const WorkHistory = () => {
     });
 
   const handleDeleteRecord = (id) => {
-    if (window.confirm(lang === 'hi' ? 'क्या आप वाकई इस रिकॉर्ड को हटाना चाहते हैं?' : 'Are you sure you want to delete this record?')) {
-      const updatedHistory = history.filter(item => item.id !== id);
-      setHistory(updatedHistory);
-      localStorage.setItem('grievanceHistory', JSON.stringify(updatedHistory));
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000); // Reset after 3 seconds
+      return;
     }
+
+    const updatedHistory = history.filter(item => (item.id || item._id) !== id);
+    setHistory(updatedHistory);
+    localStorage.setItem('grievanceHistory', JSON.stringify(updatedHistory));
+    setDeleteConfirmId(null);
+    showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक हटाया गया।' : 'Record successfully deleted.', 'success');
   };
 
   const handleResumeDraft = (draft) => {
     navigate('/complain', { state: { draftData: draft } });
   };
 
-  const handleDeleteDraft = (id) => {
-    if (window.confirm(lang === 'hi' ? 'क्या आप वाकई इस ड्राफ्ट को हटाना चाहते हैं?' : 'Are you sure you want to delete this draft?')) {
-      const updatedDrafts = drafts.filter(d => d.id !== id);
-      setDrafts(updatedDrafts);
-      localStorage.setItem('grievanceDrafts', JSON.stringify(updatedDrafts));
+  const handleDeleteDraft = async (id) => {
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000); // Reset after 3 seconds
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await deleteDraftAPI(id);
+      if (res.success) {
+        const updatedDrafts = drafts.filter(d => d._id !== id);
+        setDrafts(updatedDrafts);
+        showAlert(lang === 'hi' ? 'ड्राफ्ट सफलतापूर्वक हटाया गया।' : 'Draft successfully deleted.', 'success');
+      }
+    } catch (err) {
+      showAlert(lang === 'hi' ? 'ड्राफ्ट हटाने में विफल: ' + err.message : 'Failed to delete draft: ' + err.message, 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -118,7 +154,18 @@ const WorkHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col">
+    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col relative">
+      {/* Custom Alert Toast */}
+      {customAlert.show && (
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-sm shadow-xl border-l-4 transform transition-all animate-slide-in-right ${customAlert.type === 'error' ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-green-500 text-gray-800'}`}>
+          {customAlert.type === 'error' ? <div className="text-red-500 bg-red-50 p-1 rounded-full"><Shield size={16} /></div> : <div className="text-green-500 bg-green-50 p-1 rounded-full"><CheckCircle size={16} /></div>}
+          <p className="text-[13px] font-bold">{customAlert.message}</p>
+          <button onClick={() => setCustomAlert(prev => ({ ...prev, show: false }))} className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none text-xl leading-none">
+            &times;
+          </button>
+        </div>
+      )}
+
       <Header />
       
       <div className="flex-grow container mx-auto px-4 py-8 max-w-7xl">
@@ -288,12 +335,12 @@ const WorkHistory = () => {
                         </td>
                         <td className="px-4 py-4">
                           <div className="font-bold text-[#002b5e]">{item.serialNumber}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{item.id.substring(0, 12)}...</div>
+                          <div className="text-[10px] text-blue-600 font-black tracking-tight uppercase">{item.complainId || `ID: ${item._id?.substring(0, 10)}`}</div>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2 mb-1">
                             <User size={14} className="text-gray-400" />
-                            <span className="font-bold text-gray-800">{item.name || 'Unknown'}</span>
+                            <span className="font-bold text-gray-800">{item.applicantName || 'Unknown'}</span>
                           </div>
                           <div className="text-[11px] text-gray-500 ml-5 font-medium">{item.mobile || 'No Mobile'}</div>
                         </td>
@@ -316,16 +363,16 @@ const WorkHistory = () => {
                         </td>
                         <td className="px-4 py-4 text-center">
                           <div className="font-bold text-gray-700 text-[12px]">
-                            {new Date(item.timestamp).toLocaleDateString()}
+                            {new Date(item.createdAt).toLocaleDateString()}
                           </div>
                           <div className="text-[10px] text-gray-400 font-medium uppercase">
-                            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </td>
                         <td className="px-4 py-4 text-center">
                           <div className="flex justify-center gap-2">
                              <button 
-                               onClick={() => alert('View details functionality coming soon!')}
+                               onClick={() => showAlert(lang === 'hi' ? 'विवरण देखने की सुविधा जल्द आ रही है!' : 'View details functionality coming soon!', 'info')}
                                className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-sm transition-colors"
                                title="View Details"
                              >
@@ -333,10 +380,17 @@ const WorkHistory = () => {
                              </button>
                              <button 
                                onClick={() => handleDeleteRecord(item.id || item._id)}
-                               className="p-1.5 text-red-500 hover:bg-red-100 rounded-sm transition-colors"
+                               className={`px-3 py-1.5 rounded-sm font-bold text-[11px] transition-all flex items-center gap-1 shadow-sm uppercase border ${
+                                 deleteConfirmId === (item.id || item._id) 
+                                   ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                                   : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                               }`}
                                title="Delete Record"
                              >
-                               <Trash2 size={18} />
+                               <Trash2 size={14} />
+                               {deleteConfirmId === (item.id || item._id) 
+                                 ? (lang === 'hi' ? 'पुष्टि करें' : 'Confirm Delete') 
+                                 : (lang === 'hi' ? 'हटाएं' : 'Delete')}
                              </button>
                           </div>
                         </td>
@@ -385,6 +439,7 @@ const WorkHistory = () => {
                           {index + 1}
                         </td>
                         <td className="px-4 py-4">
+                          <div className="font-bold text-[#e65100] text-[10px] uppercase tracking-tighter mb-1">{draft.draftId || `TEMP-ID: ${draft._id?.substring(0, 8)}`}</div>
                           <div className="font-bold text-gray-800">
                             {draft.applicantName || (lang === 'hi' ? 'बिना नाम का ड्राफ्ट' : 'Untitled Draft')}
                           </div>
@@ -410,15 +465,28 @@ const WorkHistory = () => {
                              <button 
                                onClick={() => handleResumeDraft(draft)}
                                className="bg-orange-600 text-white px-4 py-1.5 rounded-sm font-bold text-[11px] hover:bg-orange-700 transition-colors flex items-center gap-1 shadow-sm uppercase"
+                               disabled={isDeleting}
                              >
-                               <RefreshCw size={12} /> {lang === 'hi' ? 'जारी रखें' : 'Resume'}
+                               <RefreshCw size={12} className={isDeleting ? 'animate-spin' : ''} /> {lang === 'hi' ? 'जारी रखें' : 'Resume'}
                              </button>
                              <button 
-                               onClick={() => handleDeleteDraft(draft.id || draft._id)}
-                               className="bg-red-50 text-red-600 px-3 py-1.5 rounded-sm font-bold text-[11px] hover:bg-red-600 hover:text-white transition-all flex items-center gap-1 shadow-sm uppercase border border-red-200"
+                               onClick={() => handleDeleteDraft(draft._id)}
+                               className={`px-3 py-1.5 rounded-sm font-bold text-[11px] transition-all flex items-center gap-1 shadow-sm uppercase border ${
+                                 deleteConfirmId === draft._id 
+                                   ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                                   : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                               }`}
+                               disabled={isDeleting}
                                title="Delete Draft"
                              >
-                               <Trash2 size={12} /> {lang === 'hi' ? 'हटाएं' : 'Delete'}
+                               {isDeleting && deleteConfirmId === draft._id ? (
+                                 <Loader2 size={12} className="animate-spin" />
+                               ) : (
+                                 <Trash2 size={12} />
+                               )}
+                               {deleteConfirmId === draft._id 
+                                 ? (lang === 'hi' ? 'पुष्टि करें' : 'Confirm Delete') 
+                                 : (lang === 'hi' ? 'हटाएं' : 'Delete')}
                              </button>
                           </div>
                         </td>
@@ -456,6 +524,16 @@ const WorkHistory = () => {
            </div>
         </div>
 
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes slide-in-right {
+            0% { transform: translateX(100%); opacity: 0; }
+            10% { transform: translateX(-5%); opacity: 1; }
+            100% { transform: translateX(0); opacity: 1; }
+          }
+          .animate-slide-in-right {
+            animation: slide-in-right 0.4s ease-out forwards;
+          }
+        ` }} />
       </div>
       <Footer />
     </div>

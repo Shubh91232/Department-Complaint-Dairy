@@ -6,7 +6,7 @@ import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search, Clock } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
-import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI } from '../../apiHandler/apis';
+import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, deleteDraftAPI } from '../../apiHandler/apis';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
@@ -16,8 +16,11 @@ const ComplainForm = () => {
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [showPreview, setShowPreview] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [draftId, setDraftId] = useState(null);
+  const [shortDraftId, setShortDraftId] = useState(null);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -94,43 +97,67 @@ const ComplainForm = () => {
     remarks: ''
   });
 
-  // Load from Draft if navigated via "Resume"
+  // Load from Draft if navigated via "Resume" or URL param
   React.useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlDraftId = queryParams.get('draftId');
+
     if (location.state?.draftData) {
       const draft = location.state.draftData;
       setDraftId(draft._id);
-
-      setApplicantData({
-        name: draft.applicantName || '',
-        mobile: draft.mobile || '',
-        address: draft.address || ''
-      });
-
-      setFormData(prev => ({
-        ...prev,
-        source: draft.source || 'PR',
-        serialNumber: draft.serialNumber || '',
-        departmentRef: draft.departmentRef || '',
-        financialYear: draft.financialYear || '2025-2026',
-        dateReceived: draft.dateReceived || '',
-        district: draft.district || '',
-        block: draft.block || '',
-        panchayat: draft.panchayat || '',
-        level: draft.level || 'District',
-        department: draft.department || '',
-        scheme: draft.scheme || '',
-        complaintCategory: draft.complaintCategory || '',
-        description: draft.description || '',
-        responsibleOfficer: draft.responsibleOfficer || '',
-        currentStatus: draft.currentStatus || 'Pending',
-        actionTaken: draft.actionTaken || '',
-        remarks: draft.remarks || ''
-      }));
-
-      // Automatically jump to Step 2 if we are resuming a draft that already had step 1 completed
-      setStep(2);
+      setShortDraftId(draft.draftId || `D-${draft._id.slice(-6).toUpperCase()}`);
+      loadDraftData(draft);
+    } else if (urlDraftId) {
+      setDraftId(urlDraftId);
+      setShortDraftId(`D-${urlDraftId.slice(-6).toUpperCase()}`);
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
+
+  const loadDraftData = async (draft) => {
+    setApplicantData({
+      name: draft.applicantName || '',
+      mobile: draft.mobile || '',
+      address: draft.address || ''
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      source: draft.source || 'PR',
+      serialNumber: draft.serialNumber || '',
+      departmentRef: draft.departmentRef || '',
+      financialYear: draft.financialYear || '2025-2026',
+      dateReceived: draft.dateReceived || '',
+      district: draft.district || '',
+      block: draft.block || '',
+      panchayat: draft.panchayat || '',
+      level: draft.level || 'District',
+      department: draft.department || '',
+      scheme: draft.scheme || '',
+      complaintCategory: draft.complaintCategory || '',
+      description: draft.description || '',
+      responsibleOfficer: draft.responsibleOfficer || '',
+      currentStatus: draft.currentStatus || 'Pending',
+      actionTaken: draft.actionTaken || '',
+      remarks: draft.remarks || ''
+    }));
+
+    // Cascade Location Data
+    if (draft.district) {
+      try {
+        const bRes = await fetchBlocksAPI(draft.district);
+        if (bRes.success) setApiBlocks(bRes.data);
+      } catch (err) { console.error("Resume: Block fetch error", err); }
+    }
+    
+    if (draft.block) {
+      try {
+        const gRes = await fetchGPsAPI(draft.block);
+        if (gRes.success) setApiGPs(gRes.data);
+      } catch (err) { console.error("Resume: GP fetch error", err); }
+    }
+
+    setStep(2);
+  };
 
   // Fetch Departments on Mount
   React.useEffect(() => {
@@ -269,28 +296,9 @@ const ComplainForm = () => {
     setApplicantData({ ...applicantData, [e.target.name]: e.target.value });
   };
 
-  const handleProceed = async () => {
-    setIsDrafting(true);
-    try {
-      const payload = {
-        applicantName: applicantData.name,
-        mobile: applicantData.mobile,
-        address: applicantData.address,
-        ...formData
-      };
-      if (draftId) payload.draftId = draftId;
-
-      const res = await draftComplaintAPI(payload);
-      if (res.success) {
-        setDraftId(res.data._id);
-        setStep(2);
-        window.scrollTo(0, 0);
-      }
-    } catch (err) {
-      showAlert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message, 'error');
-    } finally {
-      setIsDrafting(false);
-    }
+  const handleProceed = () => {
+    setStep(2);
+    window.scrollTo(0, 0);
   };
 
   const handleFileUpload = (e) => {
@@ -354,8 +362,13 @@ const ComplainForm = () => {
 
       const res = await draftComplaintAPI(payload);
       if (res.success) {
-        if (res.data?._id) setDraftId(res.data._id);
-        showAlert(lang === 'hi' ? 'प्रगति ड्राफ्ट के रूप में सहेजी गई।' : 'Progress saved as draft.', 'success');
+        const newId = res.data?._id;
+        const shortId = res.data?.draftId || `D-${newId.slice(-6).toUpperCase()}`;
+        setDraftId(newId);
+        setShortDraftId(shortId);
+        // Update URL with draftId
+        navigate(`/complain?draftId=${newId}`, { replace: true, state: location.state });
+        showAlert(lang === 'hi' ? `प्रगति ड्राफ्ट (${shortId}) के रूप में सहेजी गई।` : `Progress saved as draft (${shortId}).`, 'success');
       }
     } catch (err) {
       console.error('Draft Error:', err);
@@ -371,6 +384,11 @@ const ComplainForm = () => {
       showAlert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha', 'error');
       return;
     }
+    if (!formData.district || !formData.department || !formData.scheme || !formData.complaintCategory || !formData.description) {
+      showAlert(lang === 'hi' ? 'कृपया सभी अनिवार्य फ़ील्ड भरें (ज़िला, विभाग, योजना, श्रेणी और विवरण)' : 'Please fill all mandatory fields (District, Department, Scheme, Category and Description)', 'error');
+      return;
+    }
+
     const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
     if (!isValid) {
       showAlert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!', 'error');
@@ -381,6 +399,12 @@ const ComplainForm = () => {
   };
 
   const confirmSubmit = async () => {
+    if (!formData.scheme) {
+      showAlert(lang === 'hi' ? 'योजना का चयन अनिवार्य है!' : 'Scheme selection is mandatory!', 'error');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -391,10 +415,26 @@ const ComplainForm = () => {
       };
       if (draftId) payload.draftId = draftId;
 
+      console.log("Final Submission Payload:", payload);
       const res = await submitComplaintAPI(payload);
       if (res.success) {
+        // Delete draft if it exists
+        if (draftId) {
+          try {
+            await deleteDraftAPI(draftId);
+          } catch (err) {
+            console.error("Failed to delete draft:", err);
+          }
+        }
+        
+        setReceiptData({
+          ...payload,
+          caseNumber: res.data?.complainId || res.data?.caseNumber || `RD-${Date.now().toString().slice(-6)}`,
+          submissionDate: new Date().toLocaleString()
+        });
+        setShowPreview(false);
+        setShowReceipt(true);
         showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.', 'success');
-        setTimeout(() => navigate('/'), 2000);
       }
     } catch (err) {
       showAlert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message, 'error');
@@ -403,9 +443,7 @@ const ComplainForm = () => {
     }
   };
 
-  const districts = ['Ajmer', 'Alwar', 'Banswara', 'Baran', 'Barmer', 'Bharatpur', 'Bhilwara', 'Bikaner', 'Bundi', 'Chittorgarh', 'Churu', 'Dausa', 'Dholpur', 'Dungarpur', 'Hanumangarh', 'Jaipur', 'Jaisalmer', 'Jalore', 'Jhalawar', 'Jhunjhunu', 'Jodhpur', 'Karauli', 'Kota', 'Nagaur', 'Pali', 'Pratapgarh', 'Rajsamand', 'Sawai Madhopur', 'Sikar', 'Sirohi', 'Sri Ganganagar', 'Tonk', 'Udaipur'];
-  const blocks = formData.district ? ['Block 1', 'Block 2', 'Block 3'] : [];
-  const panchayats = formData.block ? ['Panchayat 1', 'Panchayat 2', 'Panchayat 3'] : [];
+
 
   const labelClass = "text-[12px] font-bold text-gray-700 block mb-1";
   const inputClass = "w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:border-[#1976d2] focus:ring-1 focus:ring-[#1976d2] bg-white transition-all";
@@ -451,6 +489,12 @@ const ComplainForm = () => {
               <h1 className="text-2xl font-bold text-[#002b5e] mb-2 border-b-2 border-[#1976d2] inline-block pb-1">
                 {lang === 'hi' ? 'मास्टर प्रविष्टि - नया प्रकरण' : 'Master Entry - New Case'}
               </h1>
+              {shortDraftId && (
+                <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-sm text-[11px] font-bold ml-4 border border-orange-200">
+                  <Database size={12} />
+                  DRAFT: {shortDraftId}
+                </div>
+              )}
               <p className="text-gray-600 text-[13px] mt-2">
                 {lang === 'hi' ? 'कृपया परिवादी का विवरण दर्ज करें (यदि उपलब्ध हो)।' : 'Please enter the complainant details (if available).'}
               </p>
@@ -532,10 +576,9 @@ const ComplainForm = () => {
                       <Clock size={18} />
                       {lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft'}
                     </button>
-                    <button type="button" onClick={handleProceed} disabled={isDrafting} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] disabled:opacity-70 text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
-                      {isDrafting && <Loader2 size={16} className="animate-spin" />}
-                      {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details')}
-                      {!isDrafting && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+                    <button type="button" onClick={handleProceed} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
+                      {lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details'}
+                      <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -550,6 +593,11 @@ const ComplainForm = () => {
                 <h1 className="text-3xl font-extrabold text-[#002b5e] mb-2 flex items-center gap-3">
                   <Database size={32} className="text-[#1976d2]" />
                   {lang === 'hi' ? 'मास्टर शिकायत प्रविष्टि (Master Data Entry)' : 'Master Grievance Data Entry'}
+                  {shortDraftId && (
+                    <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-sm text-[11px] font-bold ml-2 border border-orange-200">
+                      ID: {shortDraftId}
+                    </div>
+                  )}
                 </h1>
                 <p className="text-gray-600 text-[14px] font-medium">
                   {lang === 'hi' ? 'विभागीय एक्सेल शीट से प्राप्त डेटा को पोर्टल में दर्ज करें।' : 'Digitize and enter offline departmental records into the central database.'}
@@ -980,9 +1028,14 @@ const ComplainForm = () => {
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
-                  <button type="button" onClick={saveAsDraft} className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100">
-                    <Clock size={18} />
-                    {lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft'}
+                  <button 
+                    type="button" 
+                    onClick={saveAsDraft} 
+                    disabled={isDrafting}
+                    className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70"
+                  >
+                    {isDrafting ? <Loader2 size={18} className="animate-spin" /> : <Clock size={18} />}
+                    {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft')}
                   </button>
                   <button type="button" onClick={() => { setStep(1); window.scrollTo(0,0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
@@ -995,115 +1048,187 @@ const ComplainForm = () => {
               </div>
             </form>
 
-            {/* Preview Modal Overlay */}
+            {/* Official Document Preview Modal */}
             {showPreview && (
-              <div className="fixed inset-0 bg-[#002b5e]/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                <div className="bg-white rounded-md shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-                  <div className="bg-gray-100 border-b border-gray-300 p-4 flex justify-between items-center z-10">
-                    <h2 className="text-lg font-bold text-[#002b5e] flex items-center gap-2"><FileText size={20} /> {lang === 'hi' ? 'डेटा प्रविष्टि सारांश' : 'Data Entry Summary'}</h2>
-                    <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-red-500 transition-colors"><X size={24} /></button>
+              <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+                <div className="bg-white shadow-2xl w-full max-w-4xl min-h-[90vh] flex flex-col my-8 rounded-sm">
+                  {/* Modal Header */}
+                  <div className="bg-gray-100 px-6 py-4 border-b flex justify-between items-center print:hidden">
+                    <h2 className="font-bold text-[#002b5e] flex items-center gap-2 text-lg uppercase tracking-tight">
+                      <FileText size={20} /> {lang === 'hi' ? 'दस्तावेज़ पूर्वावलोकन' : 'Official Document Preview'}
+                    </h2>
+                    <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-red-500 transition-colors"><X size={28} /></button>
                   </div>
 
-                  <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-grow bg-gray-50">
-                    {applicantData.name && (
-                      <div className="bg-blue-50 border border-blue-200 p-4 rounded-sm shadow-sm text-[14px]">
-                        <h3 className="font-bold text-[#002b5e] mb-2 border-b border-blue-200 pb-1">Complainant Details</h3>
-                        <p><strong>Name:</strong> {applicantData.name} | <strong>Mobile:</strong> {applicantData.mobile}</p>
-                        {applicantData.address && <p><strong>Address:</strong> {applicantData.address}</p>}
-                      </div>
-                    )}
+                  {/* Document Body */}
+                  <div className="flex-grow p-10 md:p-16 bg-white overflow-y-auto custom-scrollbar">
+                    <div className="border-[3px] border-double border-gray-800 p-8 md:p-12 relative">
+                      {/* Document Watermark/Header Decoration */}
+                      <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-gray-200"></div>
+                      <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-gray-200"></div>
+                      <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-gray-200"></div>
+                      <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-gray-200"></div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[14px]">
-                      <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Calendar size={16} className="text-[#1976d2]" /> Metadata</h3>
-                        <table className="w-full text-left border-collapse">
-                          <tbody>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium w-1/3">Source</th><td className="py-2 font-semibold">{formData.source}</td></tr>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium">Serial No</th><td className="py-2 font-semibold text-[#e65100]">{formData.serialNumber}</td></tr>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium">Fin. Year</th><td className="py-2 font-semibold">{formData.financialYear}</td></tr>
-                            <tr><th className="py-2 text-gray-500 font-medium">Received Date</th><td className="py-2 font-semibold">{formData.dateReceived}</td></tr>
-                          </tbody>
-                        </table>
+                      <div className="text-center mb-10">
+                        <h1 className="text-2xl font-black uppercase text-gray-900 mb-1">Government of Rajasthan</h1>
+                        <h2 className="text-xl font-bold text-gray-800 mb-2 uppercase">Department of Rural Development & Panchayati Raj</h2>
+                        <div className="h-1 w-24 bg-gray-900 mx-auto mb-6"></div>
+                        <h3 className="text-lg font-black bg-gray-100 py-2 inline-block px-8 border border-gray-300">
+                          {lang === 'hi' ? 'शिकायत/मामला प्रविष्टि सारांश' : 'Grievance / Case Entry Summary'}
+                        </h3>
                       </div>
 
-                      <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                        <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><MapPin size={16} className="text-[#e65100]" /> Location</h3>
-                        <table className="w-full text-left border-collapse">
-                          <tbody>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium w-1/3">Level</th><td className="py-2 font-semibold">{formData.level}</td></tr>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium">District</th><td className="py-2 font-semibold">{formData.district}</td></tr>
-                            <tr className="border-b border-gray-50"><th className="py-2 text-gray-500 font-medium">Block</th><td className="py-2 font-semibold">{formData.block || '-'}</td></tr>
-                            <tr><th className="py-2 text-gray-500 font-medium">Panchayat</th><td className="py-2 font-semibold">{formData.panchayat || '-'}</td></tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                      {/* Info Grid */}
+                      <div className="space-y-8 text-gray-900">
+                        {/* Section: Applicant */}
+                        <div>
+                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
+                            <User size={16} /> {lang === 'hi' ? 'आवेदक का विवरण' : 'I. Complainant Information'}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-y-4 px-2">
+                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Full Name</span> <span className="font-bold border-b border-gray-100 pb-1">{applicantData.name || 'NOT PROVIDED'}</span></p>
+                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Mobile Number</span> <span className="font-bold border-b border-gray-100 pb-1">{applicantData.mobile || 'N/A'}</span></p>
+                            <p className="col-span-2 flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Postal Address</span> <span className="font-semibold">{applicantData.address || 'N/A'}</span></p>
+                          </div>
+                        </div>
 
-                    <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><ShieldAlert size={16} className="text-[#2e7d32]" /> Complaint Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {/* Section: Metadata */}
                         <div>
-                          <span className="text-gray-500 font-medium block mb-1">Department</span>
-                          <p className="font-semibold text-[#002b5e]">{formData.department}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 font-medium block mb-1">Scheme</span>
-                          <p className="font-semibold text-[#002b5e]">{formData.scheme}</p>
-                        </div>
-                      </div>
-                      <div className="mb-4">
-                        <span className="text-gray-500 font-medium block mb-1">Category</span>
-                        <p className="font-semibold text-lg text-[#002b5e]">{formData.complaintCategory}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 font-medium block mb-1">Description</span>
-                        <p className="text-gray-800 bg-gray-50 p-3 rounded-sm border border-gray-100 whitespace-pre-wrap">{formData.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 p-5 rounded-sm shadow-sm">
-                      <h3 className="font-extrabold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2"><Activity size={16} className="text-[#6a1b9a]" /> Enforcement</h3>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <span className="text-gray-500 font-medium block mb-1">Responsible Officer</span>
-                          <p className="font-semibold">{formData.responsibleOfficer}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 font-medium block mb-1">Status</span>
-                          <span className={`inline-block px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wide ${formData.currentStatus === 'Pending' ? 'bg-red-100 text-red-800 border border-red-200' :
-                              formData.currentStatus === 'Resolved' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                'bg-blue-100 text-blue-800 border border-blue-200'
-                            }`}>{formData.currentStatus}</span>
-                        </div>
-                      </div>
-                      {(formData.actionTaken || formData.remarks) && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-4">
-                          {formData.actionTaken && (
-                            <div>
-                              <span className="text-gray-500 font-medium block mb-1">Action Taken</span>
-                              <p className="text-gray-800">{formData.actionTaken}</p>
+                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
+                            <Calendar size={16} /> {lang === 'hi' ? 'संदर्भ और स्थान' : 'II. Reference & Geographic Scope'}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-x-12 gap-y-4 px-2">
+                            <div className="space-y-4">
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Source</span> <span className="font-bold">{formData.source}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Serial No</span> <span className="font-black text-blue-800">{formData.serialNumber}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Fin. Year</span> <span className="font-bold">{formData.financialYear}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Received Date</span> <span className="font-bold">{formData.dateReceived}</span></p>
                             </div>
-                          )}
-                          {formData.remarks && (
-                            <div>
-                              <span className="text-gray-500 font-medium block mb-1">Remarks</span>
-                              <p className="text-gray-800">{formData.remarks}</p>
+                            <div className="space-y-4">
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Admin Level</span> <span className="font-bold">{formData.level}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">District</span> <span className="font-bold">{apiDistricts.find(d => d.value === formData.district)?.label || formData.district}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Block</span> <span className="font-bold">{apiBlocks.find(b => b.value === formData.block)?.label || formData.block || '-'}</span></p>
+                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Gram Panchayat</span> <span className="font-bold">{formData.panchayat || '-'}</span></p>
                             </div>
-                          )}
+                          </div>
                         </div>
-                      )}
-                    </div>
 
+                        {/* Section: Grievance */}
+                        <div>
+                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
+                            <ShieldAlert size={16} /> {lang === 'hi' ? 'शिकायत विवरण' : 'III. Grievance Specifics'}
+                          </h4>
+                          <div className="px-2 space-y-4">
+                            <div className="grid grid-cols-2 gap-8">
+                               <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Department</span> <span className="font-bold">{formData.department}</span></p>
+                               <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Scheme Name</span> <span className="font-bold">{formData.scheme}</span></p>
+                            </div>
+                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Complaint Category</span> <span className="font-black text-gray-900 border-l-4 border-gray-800 pl-3 py-1 bg-gray-50">{formData.complaintCategory}</span></p>
+                            <p className="flex flex-col gap-1">
+                              <span className="text-[11px] font-bold text-gray-500 uppercase">Detailed Description</span>
+                              <span className="text-[14px] leading-relaxed italic bg-gray-50 p-4 border border-dashed border-gray-300">"{formData.description}"</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Section: Action */}
+                        <div>
+                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
+                            <Activity size={16} /> {lang === 'hi' ? 'प्रवर्तन और स्थिति' : 'IV. Status & Enforcement Details'}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-8 px-2">
+                             <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Responsible Officer</span> <span className="font-bold">{formData.responsibleOfficer}</span></p>
+                             <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Current Case Status</span> <span className="font-black uppercase text-[#1976d2]">{formData.currentStatus}</span></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Document Footer */}
+                      <div className="mt-16 flex justify-between items-end">
+                        <div className="text-[11px] text-gray-400 font-bold uppercase italic">
+                           System Generated Preview • {new Date().toLocaleString()}
+                        </div>
+                        <div className="text-center">
+                          <div className="w-48 h-12 border-b-2 border-gray-200 mb-1"></div>
+                          <p className="text-[10px] font-black uppercase text-gray-500">Authorized Officer Signature</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-white p-4 border-t border-gray-200 flex justify-end gap-4 shadow-md z-10">
-                    <button onClick={() => setShowPreview(false)} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 disabled:opacity-70 hover:bg-gray-50 font-bold text-gray-700 transition-colors rounded-sm">
-                      {lang === 'hi' ? 'संशोधन करें' : 'Edit Info'}
+
+                  {/* Actions Footer */}
+                  <div className="bg-gray-50 p-6 border-t flex justify-end gap-4 print:hidden">
+                    <button onClick={() => setShowPreview(false)} disabled={isSubmitting} className="px-8 py-3 bg-white border-2 border-gray-300 font-black text-gray-700 hover:bg-gray-100 transition-all rounded-sm uppercase tracking-widest text-[12px]">
+                      {lang === 'hi' ? 'संशोधन करें' : 'Edit Information'}
                     </button>
-                    <button onClick={confirmSubmit} disabled={isSubmitting} className="px-8 py-2 bg-[#1976d2] hover:bg-[#115293] disabled:opacity-70 font-bold text-white shadow-md flex items-center gap-2 transition-colors rounded-sm">
+                    <button onClick={confirmSubmit} disabled={isSubmitting} className="px-10 py-3 bg-[#1e7b34] text-white font-black hover:bg-[#155a26] transition-all rounded-sm shadow-lg flex items-center gap-3 uppercase tracking-widest text-[12px]">
                       {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                      {isSubmitting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'मास्टर सूची में सहेजें' : 'Save to Master List')}
+                      {isSubmitting ? (lang === 'hi' ? 'सबमिट हो रहा है...' : 'Finalizing Submission...') : (lang === 'hi' ? 'डेटा सबमिट करें' : 'Confirm & Submit to Master')}
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Submission Receipt Modal */}
+            {showReceipt && receiptData && (
+              <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-md overflow-y-auto">
+                <div className="bg-white rounded-md shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                   <div className="bg-[#1e7b34] p-8 text-white text-center">
+                      <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white/40">
+                         <Check size={40} className="text-white" />
+                      </div>
+                      <h2 className="text-2xl font-black uppercase tracking-tight">{lang === 'hi' ? 'सबमिशन सफल!' : 'Submission Successful!'}</h2>
+                      <p className="text-green-50 font-medium mt-2">{lang === 'hi' ? 'शिकायत मास्टर सूची में सफलतापूर्वक दर्ज की गई है।' : 'The grievance has been successfully recorded in the master list.'}</p>
+                   </div>
+
+                   <div className="p-8 space-y-6">
+                      <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-6 rounded-md text-center">
+                         <span className="text-gray-500 text-[12px] font-bold uppercase block mb-1">Grievance Case Number</span>
+                         <span className="text-4xl font-black text-[#002b5e] tracking-tighter">{receiptData.caseNumber}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6 text-[13px]">
+                         <div>
+                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Submitted On</span>
+                            <span className="font-bold text-gray-800">{receiptData.submissionDate}</span>
+                         </div>
+                         <div>
+                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Officer ID</span>
+                            <span className="font-bold text-gray-800">{activeUser?.id}</span>
+                         </div>
+                         <div>
+                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Complainant</span>
+                            <span className="font-bold text-gray-800">{receiptData.applicantName || 'Anonymous'}</span>
+                         </div>
+                         <div>
+                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Location</span>
+                            <span className="font-bold text-gray-800">
+                               {apiDistricts.find(d => d.value === receiptData.district)?.label || receiptData.district}
+                               {receiptData.block && ` / ${apiBlocks.find(b => b.value === receiptData.block)?.label || receiptData.block}`}
+                            </span>
+                         </div>
+                      </div>
+
+                      <div className="pt-6 border-t border-gray-100 flex flex-col gap-3">
+                         <button 
+                            onClick={() => window.print()} 
+                            className="w-full py-4 bg-[#002b5e] text-white font-black rounded-sm shadow-md hover:bg-[#001c3d] transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[13px]"
+                          >
+                            <FileText size={18} /> {lang === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
+                         </button>
+                         <button 
+                            onClick={() => navigate('/')} 
+                            className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-sm hover:bg-gray-200 transition-all uppercase tracking-widest text-[11px]"
+                          >
+                            {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
+                         </button>
+                      </div>
+                   </div>
+
+                   <div className="bg-gray-50 px-8 py-4 border-t text-center">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase">© 2026 Department of Rural Development, Rajasthan</p>
+                   </div>
                 </div>
               </div>
             )}
