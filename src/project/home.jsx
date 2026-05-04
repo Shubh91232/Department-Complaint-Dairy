@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History, Loader2 } from 'lucide-react';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History, Loader2, ChevronLeft } from 'lucide-react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+import 'swiper/css/effect-fade';
 import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
@@ -76,7 +82,7 @@ const Home = () => {
       statusCaptchaRef.current?.refresh();
       return;
     }
-    showAlert(`${lang === 'hi' ? "स्थिति खोजी जा रही है:" : "Searching status for:"} ${statusInput}`, 'success');
+    navigate('/track', { state: { query: statusInput } });
   };
 
   const handleLogin = async () => {
@@ -195,17 +201,17 @@ const Home = () => {
             </div>
             <div className="flex flex-col">
               {[
-                { icon: <PieChartIcon size={16} />, label: t.icons.cause },
-                { icon: <Scale size={16} />, label: t.icons.act },
-                { icon: <Book size={16} />, label: t.icons.manual },
+                { icon: <PieChartIcon size={16} />, label: t.icons.cause, path: '/info/cause-list' },
+                { icon: <Scale size={16} />, label: t.icons.act, path: '/info/act' },
+                { icon: <Book size={16} />, label: t.icons.manual, path: '/info/manual' },
                 { 
                   icon: <Bell size={16} />, 
                   label: t.icons.notification, 
                   path: '/notifications', 
                   badge: '3' 
                 },
-                { icon: <FileText size={16} />, label: t.icons.circular },
-                { icon: <Newspaper size={16} />, label: t.icons.news }
+                { icon: <FileText size={16} />, label: t.icons.circular, path: '/info/circular' },
+                { icon: <Newspaper size={16} />, label: t.icons.news, path: '/info/news-clippings' }
               ].map((item, idx) => (
                 <div 
                   key={idx} 
@@ -257,16 +263,55 @@ const Home = () => {
         {/* Middle Column (Process, Chart, Banner) - Order 1 on Mobile/LG, 2 on XL */}
         <div className="lg:col-span-1 xl:col-span-6 order-1 lg:order-1 xl:order-2 flex flex-col gap-6">
 
-          {/* Hero Banner Image */}
-          <div className="bg-white p-1 shadow-sm border border-gray-200 rounded-md overflow-hidden">
-            <div className="h-40 sm:h-56 md:h-64 lg:h-56 relative flex items-center justify-center">
-              <img src="https://images.unsplash.com/photo-1541178735493-479c1a27ed24?auto=format&fit=crop&w=800&q=80" alt="Rajasthan Govt Building" className="w-full h-full object-cover opacity-50 mix-blend-overlay" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#002b5e]/90 to-transparent"></div>
-              <div className="absolute bottom-0 w-full p-4 md:p-6 text-left">
-                <h2 className="text-xl md:text-2xl font-bold text-white mb-1 uppercase tracking-wide">{t.bannerTitle}</h2>
-                <p className="text-gray-200 font-medium text-[12px] md:text-[13px]">Empowering citizens through transparent governance</p>
-              </div>
-            </div>
+          {/* Hero Banner Swiper */}
+          <div className="shadow-md border border-gray-200 rounded-md overflow-hidden relative" style={{position:'relative'}}>
+            <style>{`
+              .hero-swiper .swiper-pagination-bullet { background: white; opacity: 0.6; width: 8px; height: 8px; }
+              .hero-swiper .swiper-pagination-bullet-active { background: #e65100; opacity: 1; width: 22px; border-radius: 4px; }
+              .hero-swiper .swiper-button-next, .hero-swiper .swiper-button-prev { color: white; background: rgba(0,43,94,0.6); width: 32px; height: 32px; border-radius: 4px; }
+              .hero-swiper .swiper-button-next::after, .hero-swiper .swiper-button-prev::after { font-size: 13px; font-weight: bold; }
+            `}</style>
+            <Swiper
+              modules={[Autoplay, Pagination, Navigation, EffectFade]}
+              effect="fade"
+              autoplay={{ delay: 3500, disableOnInteraction: false }}
+              pagination={{ clickable: true }}
+              navigation={true}
+              loop={true}
+              className="hero-swiper h-44 sm:h-56 md:h-64 lg:h-60"
+            >
+              {[
+                {
+                  img: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&w=900&q=80',
+                  title: lang === 'hi' ? 'लोक शिकायत निवारण कार्यालय' : 'Public Grievance Redressal Office',
+                  subtitle: lang === 'hi' ? 'पारदर्शी शासन के माध्यम से नागरिकों को सशक्त बनाना' : 'Empowering citizens through transparent governance'
+                },
+                {
+                  img: 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80',
+                  title: lang === 'hi' ? 'ग्रामीण विकास एवं पंचायती राज' : 'Rural Development & Panchayati Raj',
+                  subtitle: lang === 'hi' ? 'राजस्थान सरकार – गांव की ओर, विकास की राह' : 'Government of Rajasthan – Towards Villages, Path of Progress'
+                },
+                {
+                  img: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=900&q=80',
+                  title: lang === 'hi' ? 'राज न्यायसेतु पोर्टल' : 'Raj NyaySetu Portal',
+                  subtitle: lang === 'hi' ? 'आपकी शिकायत, हमारी प्राथमिकता' : 'Your Grievance, Our Priority'
+                },
+                {
+                  img: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=900&q=80',
+                  title: lang === 'hi' ? 'तीव्र समाधान, डिजिटल राजस्थान' : 'Fast Resolution, Digital Rajasthan',
+                  subtitle: lang === 'hi' ? '97% शिकायतों का समय पर निपटान' : '97% grievances resolved within the stipulated time'
+                },
+                {
+                  img: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=900&q=80',
+                  title: lang === 'hi' ? 'MNREGA एवं सामाजिक सुरक्षा योजनाएं' : 'MNREGA & Social Security Schemes',
+                  subtitle: lang === 'hi' ? 'हर नागरिक के अधिकारों की रक्षा' : 'Protecting the rights of every citizen'
+                },
+              ].map((slide, idx) => (
+              <SwiperSlide key={idx}>
+                  <img src={slide.img} alt={slide.title} className="w-full h-full object-cover" />
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </div>
 
           {/* Action Boxes (Govt Style Process) */}
