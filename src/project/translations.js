@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     changeLang: "Language",
-    title: "Public Grievance Redressal Portal",
+    title: "Raj NyaySetu Portal",
     subtitle: "Rural Development and Panchayati Raj Department, Rajasthan",
     nav: {
       home: "Home", act: "About the Act", format: "Format of application", faq: "FAQ",

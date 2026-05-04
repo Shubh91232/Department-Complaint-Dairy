@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { 
-  History, 
+  History as HistoryIcon, 
   FileText, 
   Search, 
   Filter, 
@@ -19,7 +19,8 @@ import {
   User,
   ArrowUpDown,
   Landmark,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import { fetchDraftsAPI } from '../../apiHandler/apis';
@@ -135,7 +136,7 @@ const WorkHistory = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center text-white border border-white/20">
-                <History size={32} />
+                <HistoryIcon size={32} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white uppercase tracking-wider">
@@ -174,7 +175,7 @@ const WorkHistory = () => {
                activeTab === 'history' ? 'bg-blue-50 text-[#002b5e] border-b-2 border-[#002b5e]' : 'text-gray-500 hover:bg-gray-50'
              }`}
            >
-              <History size={18} />
+              <HistoryIcon size={18} />
               {lang === 'hi' ? 'सफलतापूर्वक सहेजे गए' : 'Submitted Records'}
               <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'history' ? 'bg-[#002b5e] text-white' : 'bg-gray-200 text-gray-600'}`}>
                 {history.length}
@@ -331,11 +332,11 @@ const WorkHistory = () => {
                                <MoreVertical size={18} />
                              </button>
                              <button 
-                               onClick={() => handleDeleteRecord(item.id)}
+                               onClick={() => handleDeleteRecord(item.id || item._id)}
                                className="p-1.5 text-red-500 hover:bg-red-100 rounded-sm transition-colors"
                                title="Delete Record"
                              >
-                               <AlertCircle size={18} />
+                               <Trash2 size={18} />
                              </button>
                           </div>
                         </td>
@@ -345,13 +346,19 @@ const WorkHistory = () => {
                     <tr>
                       <td colSpan="7" className="px-4 py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
-                          <History size={48} className="text-gray-200" />
+                          <HistoryIcon size={48} className="text-gray-200" />
                           <p className="text-gray-500 font-bold text-lg">
                             {lang === 'hi' ? 'कोई रिकॉर्ड नहीं मिला।' : 'No records found.'}
                           </p>
                           <p className="text-gray-400 text-sm">
                             {lang === 'hi' ? 'अपनी पहली शिकायत प्रविष्टि अभी शुरू करें।' : 'Start your first grievance entry now.'}
                           </p>
+                          <button 
+                            onClick={() => navigate('/complain')}
+                            className="mt-4 bg-[#e65100] text-white px-6 py-2 rounded-sm font-bold text-[13px] hover:bg-[#bf4300] transition-all shadow-md flex items-center gap-2 uppercase tracking-wider"
+                          >
+                            <FileText size={16} /> {lang === 'hi' ? 'नई शिकायत दर्ज करें' : 'Create New Complain'}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -407,11 +414,11 @@ const WorkHistory = () => {
                                <RefreshCw size={12} /> {lang === 'hi' ? 'जारी रखें' : 'Resume'}
                              </button>
                              <button 
-                               onClick={() => handleDeleteDraft(draft.id)}
-                               className="p-1.5 text-red-500 hover:bg-red-100 rounded-sm transition-colors"
+                               onClick={() => handleDeleteDraft(draft.id || draft._id)}
+                               className="bg-red-50 text-red-600 px-3 py-1.5 rounded-sm font-bold text-[11px] hover:bg-red-600 hover:text-white transition-all flex items-center gap-1 shadow-sm uppercase border border-red-200"
                                title="Delete Draft"
                              >
-                               <AlertCircle size={18} />
+                               <Trash2 size={12} /> {lang === 'hi' ? 'हटाएं' : 'Delete'}
                              </button>
                           </div>
                         </td>
@@ -425,6 +432,12 @@ const WorkHistory = () => {
                           <p className="text-gray-500 font-bold text-lg">
                             {lang === 'hi' ? 'कोई ड्राफ्ट नहीं मिला।' : 'No pending drafts found.'}
                           </p>
+                          <button 
+                            onClick={() => navigate('/complain')}
+                            className="mt-4 bg-[#e65100] text-white px-6 py-2 rounded-sm font-bold text-[13px] hover:bg-[#bf4300] transition-all shadow-md flex items-center gap-2 uppercase tracking-wider"
+                          >
+                            <FileText size={16} /> {lang === 'hi' ? 'नई शिकायत दर्ज करें' : 'Create New Complain'}
+                          </button>
                         </div>
                       </td>
                     </tr>

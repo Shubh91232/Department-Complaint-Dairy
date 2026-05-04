@@ -28,7 +28,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="text-[12px] text-white leading-relaxed mt-2 pr-4">
-              {isEn ? 'This is the official Public Grievance Redressal Portal for the Rural Development and Panchayati Raj Department, aimed at ensuring timely resolution of citizen grievances.' : 'यह ग्रामीण विकास एवं पंचायती राज विभाग का आधिकारिक लोक शिकायत निवारण पोर्टल है, जिसका उद्देश्य नागरिक शिकायतों का समयबद्ध समाधान सुनिश्चित करना है।'}
+              {isEn ? 'This is the official Raj NyaySetu for the Rural Development and Panchayati Raj Department, aimed at ensuring timely resolution of citizen grievances.' : 'यह ग्रामीण विकास एवं पंचायती राज विभाग का आधिकारिक लोक शिकायत निवारण पोर्टल है, जिसका उद्देश्य नागरिक शिकायतों का समयबद्ध समाधान सुनिश्चित करना है।'}
             </p>
           </div>
 
