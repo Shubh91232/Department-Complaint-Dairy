@@ -6,7 +6,7 @@ import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
-import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI } from '../../apiHandler/apis';
+import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI } from '../../apiHandler/apis';
 
 const ComplainForm = () => {
   const { lang, t } = useLanguage();
@@ -28,9 +28,15 @@ const ComplainForm = () => {
   const [deptData, setDeptData] = useState(null);
   const [deptSearch, setDeptSearch] = useState('');
   const [schemeSearch, setSchemeSearch] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
   const [showDeptOptions, setShowDeptOptions] = useState(false);
   const [showSchemeOptions, setShowSchemeOptions] = useState(false);
+  const [showCategoryOptions, setShowCategoryOptions] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [apiDistricts, setApiDistricts] = useState([]);
+  const [apiBlocks, setApiBlocks] = useState([]);
+  const [apiGPs, setApiGPs] = useState([]);
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
 
   const showAlert = (message, type = 'error') => {
@@ -151,8 +157,32 @@ const ComplainForm = () => {
       }
     };
 
+    const loadLevels = async () => {
+      try {
+        const res = await fetchLevelsAPI();
+        if (res.success) {
+          setLevels(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load levels:", err);
+      }
+    };
+
+    const loadDistricts = async () => {
+      try {
+        const res = await fetchDistrictsAPI();
+        if (res.success) {
+          setApiDistricts(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load districts:", err);
+      }
+    };
+
     loadDepts();
     loadCategories();
+    loadLevels();
+    loadDistricts();
   }, []);
 
   // Derived Departments & Schemes
@@ -182,6 +212,10 @@ const ComplainForm = () => {
     s.scheme_name_hi.includes(schemeSearch)
   );
 
+  const filteredCategories = categories.filter(c => 
+    c.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
   // Auto-category mapping based on scheme type
   const autoSelectCategory = (type) => {
     const mapping = {
@@ -196,19 +230,42 @@ const ComplainForm = () => {
     return mapping[type] || 'Other';
   };
 
-  const handleApplicantChange = (e) => {
-    setApplicantData({ ...applicantData, [e.target.name]: e.target.value });
-  };
-
-  const handleFormChange = (e) => {
+  const handleFormChange = async (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-      if (name === 'department') {
-        newData.scheme = ''; // Reset scheme when department changes
-      }
+      if (name === 'department') newData.scheme = ''; 
+      if (name === 'district') { newData.block = ''; newData.panchayat = ''; }
+      if (name === 'block') newData.panchayat = '';
       return newData;
     });
+
+    // Cascading Location Fetching
+    if (name === 'district') {
+      setApiBlocks([]);
+      setApiGPs([]);
+      if (value) {
+        try {
+          const res = await fetchBlocksAPI(value);
+          if (res.success) setApiBlocks(res.data);
+        } catch (err) { console.error("Error fetching blocks:", err); }
+      }
+    }
+
+    if (name === 'block') {
+      setApiGPs([]);
+      if (value) {
+        try {
+          const res = await fetchGPsAPI(value);
+          if (res.success) setApiGPs(res.data);
+        } catch (err) { console.error("Error fetching GPs:", err); }
+      }
+    }
+  };
+
+  const handleApplicantChange = (e) => {
+    setApplicantData({ ...applicantData, [e.target.name]: e.target.value });
   };
 
   const handleProceed = async () => {
@@ -597,32 +654,39 @@ const ComplainForm = () => {
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'स्तर (Level)' : 'Level'} {requiredSpan}</label>
                         <select name="level" value={formData.level} onChange={handleFormChange} required className={inputClass}>
-                          <option value="State">State Level</option>
-                          <option value="District">District Level</option>
-                          <option value="Panchayat">Panchayat Level</option>
+                          <option value="">-- Select Level --</option>
+                          {levels.map(l => (
+                            <option key={l.value} value={l.label}>{l.label}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'ज़िला (District)' : 'District'} {requiredSpan}</label>
                           <select name="district" value={formData.district} onChange={handleFormChange} required className={inputClass}>
-                            <option value="">-- Select --</option>
-                            {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                            <option value="">-- Select District --</option>
+                            {apiDistricts.map(d => (
+                              <option key={d.value} value={d.value}>{d.label}</option>
+                            ))}
                           </select>
                         </div>
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'ब्लॉक (Block)' : 'Block'}</label>
                           <select name="block" value={formData.block} onChange={handleFormChange} disabled={!formData.district} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}>
-                            <option value="">-- Select --</option>
-                            {blocks.map(b => <option key={b} value={b}>{b}</option>)}
+                            <option value="">-- Select Block --</option>
+                            {apiBlocks.map(b => (
+                              <option key={b.value} value={b.value}>{b.label}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'ग्राम पंचायत' : 'Gram Panchayat'}</label>
                         <select name="panchayat" value={formData.panchayat} onChange={handleFormChange} disabled={!formData.block} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}>
-                          <option value="">-- Select --</option>
-                          {panchayats.map(p => <option key={p} value={p}>{p}</option>)}
+                          <option value="">-- Select GP --</option>
+                          {apiGPs.map(g => (
+                            <option key={g.value} value={g.label}>{g.label}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -780,12 +844,54 @@ const ComplainForm = () => {
                       </div>
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत की श्रेणी' : 'Complaint Category'} {requiredSpan}</label>
-                        <select name="complaintCategory" value={formData.complaintCategory} onChange={handleFormChange} required className={`${inputClass} font-semibold text-[#002b5e]`}>
-                          <option value="">-- Select Category --</option>
-                          {categories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <div 
+                            className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.complaintCategory ? 'text-gray-400' : 'text-[#002b5e] font-semibold'}`}
+                            onClick={() => setShowCategoryOptions(!showCategoryOptions)}
+                          >
+                            <span>{formData.complaintCategory || (lang === 'hi' ? '-- श्रेणी चुनें --' : '-- Select Category --')}</span>
+                            <ChevronRight size={16} className={`transform transition-transform ${showCategoryOptions ? 'rotate-90' : ''}`} />
+                          </div>
+
+                          {showCategoryOptions && (
+                            <div className="absolute z-[70] mt-1 w-full bg-white border border-gray-200 shadow-2xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                              <div className="p-3 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
+                                <div className="relative">
+                                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                                  <input 
+                                    type="text" 
+                                    placeholder={lang === 'hi' ? 'श्रेणी खोजें...' : 'Search category...'} 
+                                    className="w-full pl-10 pr-3 py-2 text-[13px] border border-blue-100 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
+                                    value={categorySearch}
+                                    onChange={(e) => setCategorySearch(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    autoFocus
+                                  />
+                                </div>
+                              </div>
+                              <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                {filteredCategories.length > 0 ? filteredCategories.map((cat, idx) => (
+                                  <div 
+                                    key={idx}
+                                    className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
+                                    onClick={() => {
+                                      setFormData(prev => ({ ...prev, complaintCategory: cat }));
+                                      setShowCategoryOptions(false);
+                                      setCategorySearch('');
+                                    }}
+                                  >
+                                    <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{cat}</div>
+                                  </div>
+                                )) : (
+                                  <div className="py-8 flex flex-col items-center justify-center text-gray-400 gap-2">
+                                    <Search size={24} className="opacity-20" />
+                                    <p className="text-[12px] italic">{lang === 'hi' ? 'कोई श्रेणी नहीं मिली' : 'No categories found'}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत / प्रकरण का विवरण' : 'Complaint / Case Description'} {requiredSpan}</label>
