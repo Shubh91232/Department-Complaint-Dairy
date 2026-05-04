@@ -93,6 +93,27 @@ export const postAuthAPI = async (url, payload = {}) => {
   }
 };
 
+/**
+ * Global DELETE handler with Authorization (Bearer token)
+ */
+export const deleteAuthAPI = async (url) => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, { method: 'DELETE', headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in Auth DELETE ${url}:`, error);
+    throw error;
+  }
+};
+
 // --- SPECIFIC IMPLEMENTATIONS ---
 
 export const fetchCaptchaImageAPI = async () => {
@@ -170,4 +191,12 @@ export const fetchComplaintCategoriesAPI = async () => {
 
 export const fetchSchemesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.SCHEMES_LIST, true);
+};
+
+export const fetchGrievanceHistoryAPI = async () => {
+  return await getAuthAPI(URLS.COMPLAINTS.HISTORY);
+};
+
+export const deleteDraftAPI = async (id) => {
+  return await deleteAuthAPI(URLS.COMPLAINTS.DELETE_DRAFT(id));
 };
