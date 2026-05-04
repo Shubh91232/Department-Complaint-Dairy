@@ -9,12 +9,6 @@ const Footer = () => {
 
   return (
     <div className="bg-[#001f44] text-white border-t-4 border-[#e65100] mt-auto w-full">
-      {/* Top Banner inside Footer for Downloads */}
-      <div className="bg-[#e65100] py-3 text-center shadow-inner">
-        <a onClick={() => alert(t.download)} className="text-white hover:text-[#001f44] cursor-pointer font-bold text-[14px] flex items-center justify-center gap-2 transition-colors">
-            <Download size={18} /> {t.download}
-        </a>
-      </div>
 
       <div className="container mx-auto px-6 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 border-b border-blue-900 pb-8">

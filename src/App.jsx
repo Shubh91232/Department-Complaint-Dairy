@@ -15,6 +15,12 @@ import Register from './project/complain_path/register';
 import Notification from './project/complain_path/notification';
 import Drafts from './project/complain_path/drafts';
 import WorkHistory from './project/complain_path/history';
+import TrackGrievance from './project/complain_path/track';
+import CauseList from './project/info/CauseList';
+import Act from './project/info/Act';
+import Manual from './project/info/Manual';
+import Circular from './project/info/Circular';
+import NewsClippings from './project/info/NewsClippings';
 import { LanguageProvider } from './project/LanguageContext';
 
 function App() {
@@ -38,6 +44,12 @@ function App() {
         <Route path="/notifications" element={<Notification />} />
         <Route path="/drafts" element={<Drafts />} />
         <Route path="/history" element={<WorkHistory />} />
+        <Route path="/track" element={<TrackGrievance />} />
+        <Route path="/info/cause-list" element={<CauseList />} />
+        <Route path="/info/act" element={<Act />} />
+        <Route path="/info/manual" element={<Manual />} />
+        <Route path="/info/circular" element={<Circular />} />
+        <Route path="/info/news-clippings" element={<NewsClippings />} />
       </Routes>
     </Router>
     </LanguageProvider>
