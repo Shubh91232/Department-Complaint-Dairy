@@ -172,20 +172,22 @@ const Home = () => {
       <Header />
 
       {/* News Flash (Marquee style) */}
-      <div className="bg-[#fff8e1] text-[13px] border-b border-orange-200 flex items-stretch shadow-sm relative z-10">
-        <div className="bg-[#cc0000] text-white font-bold px-6 py-2 whitespace-nowrap flex items-center">
-          <Bell size={16} className="mr-2" /> {t.newsFlash}
+      <div className="bg-[#fff8e1] text-[12px] md:text-[13px] border-b border-orange-200 flex items-stretch shadow-sm relative z-10">
+        <div className="bg-[#cc0000] text-white font-bold px-3 md:px-6 py-2 whitespace-nowrap flex items-center shrink-0">
+          <Bell size={14} className="mr-1.5 md:mr-2 md:block hidden" /> 
+          <span className="hidden sm:inline">{t.newsFlash}</span>
+          <span className="sm:hidden">News</span>
         </div>
-        <div className="flex-1 py-2 px-4 text-red-700 font-semibold flex items-center">
+        <div className="flex-1 py-2 px-3 md:px-4 text-red-700 font-semibold flex items-center overflow-hidden">
           <marquee scrollamount="5" className="hover:pause-marquee">नागरिक अब अपनी शिकायतें सीधे पोर्टल के माध्यम से दर्ज कर सकते हैं। | जनसुनवाई का नया कार्यक्रम जारी किया गया है।</marquee>
         </div>
       </div>
 
       {/* Main Content Layout */}
-      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="container mx-auto px-4 py-6 md:py-8 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-6 md:gap-8">
 
-        {/* Left Column (Information & Links) */}
-        <div className="lg:col-span-3 flex flex-col gap-5">
+        {/* Left Column (Information & Links) - Order 2 on Mobile/LG, 1 on XL */}
+        <div className="lg:col-span-2 xl:col-span-3 order-2 lg:order-3 xl:order-1 flex flex-col gap-5">
 
           {/* Quick Info Menu */}
           <div className="bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden">
@@ -253,65 +255,65 @@ const Home = () => {
 
         </div>
 
-        {/* Middle Column (Process, Chart, Banner) */}
-        <div className="lg:col-span-6 flex flex-col gap-6">
+        {/* Middle Column (Process, Chart, Banner) - Order 1 on Mobile/LG, 2 on XL */}
+        <div className="lg:col-span-1 xl:col-span-6 order-1 lg:order-1 xl:order-2 flex flex-col gap-6">
 
           {/* Hero Banner Image */}
           <div className="bg-white p-1 shadow-sm border border-gray-200 rounded-md overflow-hidden">
-            <div className="h-48 bg-[#002b5e] relative flex items-center justify-center">
+            <div className="h-40 sm:h-56 md:h-64 lg:h-56 relative flex items-center justify-center">
               <img src="https://images.unsplash.com/photo-1541178735493-479c1a27ed24?auto=format&fit=crop&w=800&q=80" alt="Rajasthan Govt Building" className="w-full h-full object-cover opacity-50 mix-blend-overlay" />
               <div className="absolute inset-0 bg-gradient-to-r from-[#002b5e]/90 to-transparent"></div>
-              <div className="absolute bottom-0 w-full p-6 text-left">
-                <h2 className="text-2xl font-bold text-white mb-1 uppercase tracking-wide">{t.bannerTitle}</h2>
-                <p className="text-gray-200 font-medium text-[13px]">Empowering citizens through transparent governance</p>
+              <div className="absolute bottom-0 w-full p-4 md:p-6 text-left">
+                <h2 className="text-xl md:text-2xl font-bold text-white mb-1 uppercase tracking-wide">{t.bannerTitle}</h2>
+                <p className="text-gray-200 font-medium text-[12px] md:text-[13px]">Empowering citizens through transparent governance</p>
               </div>
             </div>
           </div>
 
           {/* Action Boxes (Govt Style Process) */}
           <div className="mt-2">
-            <h3 className="text-[15px] font-bold text-[#002b5e] mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
+            <h3 className="text-[14px] md:text-[15px] font-bold text-[#002b5e] mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
               <span className="w-4 h-4 bg-[#e65100] inline-block"></span>
               {t.complainTitle}
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div onClick={() => showAlert(t.process.citizen, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#002b5e] transition-colors rounded-md group">
-                <div className="w-12 h-12 mx-auto bg-blue-50 text-[#002b5e] border border-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#002b5e] group-hover:text-white transition-colors">
-                  <User size={20} />
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              <div onClick={() => showAlert(t.process.citizen, 'success')} className="bg-white border border-gray-200 shadow-sm p-4 md:p-5 text-center cursor-pointer hover:border-[#002b5e] transition-colors rounded-md group">
+                <div className="w-10 h-10 md:w-12 md:h-12 mx-auto bg-blue-50 text-[#002b5e] border border-blue-100 rounded-full flex items-center justify-center mb-2 md:mb-3 group-hover:bg-[#002b5e] group-hover:text-white transition-colors">
+                  <User size={18} />
                 </div>
-                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.citizen}</span>
+                <span className="font-semibold text-[#002b5e] text-[12px] md:text-[13px] leading-tight block">{t.process.citizen}</span>
               </div>
 
-              <div onClick={handleComplainClick} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-[#e65100] transition-colors rounded-md group">
-                <div className="w-12 h-12 mx-auto bg-orange-50 text-[#e65100] border border-orange-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#e65100] group-hover:text-white transition-colors">
-                  <FileText size={20} />
+              <div onClick={handleComplainClick} className="bg-white border border-gray-200 shadow-sm p-4 md:p-5 text-center cursor-pointer hover:border-[#e65100] transition-colors rounded-md group">
+                <div className="w-10 h-10 md:w-12 md:h-12 mx-auto bg-orange-50 text-[#e65100] border border-orange-100 rounded-full flex items-center justify-center mb-2 md:mb-3 group-hover:bg-[#e65100] group-hover:text-white transition-colors">
+                  <FileText size={18} />
                 </div>
-                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.grievance}</span>
+                <span className="font-semibold text-[#002b5e] text-[12px] md:text-[13px] leading-tight block">{t.process.grievance}</span>
               </div>
 
-              <div onClick={() => showAlert(t.process.reminder, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-yellow-600 transition-colors rounded-md group">
-                <div className="w-12 h-12 mx-auto bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
-                  <Bell size={20} />
+              <div onClick={() => showAlert(t.process.reminder, 'success')} className="bg-white border border-gray-200 shadow-sm p-4 md:p-5 text-center cursor-pointer hover:border-yellow-600 transition-colors rounded-md group">
+                <div className="w-10 h-10 md:w-12 md:h-12 mx-auto bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-full flex items-center justify-center mb-2 md:mb-3 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                  <Bell size={18} />
                 </div>
-                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.reminder}</span>
+                <span className="font-semibold text-[#002b5e] text-[12px] md:text-[13px] leading-tight block">{t.process.reminder}</span>
               </div>
 
-              <div onClick={() => showAlert(t.process.action, 'success')} className="bg-white border border-gray-200 shadow-sm p-5 text-center cursor-pointer hover:border-green-600 transition-colors rounded-md group">
-                <div className="w-12 h-12 mx-auto bg-green-50 text-green-600 border border-green-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                  <Search size={20} />
+              <div onClick={() => showAlert(t.process.action, 'success')} className="bg-white border border-gray-200 shadow-sm p-4 md:p-5 text-center cursor-pointer hover:border-green-600 transition-colors rounded-md group">
+                <div className="w-10 h-10 md:w-12 md:h-12 mx-auto bg-green-50 text-green-600 border border-green-100 rounded-full flex items-center justify-center mb-2 md:mb-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                  <Search size={18} />
                 </div>
-                <span className="font-semibold text-[#002b5e] text-[13px]">{t.process.action}</span>
+                <span className="font-semibold text-[#002b5e] text-[12px] md:text-[13px] leading-tight block">{t.process.action}</span>
               </div>
             </div>
           </div>
 
         </div>
 
-        {/* Right Column (Forms & Direct Actions) */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        {/* Right Column (Forms & Direct Actions) - Order 3 on Mobile, 2 on LG, 3 on XL */}
+        <div className="lg:col-span-1 xl:col-span-3 order-3 lg:order-2 xl:order-3 flex flex-col gap-4">
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
             <button onClick={handleComplainClick} className="bg-[#1e7b34] text-white py-2.5 px-2 font-semibold text-[13px] hover:bg-[#145a24] shadow-sm rounded-md flex flex-col justify-center items-center gap-1 border border-[#145a24] transition-colors">
               <AlertCircle size={18} /> <span className="text-center leading-tight">{t.btnNew}</span>
             </button>
@@ -428,14 +430,27 @@ const Home = () => {
                          <p className="text-gray-500 text-[11px] font-medium">{loggedInUserData?.designation || 'N/A'}</p>
                        </div>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-sm border border-gray-200 text-[12px] space-y-2 shadow-inner">
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Employee ID:</span> <span className="font-bold text-gray-800">{loggedInUserData?.id || 'N/A'}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Dept:</span> <span className="font-semibold text-gray-700 text-right">{loggedInUserData?.department || 'N/A'}</span></div>
-                      <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">Location:</span> <span className="font-semibold text-gray-700">{loggedInUserData?.district || 'N/A'}</span></div>
-                      <div className="flex justify-between pt-1">
-                        <span className="text-gray-500">Status:</span> 
-                        <span className={`font-medium text-[11px] px-2 py-0.5 rounded-sm ${loggedInUserData?.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                          {loggedInUserData?.status === 'approved' ? 'Active' : 'Pending Approval'}
+                    <div className="bg-gray-50 p-3 rounded-sm border border-gray-200 text-[12px] space-y-2.5 shadow-inner">
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-1.5">
+                        <span className="text-gray-500 font-medium shrink-0">Employee ID:</span> 
+                        <span className="font-bold text-gray-800">{loggedInUserData?.id || 'N/A'}</span>
+                      </div>
+                      <div className="border-b border-gray-100 pb-1.5">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-gray-500 font-medium shrink-0">Dept:</span> 
+                          <span className="font-bold text-gray-700 text-right leading-tight">{loggedInUserData?.department || 'N/A'}</span>
+                        </div>
+                      </div>
+                      <div className="border-b border-gray-100 pb-1.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-gray-500 font-medium">Work Location:</span> 
+                          <span className="font-bold text-gray-700 leading-snug break-words">{loggedInUserData?.district || 'N/A'}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span className="text-gray-500 font-medium shrink-0">Status:</span> 
+                        <span className={`font-bold text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-wide ${loggedInUserData?.status === 'approved' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
+                          {loggedInUserData?.status === 'approved' ? 'Active' : 'Pending'}
                         </span>
                       </div>
                     </div>
@@ -543,85 +558,85 @@ const Home = () => {
       </div>
 
       {/* Massive Statistics Dashboard (Formalized) */}
-      <div className="bg-[#002b5e] py-10 border-y border-[#001f44] mt-4">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8 relative flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Public Grievance Dashboard</h2>
-            <div className="w-16 h-1 bg-[#e65100] mx-auto mb-3"></div>
-            <p className="text-blue-200 text-[13px]">Monitoring and analytics of public grievances to ensure transparent governance.</p>
+      <div className="bg-[#002b5e] py-10 md:py-16 border-y border-[#001f44] mt-4">
+        <div className="container mx-auto px-4 text-center">
+          <div className="mb-10 relative flex flex-col items-center">
+            <h2 className="text-xl md:text-3xl font-bold text-white mb-3 uppercase tracking-wider">Public Grievance Dashboard</h2>
+            <div className="w-20 h-1.5 bg-[#e65100] mx-auto mb-4"></div>
+            <p className="text-blue-200 text-[13px] md:text-[14px] max-w-2xl">Monitoring and analytics of public grievances to ensure transparent governance and departmental accountability across the state.</p>
             {isLoggedIn && (
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden md:block">
-                 <button onClick={() => navigate('/dashboard')} className="cursor-pointer bg-[#1e7b34] text-white border border-[#145a24] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors flex items-center gap-2 shadow-sm">
-                   <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Dashboard'}
+              <div className="mt-6 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2">
+                 <button onClick={() => navigate('/dashboard')} className="cursor-pointer bg-[#1e7b34] text-white border border-[#145a24] px-5 py-2.5 font-bold text-[13px] rounded-sm hover:bg-[#145a24] transition-all flex items-center gap-2 shadow-lg active:scale-95">
+                   <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Full Dashboard'}
                  </button>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-10">
             {/* Stat Cards */}
-            <div className="bg-white border-t-4 border-blue-600 p-5 rounded-sm text-center shadow-sm">
-              <div className="w-8 h-8 mx-auto bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-2">
-                <FileText size={16} />
+            <div className="bg-white border-t-4 border-blue-600 p-4 md:p-6 rounded-sm text-center shadow-md transform hover:-translate-y-1 transition-transform">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-2 md:mb-3">
+                <FileText size={18} />
               </div>
-              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">{t.stats.total || 'Total Received'}</div>
-              <div className="text-2xl font-bold text-[#002b5e]">2,450,192</div>
+              <div className="text-gray-500 mb-1 font-bold uppercase text-[9px] md:text-[10px] tracking-widest leading-tight">{t.stats.total || 'Total Received'}</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-[#002b5e] break-all sm:break-normal">2,450,192</div>
             </div>
             
-            <div className="bg-white border-t-4 border-green-600 p-5 rounded-sm text-center shadow-sm">
-              <div className="w-8 h-8 mx-auto bg-green-50 text-green-700 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle size={16} />
+            <div className="bg-white border-t-4 border-green-600 p-4 md:p-6 rounded-sm text-center shadow-md transform hover:-translate-y-1 transition-transform">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto bg-green-50 text-green-700 rounded-full flex items-center justify-center mb-2 md:mb-3">
+                <CheckCircle size={18} />
               </div>
-              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">{t.stats.executed || 'Total Disposed'}</div>
-              <div className="text-2xl font-bold text-green-700">2,380,441</div>
+              <div className="text-gray-500 mb-1 font-bold uppercase text-[9px] md:text-[10px] tracking-widest leading-tight">{t.stats.executed || 'Total Disposed'}</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-green-700 break-all sm:break-normal">2,380,441</div>
             </div>
 
-            <div className="bg-white border-t-4 border-orange-500 p-5 rounded-sm text-center shadow-sm">
-              <div className="w-8 h-8 mx-auto bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-2">
-                <RefreshCw size={16} />
+            <div className="bg-white border-t-4 border-orange-500 p-4 md:p-6 rounded-sm text-center shadow-md transform hover:-translate-y-1 transition-transform">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-2 md:mb-3">
+                <RefreshCw size={18} />
               </div>
-              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Pending Cases</div>
-              <div className="text-2xl font-bold text-orange-600">45,337</div>
+              <div className="text-gray-500 mb-1 font-bold uppercase text-[9px] md:text-[10px] tracking-widest leading-tight">Pending Cases</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-orange-600 break-all sm:break-normal">45,337</div>
             </div>
 
-            <div className="bg-white border-t-4 border-purple-600 p-5 rounded-sm text-center shadow-sm">
-              <div className="w-8 h-8 mx-auto bg-purple-50 text-purple-700 rounded-full flex items-center justify-center mb-2">
-                <BarChart2 size={16} />
+            <div className="bg-white border-t-4 border-purple-600 p-4 md:p-6 rounded-sm text-center shadow-md transform hover:-translate-y-1 transition-transform">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto bg-purple-50 text-purple-700 rounded-full flex items-center justify-center mb-2 md:mb-3">
+                <BarChart2 size={18} />
               </div>
-              <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Avg. Resolution</div>
-              <div className="text-2xl font-bold text-purple-700">14 Days</div>
+              <div className="text-gray-500 mb-1 font-bold uppercase text-[9px] md:text-[10px] tracking-widest leading-tight">Avg. Resolution</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-purple-700 break-all sm:break-normal">14 Days</div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
             {/* Donut Chart Block */}
-            <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center justify-center border border-gray-200">
-              <h3 className="font-bold text-[#002b5e] text-[15px] mb-6 self-start border-b border-gray-200 w-full pb-2">Disposal Breakdown</h3>
-              <div className="w-40 h-40 rounded-full relative shadow-inner mb-6 border border-gray-100" style={{ background: 'conic-gradient(#1e88e5 0% 63.5%, #43a047 63.5% 83.5%, #fb8c00 83.5% 100%)' }}>
-                <div className="absolute inset-0 m-auto w-24 h-24 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
-                   <span className="text-2xl font-bold text-gray-800">97%</span>
-                   <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mt-0.5">Disposed</span>
+            <div className="bg-white rounded-md p-8 shadow-md flex flex-col items-center justify-center border border-gray-200">
+              <h3 className="font-bold text-[#002b5e] text-[16px] mb-8 self-start border-b border-gray-100 w-full pb-3">Disposal Breakdown</h3>
+              <div className="w-48 h-48 rounded-full relative shadow-inner mb-8 border-8 border-gray-50" style={{ background: 'conic-gradient(#1e88e5 0% 63.5%, #43a047 63.5% 83.5%, #fb8c00 83.5% 100%)' }}>
+                <div className="absolute inset-0 m-auto w-32 h-32 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
+                   <span className="text-3xl font-black text-gray-800">97%</span>
+                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Disposed</span>
                 </div>
               </div>
-              <div className="w-full grid grid-cols-1 gap-2 text-[12px] font-medium px-2">
-                 <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#1e88e5]"></div><span className="text-gray-700">Accepted</span></div><span className="text-[#002b5e] font-bold">63.5%</span></div>
-                 <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#43a047]"></div><span className="text-gray-700">Alternate</span></div><span className="text-[#002b5e] font-bold">20.0%</span></div>
-                 <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#fb8c00]"></div><span className="text-gray-700">Rejected</span></div><span className="text-[#002b5e] font-bold">16.5%</span></div>
+              <div className="w-full grid grid-cols-1 gap-3 text-[13px] font-semibold">
+                 <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-sm"><div className="flex items-center gap-3"><div className="w-3.5 h-3.5 bg-[#1e88e5] rounded-full"></div><span className="text-gray-700">Accepted</span></div><span className="text-[#002b5e] font-black">63.5%</span></div>
+                 <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-sm"><div className="flex items-center gap-3"><div className="w-3.5 h-3.5 bg-[#43a047] rounded-full"></div><span className="text-gray-700">Alternate</span></div><span className="text-[#002b5e] font-black">20.0%</span></div>
+                 <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-sm"><div className="flex items-center gap-3"><div className="w-3.5 h-3.5 bg-[#fb8c00] rounded-full"></div><span className="text-gray-700">Rejected</span></div><span className="text-[#002b5e] font-black">16.5%</span></div>
               </div>
             </div>
 
             {/* Department Performance Bar Chart */}
-            <div className="bg-white rounded-md p-6 shadow-sm md:col-span-2 border border-gray-200">
-              <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
-                <h3 className="font-bold text-[#002b5e] text-[15px]">Top Performing Departments</h3>
-                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
+            <div className="bg-white rounded-md p-8 shadow-md lg:col-span-2 border border-gray-200">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-gray-100 pb-4 gap-4">
+                <h3 className="font-bold text-[#002b5e] text-[16px]">Top Performing Departments</h3>
+                <div className="flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-wider bg-gray-50 px-4 py-2 rounded-full">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-gray-400 rounded-sm"></div><span className="text-gray-600">Total</span></div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div><span className="text-green-700">Resolved</span></div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-red-500 rounded-sm"></div><span className="text-red-600">Rejected</span></div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-orange-400 rounded-sm"></div><span className="text-orange-600">Pending</span></div>
                 </div>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-8">
                  {[
                    {name: 'Panchayati Raj & Rural Development', total: 12450, resolved: 12201, rejected: 150, pending: 99, color: 'bg-[#1e7b34]', textColor: 'text-[#1e7b34]'},
                    {name: 'Public Health Engineering (PHED)', total: 8920, resolved: 8384, rejected: 310, pending: 226, color: 'bg-[#0059b3]', textColor: 'text-[#0059b3]'},
@@ -630,21 +645,21 @@ const Home = () => {
                  ].map((dept, i) => {
                    const resolvePercent = ((dept.resolved / dept.total) * 100).toFixed(1);
                    return (
-                     <div key={i}>
-                       <div className="flex justify-between items-end text-[12px] font-bold text-gray-800 mb-1.5">
-                         <span>{dept.name}</span>
-                         <span className={`${dept.textColor} font-bold text-[13px]`}>{resolvePercent}% Resolved</span>
+                     <div key={i} className="group">
+                       <div className="flex justify-between items-end text-[13px] font-bold text-gray-800 mb-2">
+                         <span className="max-w-[70%] sm:max-w-none truncate sm:whitespace-normal">{dept.name}</span>
+                         <span className={`${dept.textColor} font-black text-[13px] whitespace-nowrap`}>{resolvePercent}% Resolved</span>
                        </div>
-                       <div className="w-full bg-gray-100 h-2.5 rounded-sm overflow-hidden mb-2 flex">
-                         <div className="bg-green-500 h-full" style={{width: `${(dept.resolved / dept.total) * 100}%`}} title={`Resolved: ${dept.resolved}`}></div>
-                         <div className="bg-red-500 h-full" style={{width: `${(dept.rejected / dept.total) * 100}%`}} title={`Rejected: ${dept.rejected}`}></div>
-                         <div className="bg-orange-400 h-full" style={{width: `${(dept.pending / dept.total) * 100}%`}} title={`Pending: ${dept.pending}`}></div>
+                       <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden mb-3 flex shadow-inner">
+                         <div className="bg-green-500 h-full transition-all group-hover:brightness-110" style={{width: `${(dept.resolved / dept.total) * 100}%`}} title={`Resolved: ${dept.resolved}`}></div>
+                         <div className="bg-red-500 h-full transition-all group-hover:brightness-110" style={{width: `${(dept.rejected / dept.total) * 100}%`}} title={`Rejected: ${dept.rejected}`}></div>
+                         <div className="bg-orange-400 h-full transition-all group-hover:brightness-110" style={{width: `${(dept.pending / dept.total) * 100}%`}} title={`Pending: ${dept.pending}`}></div>
                        </div>
-                       <div className="grid grid-cols-4 gap-2 text-[12px] font-bold text-center pt-1">
-                          <div className="text-gray-600">{dept.total.toLocaleString()}</div>
-                          <div className="text-green-600">{dept.resolved.toLocaleString()}</div>
-                          <div className="text-red-500">{dept.rejected.toLocaleString()}</div>
-                          <div className="text-orange-500">{dept.pending.toLocaleString()}</div>
+                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px] font-black text-center pt-1">
+                          <div className="bg-gray-50 py-1.5 rounded text-gray-600 flex flex-col sm:flex-row items-center justify-center gap-1"><span className="text-[9px] uppercase text-gray-400 sm:hidden">Total:</span> {dept.total.toLocaleString()}</div>
+                          <div className="bg-green-50 py-1.5 rounded text-green-600 flex flex-col sm:flex-row items-center justify-center gap-1"><span className="text-[9px] uppercase text-green-400 sm:hidden">Res:</span> {dept.resolved.toLocaleString()}</div>
+                          <div className="bg-red-50 py-1.5 rounded text-red-500 flex flex-col sm:flex-row items-center justify-center gap-1"><span className="text-[9px] uppercase text-red-400 sm:hidden">Rej:</span> {dept.rejected.toLocaleString()}</div>
+                          <div className="bg-orange-50 py-1.5 rounded text-orange-500 flex flex-col sm:flex-row items-center justify-center gap-1"><span className="text-[9px] uppercase text-orange-400 sm:hidden">Pend:</span> {dept.pending.toLocaleString()}</div>
                        </div>
                      </div>
                    );
