@@ -76,8 +76,8 @@ const Header = () => {
           <div className="flex gap-4 items-center shrink-0">
             {/* CM Photo Placeholder */}
             <div className="hidden sm:flex flex-col items-center">
-              <div className="w-12 h-14 md:w-16 md:h-20 bg-gray-50 border border-[#e65100] shadow-sm overflow-hidden p-0.5">
-                <img src="https://i.pravatar.cc/150?img=11" alt="Hon'ble CM" className="w-full h-full object-cover" />
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-50 border border-[#e65100] shadow-sm overflow-hidden p-0.5">
+                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Hon'ble CM" className="w-full h-full object-cover p-1 opacity-60" />
               </div>
               <span className="text-[8px] md:text-[10px] font-bold mt-1 text-[#002b5e] text-center leading-none">Hon'ble CM</span>
             </div>
