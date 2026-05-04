@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, Shield, Loader2 } from 'lucide-react';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History } from 'lucide-react';
 import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
@@ -476,14 +476,12 @@ const Home = () => {
                       </div>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => navigate('/dashboard')} className="cursor-pointer bg-blue-50 text-blue-700 py-2 font-bold text-[12px] rounded-sm hover:bg-blue-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-blue-200 flex items-center justify-center gap-1">
-                            <BarChart2 size={14} /> {lang === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
-                          </button>
-                          <button onClick={() => navigate('/drafts')} className="cursor-pointer bg-yellow-50 text-yellow-700 py-2 font-bold text-[12px] rounded-sm hover:bg-yellow-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-yellow-200 flex items-center justify-center gap-1">
-                            <FileText size={14} /> {lang === 'hi' ? 'मेरे ड्राफ्ट्स' : 'My Drafts'}
-                          </button>
-                        </div>
+                        <button onClick={() => navigate('/dashboard')} className="cursor-pointer w-full bg-blue-50 text-blue-700 py-2 font-bold text-[13px] rounded-sm hover:bg-blue-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-blue-200 flex items-center justify-center gap-2">
+                          <BarChart2 size={16} /> {lang === 'hi' ? 'डैशबोर्ड देखें' : 'View Dashboard'}
+                        </button>
+                        <button onClick={() => navigate('/history')} className="cursor-pointer w-full bg-orange-50 text-[#e65100] py-2 font-bold text-[13px] rounded-sm hover:bg-orange-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-orange-200 flex items-center justify-center gap-2">
+                          <History size={16} /> {lang === 'hi' ? 'कार्य इतिहास देखें' : 'View Work History'}
+                        </button>
                         <button onClick={() => setShowLogoutConfirm(true)} className="w-full bg-red-50 text-red-700 py-2 font-bold text-[13px] rounded-sm hover:bg-red-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 border border-red-200 flex items-center justify-center gap-2">
                           <LogOut size={16} /> Secure Logout
                         </button>

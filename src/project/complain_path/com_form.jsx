@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
@@ -12,7 +12,6 @@ const ComplainForm = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-
   const [step, setStep] = useState(1);
   const captchaRef = React.useRef(null);
   const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
@@ -953,7 +952,11 @@ const ComplainForm = () => {
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
-                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
+                  <button type="button" onClick={saveAsDraft} className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100">
+                    <Clock size={18} />
+                    {lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft'}
+                  </button>
+                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0,0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
                   </button>
                   <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">
