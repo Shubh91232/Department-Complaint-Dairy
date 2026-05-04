@@ -14,6 +14,7 @@ import Dashboard from './project/complain_path/dashboard';
 import Register from './project/complain_path/register';
 import Notification from './project/complain_path/notification';
 import Drafts from './project/complain_path/drafts';
+import History from './project/complain_path/history';
 import { LanguageProvider } from './project/LanguageContext';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/notifications" element={<Notification />} />
         <Route path="/drafts" element={<Drafts />} />
+        <Route path="/history" element={<History />} />
       </Routes>
     </Router>
     </LanguageProvider>

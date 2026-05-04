@@ -3,7 +3,7 @@ import { useLanguage } from '../LanguageContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search } from 'lucide-react';
+import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search, Clock } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
 import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI } from '../../apiHandler/apis';
@@ -341,6 +341,30 @@ const ComplainForm = () => {
     }, 2000);
   };
 
+  const saveAsDraft = async () => {
+    setIsDrafting(true);
+    try {
+      const payload = {
+        applicantName: applicantData.name,
+        mobile: applicantData.mobile,
+        address: applicantData.address,
+        ...formData
+      };
+      if (draftId) payload.draftId = draftId;
+
+      const res = await draftComplaintAPI(payload);
+      if (res.success) {
+        if (res.data?._id) setDraftId(res.data._id);
+        showAlert(lang === 'hi' ? 'प्रगति ड्राफ्ट के रूप में सहेजी गई।' : 'Progress saved as draft.', 'success');
+      }
+    } catch (err) {
+      console.error('Draft Error:', err);
+      showAlert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message, 'error');
+    } finally {
+      setIsDrafting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!captchaData.code) {
@@ -503,7 +527,11 @@ const ComplainForm = () => {
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-5 border-t border-gray-200 flex justify-end">
+                  <div className="mt-8 pt-5 border-t border-gray-200 flex justify-end gap-3">
+                    <button type="button" onClick={saveAsDraft} disabled={isDrafting} className="cursor-pointer bg-orange-50 text-orange-700 border border-orange-200 px-6 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 hover:bg-orange-100 disabled:opacity-70">
+                      <Clock size={18} />
+                      {lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft'}
+                    </button>
                     <button type="button" onClick={handleProceed} disabled={isDrafting} className="cursor-pointer bg-[#002b5e] hover:bg-[#001f44] disabled:opacity-70 text-white px-8 py-2.5 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center gap-2 group">
                       {isDrafting && <Loader2 size={16} className="animate-spin" />}
                       {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'प्रकरण विवरण दर्ज करें' : 'Proceed to Case Details')}

@@ -22,6 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
+import { fetchDraftsAPI } from '../../apiHandler/apis';
 
 const WorkHistory = () => {
   const { lang, t } = useLanguage();
@@ -34,10 +35,22 @@ const WorkHistory = () => {
   const [sortOrder, setSortOrder] = useState('newest');
 
   useEffect(() => {
-    const savedHistory = JSON.parse(localStorage.getItem('grievanceHistory') || '[]');
-    const savedDrafts = JSON.parse(localStorage.getItem('grievanceDrafts') || '[]');
-    setHistory(savedHistory);
-    setDrafts(savedDrafts);
+    const loadData = async () => {
+      try {
+        // Load history from local storage (until API is ready)
+        const savedHistory = JSON.parse(localStorage.getItem('grievanceHistory') || '[]');
+        setHistory(savedHistory);
+
+        // Load drafts from API
+        const res = await fetchDraftsAPI();
+        if (res.success) {
+          setDrafts(res.data || []);
+        }
+      } catch (err) {
+        console.error('Error loading history data:', err);
+      }
+    };
+    loadData();
   }, []);
 
   const filteredHistory = history
@@ -65,7 +78,7 @@ const WorkHistory = () => {
   };
 
   const handleResumeDraft = (draft) => {
-    navigate('/complain', { state: { resumeDraft: draft } });
+    navigate('/complain', { state: { draftData: draft } });
   };
 
   const handleDeleteDraft = (id) => {
@@ -366,22 +379,24 @@ const WorkHistory = () => {
                         </td>
                         <td className="px-4 py-4">
                           <div className="font-bold text-gray-800">
-                            {draft.applicantData.name || (lang === 'hi' ? 'बिना नाम का ड्राफ्ट' : 'Untitled Draft')}
+                            {draft.applicantName || (lang === 'hi' ? 'बिना नाम का ड्राफ्ट' : 'Untitled Draft')}
                           </div>
                           <div className="text-[11px] text-gray-500">
-                            {draft.formData.department ? `${draft.formData.department} - ${draft.formData.scheme}` : (lang === 'hi' ? 'विभाग नहीं चुना गया' : 'No department selected')}
+                            {draft.department ? `${draft.department} - ${draft.scheme}` : (lang === 'hi' ? 'विभाग नहीं चुना गया' : 'No department selected')}
                           </div>
                         </td>
                         <td className="px-4 py-4">
                            <div className="flex items-center gap-3">
                               <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                                 <div className="bg-orange-500 h-full" style={{ width: draft.step === 1 ? '50%' : '100%' }}></div>
+                                 <div className="bg-orange-500 h-full" style={{ width: draft.scheme ? '100%' : '50%' }}></div>
                               </div>
-                              <span className="text-[11px] font-bold text-orange-600">Step {draft.step}/2</span>
+                              <span className="text-[11px] font-bold text-orange-600">{draft.scheme ? 'Ready' : 'Incomplete'}</span>
                            </div>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <div className="font-bold text-gray-700 text-[12px]">{draft.lastModified}</div>
+                          <div className="font-bold text-gray-700 text-[12px]">
+                            {new Date(draft.updatedAt).toLocaleDateString()}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-center">
                           <div className="flex justify-center gap-3">
