@@ -2,449 +2,588 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { FileText, CheckCircle, RefreshCw, BarChart2, Download, Filter, History } from 'lucide-react';
+import { 
+  FileText, CheckCircle, RefreshCw, BarChart2, Download, 
+  Filter, History, MapPin, Search, Calendar, ChevronDown, 
+  FileSpreadsheet, FileJson, X, LayoutGrid, Users, Building2, Map as MapIcon
+} from 'lucide-react';
+import CanvasJSReact from '@canvasjs/react-charts';
+
+const CanvasJSChart = CanvasJSReact.CanvasJSChart;
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [filterDist, setFilterDist] = useState('All');
   const [filterBlock, setFilterBlock] = useState('All');
   const [filterGp, setFilterGp] = useState('All');
-  const [filterFy, setFilterFy] = useState('All');
+  const [filterFy, setFilterFy] = useState('2026-27');
   const [filterScheme, setFilterScheme] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [filterRecordType, setFilterRecordType] = useState('All');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [reportType, setReportType] = useState('agewise');
+  const [reportType, setReportType] = useState('detailed');
   const [appliedFilters, setAppliedFilters] = useState([]);
+
+  const getDynamicDataPoints = () => {
+    let factor = 1.0;
+    // Simulate data change based on filters
+    if (filterDist !== 'All') factor *= 0.75;
+    if (filterFy === '2024-25') factor *= 0.6;
+    if (filterScheme !== 'All') factor *= 0.9;
+    
+    const baseData = [
+      { y: 13.01, label: "MGNREGA", color: "#8E7DA0" },
+      { y: 8.2, label: "PM Awas Yojana", color: "#45B39D" },
+      { y: 6.73, label: "Jal Jeevan Mission", color: "#E67E22" },
+      { y: 6.26, label: "Hariyalo Rajasthan", color: "#85C1E9" },
+      { y: 6.02, label: "Mission Amrit Sarovar", color: "#D4E157" },
+      { y: 5.94, label: "Swachh Bharat Mission", color: "#AD1457" },
+      { y: 5.36, label: "Rural Infrastructure", color: "#00897B" },
+      { y: 5.36, label: "Digital Rajasthan", color: "#E57373" },
+      { y: 4.96, label: "Skill Development", color: "#26A69A" },
+      { y: 4.91, label: "Solar Power Project", color: "#5C6BC0" }
+    ];
+
+    return baseData.map(dp => ({
+      ...dp,
+      y: parseFloat((dp.y * factor).toFixed(2))
+    }));
+  };
+
+  const chartOptions = {
+    animationEnabled: true,
+    theme: "light2",
+    title: {
+      text: "Top 10 Schemes by Grievance Volume",
+      fontFamily: "Inter, sans-serif",
+      fontWeight: "900",
+      fontSize: 18,
+      padding: 20
+    },
+    axisX: {
+      title: "Department",
+      reversed: true,
+      labelFontFamily: "Inter",
+      labelFontWeight: "bold",
+      labelFontSize: 12
+    },
+    axisY: {
+      title: "Volume (in thousands)",
+      includeZero: true,
+      gridThickness: 1,
+      labelFormatter: (e) => e.value + "k",
+      labelFontFamily: "Inter",
+      labelFontSize: 12
+    },
+    data: [{
+      type: "bar",
+      dataPoints: getDynamicDataPoints()
+    }]
+  };
 
   const handleApplyFilters = () => {
     const active = [];
     if (filterScheme !== 'All') active.push(`Scheme: ${filterScheme}`);
-    if (filterFy !== 'All') active.push(`FY: ${filterFy}`);
-    if (filterStatus !== 'All') active.push(`Status: ${filterStatus}`);
     if (filterDist !== 'All') active.push(`Dist: ${filterDist}`);
-    if (filterBlock !== 'All') active.push(`Block: ${filterBlock}`);
-    if (filterGp !== 'All') active.push(`GP: ${filterGp}`);
+    if (filterStatus !== 'All') active.push(`Status: ${filterStatus}`);
     if (dateFrom || dateTo) active.push(`Date: ${dateFrom || 'Any'} to ${dateTo || 'Any'}`);
-    
-    if (active.length === 0) active.push("Showing All Data");
     
     setAppliedFilters(active);
   };
 
-  const handleDownloadExcel = () => {
-    // Generate Excel/CSV report logic based on filters
-    const csvContent = "data:text/csv;charset=utf-8,FinancialYear,District,Block,GP,Status,DateFrom,DateTo\n" + 
-                       `${filterFy},${filterDist},${filterBlock},${filterGp},${filterStatus},${dateFrom},${dateTo}`;
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Admin_Dataset_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleDownloadPdf = () => {
-    alert(`Generating styled PDF report (${reportType}) with current filters...`);
+  const clearFilters = () => {
+    setFilterDist('All');
+    setFilterBlock('All');
+    setFilterGp('All');
+    setFilterFy('2026-27');
+    setFilterScheme('All');
+    setFilterStatus('All');
+    setFilterRecordType('All');
+    setDateFrom('');
+    setDateTo('');
+    setAppliedFilters([]);
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-gray-800 flex flex-col">
       <Header />
       
-      <div className="flex-grow">
-        {/* Massive Statistics Dashboard (Formalized) */}
-        <div className="bg-[#002b5e] py-10 border-y border-[#001f44]">
-          <div className="container mx-auto px-4">
-            
-            <div className="text-center mb-8 relative flex flex-col items-center">
-              <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Public Grievance Dashboard</h2>
-              <div className="w-16 h-1 bg-[#e65100] mx-auto mb-3"></div>
-              <p className="text-blue-200 text-[13px]">Monitoring and analytics of public grievances to ensure transparent governance.</p>
+      <main className="flex-grow container mx-auto px-4 py-4">
+        {/* Top Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 group hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-[#002b5e] rounded-md flex items-center justify-center text-white">
+                <FileText size={20} />
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Today</p>
+                <div className="flex items-baseline gap-1.5">
+                  <h3 className="text-xl font-black text-gray-900">+124</h3>
+                  <span className="text-green-500 text-[10px] font-bold">+12.5%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 group hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-[#002b5e] rounded-md flex items-center justify-center text-white">
+                <CheckCircle size={20} />
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Disposed</p>
+                <div className="flex items-baseline gap-1.5">
+                  <h3 className="text-xl font-black text-gray-900">45,214</h3>
+                  <span className="text-blue-500 text-[10px] font-bold">92% rate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 group hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-orange-600 rounded-md flex items-center justify-center text-white">
+                <RefreshCw size={20} />
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Pending</p>
+                <div className="flex items-baseline gap-1.5">
+                  <h3 className="text-xl font-black text-gray-900">2,337</h3>
+                  <span className="text-orange-500 text-[10px] font-bold">-4.2%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 group hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-[#e65100] rounded-md flex items-center justify-center text-white">
+                <BarChart2 size={20} />
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Resolution</p>
+                <div className="flex items-baseline gap-1.5">
+                  <h3 className="text-xl font-black text-gray-900">14 Days</h3>
+                  <span className="text-purple-500 text-[10px] font-bold">Tgt: 15</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Map and Filter Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
+          
+          {/* Left: Rajasthan Map */}
+          <div className="lg:col-span-7 bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                  <MapIcon className="text-teal-600" size={18} />
+                  Distribution
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Rajasthan Map</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:block">
+                  <div className="w-32 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+                    <div className="bg-orange-400 h-full w-[30%]"></div>
+                    <div className="bg-yellow-400 h-full w-[40%]"></div>
+                    <div className="bg-green-500 h-full w-[30%]"></div>
+                  </div>
+                  <div className="flex justify-between text-[8px] font-black text-gray-300 mt-0.5 uppercase tracking-tighter">
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Admin Filter Section */}
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-md mb-8 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="flex-grow bg-gray-50/50 rounded-xl border border-dashed border-gray-200 relative overflow-hidden min-h-[360px] flex items-center justify-center">
+              {/* Map Placeholder */}
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Rajasthan_district_map.svg/800px-Rajasthan_district_map.svg.png" 
+                alt="Rajasthan Map" 
+                className="max-h-[320px] opacity-80 hover:opacity-100 transition-opacity cursor-pointer p-2"
+              />
+              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md p-2 rounded-lg border border-gray-100 shadow-sm text-[8px] font-black uppercase tracking-widest space-y-0.5">
+                <div className="flex items-center gap-1.5 text-red-600"><div className="w-1.5 h-1.5 rounded-full bg-red-600"></div> Critical</div>
+                <div className="flex items-center gap-1.5 text-orange-500"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div> High</div>
+                <div className="flex items-center gap-1.5 text-green-600"><div className="w-1.5 h-1.5 rounded-full bg-green-600"></div> Normal</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Filter Panel */}
+          <div className="lg:col-span-5 flex flex-col gap-5">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
+
+              <div className="p-4 flex-grow flex flex-col gap-3 overflow-y-auto max-h-[480px] no-scrollbar">
                 
-                {/* Report Type */}
-                <div className="md:col-span-4 lg:col-span-1 border-b border-white/10 pb-4 md:border-none md:pb-0">
-                  <label className="text-[11px] font-bold text-yellow-400 block mb-1 uppercase tracking-wider">Report Format</label>
-                  <select className="w-full bg-yellow-400 text-[#002b5e] font-bold border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-white" value={reportType} onChange={(e) => setReportType(e.target.value)}>
-                    <option value="detailed">Detailed Dataset (All Columns)</option>
-                    <option value="agewise">District-wise Agewise Pending</option>
-                  </select>
-                </div>
-                
-                {/* Scheme */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Scheme / Project</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterScheme} onChange={(e) => setFilterScheme(e.target.value)}>
-                    <option value="All">All Schemes</option>
-                    <option value="Hariyalo Rajasthan">Hariyalo Rajasthan</option>
-                    <option value="Mission Amrit Sarovar">Mission Amrit Sarovar</option>
-                    <option value="Rural Infrastructure">Rural Infrastructure</option>
-                    <option value="MGNREGA">MGNREGA</option>
-                    <option value="PM Awas Yojana">PM Awas Yojana</option>
-                    <option value="Jal Jeevan Mission">Jal Jeevan Mission</option>
-                  </select>
+                {/* Financial & Org Filters */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Financial Year</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                        value={filterFy}
+                        onChange={(e) => setFilterFy(e.target.value)}
+                      >
+                        <option value="All">All Years</option>
+                        <option value="2027-28">2027-28</option>
+                        <option value="2026-27">2026-27</option>
+                        <option value="2025-26">2025-26</option>
+                        <option value="2024-25">2024-25</option>
+                        <option value="2023-24">2023-24</option>
+                        <option value="2022-23">2022-23</option>
+                        <option value="2021-22">2021-22</option>
+                        <option value="2020-21">2020-21</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Department</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                        value={filterScheme}
+                        onChange={(e) => setFilterScheme(e.target.value)}
+                      >
+                        <option value="All">All Departments</option>
+                        <option value="Panchayati Raj">Panchayati Raj</option>
+                        <option value="Medical">Medical & Health</option>
+                        <option value="Revenue">Revenue</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Financial Year */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Financial Year</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterFy} onChange={(e) => setFilterFy(e.target.value)}>
-                    <option value="All">All Years</option>
-                    <option value="2025-26">2025-26</option>
-                    <option value="2024-25">2024-25</option>
-                    <option value="2023-24">2023-24</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Scheme Filter */}
+                  <div>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Scheme</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                      >
+                        <option value="All">All Schemes</option>
+                        <option value="MGNREGA">MGNREGA</option>
+                        <option value="PM Awas Yojana">PM Awas Yojana</option>
+                        <option value="Jal Jeevan Mission">Jal Jeevan Mission</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Record Type Filter */}
+                  <div>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Record Type</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                        value={filterRecordType}
+                        onChange={(e) => setFilterRecordType(e.target.value)}
+                      >
+                        <option value="All">All Records</option>
+                        <option value="Unique">Unique Only</option>
+                        <option value="Duplicate">Duplicates</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Status */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Status</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                    <option value="All">All Statuses</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
+                {/* Location Filters */}
+                <div className="space-y-3 pt-2 border-t border-gray-50">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Location Selection</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">District</label>
+                      <div className="relative">
+                        <select 
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                          value={filterDist}
+                          onChange={(e) => setFilterDist(e.target.value)}
+                        >
+                          <option value="All">All Districts</option>
+                          <option value="Jaipur">Jaipur</option>
+                          <option value="Jodhpur">Jodhpur</option>
+                        </select>
+                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Block</label>
+                      <div className="relative">
+                        <select 
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                          value={filterBlock}
+                          onChange={(e) => setFilterBlock(e.target.value)}
+                        >
+                          <option value="All">All Blocks</option>
+                          <option value="Amber">Amber</option>
+                          <option value="Luni">Luni</option>
+                        </select>
+                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">Gram Panchayat</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 appearance-none transition-all"
+                        value={filterGp}
+                        onChange={(e) => setFilterGp(e.target.value)}
+                      >
+                        <option value="All">All GPs</option>
+                        <option value="GP-1">GP-1</option>
+                        <option value="GP-2">GP-2</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Date Range */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Date Range (From - To)</label>
-                  <div className="flex gap-2">
-                    <input type="date" className="w-1/2 bg-white text-gray-800 border border-transparent rounded-sm px-2 py-2 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                    <input type="date" className="w-1/2 bg-white text-gray-800 border border-transparent rounded-sm px-2 py-2 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-                  </div>
-                </div>
-
-                {/* District */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">District</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterDist} onChange={(e) => setFilterDist(e.target.value)}>
-                    <option value="All">All Districts</option>
-                    <option value="Jaipur">Jaipur</option>
-                    <option value="Jodhpur">Jodhpur</option>
-                    <option value="Udaipur">Udaipur</option>
-                    <option value="Ajmer">Ajmer</option>
-                  </select>
-                </div>
-
-                {/* Block / Tehsil */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Block / Tehsil</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterBlock} onChange={(e) => setFilterBlock(e.target.value)}>
-                    <option value="All">All Blocks</option>
-                    <option value="Block A">Block A</option>
-                    <option value="Block B">Block B</option>
-                  </select>
-                </div>
-
-                {/* Gram Panchayat */}
-                <div>
-                  <label className="text-[11px] font-semibold text-blue-200 block mb-1 uppercase tracking-wider">Gram Panchayat</label>
-                  <select className="w-full bg-white text-gray-800 border border-transparent rounded-sm px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#e65100]" value={filterGp} onChange={(e) => setFilterGp(e.target.value)}>
-                    <option value="All">All GPs</option>
-                    <option value="GP 1">GP 1</option>
-                    <option value="GP 2">GP 2</option>
-                  </select>
-                </div>
-
-                {/* Apply Button */}
-                <div className="flex gap-2 items-end">
-                  <button onClick={handleApplyFilters} className="cursor-pointer bg-blue-600 text-white w-full py-2 font-bold text-[13px] rounded-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
-                    <Filter size={16} /> Apply Filters
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Download Buttons Row */}
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-white/10 mt-2">
-                <button onClick={handleDownloadExcel} className="cursor-pointer bg-[#1e7b34] text-white border border-[#145a24] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#145a24] transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
-                  <Download size={16} /> Download Excel
-                </button>
-                <button onClick={handleDownloadPdf} className="cursor-pointer bg-[#d32f2f] text-white border border-[#b71c1c] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#b71c1c] transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
-                  <FileText size={16} /> Download PDF
-                </button>
-                <button onClick={() => navigate('/history')} className="cursor-pointer bg-[#002b5e] text-white border border-[#001f44] px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-[#001f44] transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
-                  <History size={16} /> View Work History
-                </button>
-              </div>
-
-              {/* Applied Filters Display */}
-              {appliedFilters.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-white/10 mt-4">
-                  <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">Active Filters:</span>
-                  {appliedFilters.map((filter, idx) => (
-                    <span key={idx} className="bg-blue-800/50 text-blue-100 border border-blue-500/30 px-2.5 py-1 rounded-sm text-[11px] font-semibold flex items-center gap-1 shadow-inner">
-                      {filter}
-                    </span>
-                  ))}
-                  <button onClick={() => {
-                    setFilterScheme('All'); setFilterFy('All'); setFilterStatus('All'); 
-                    setFilterDist('All'); setFilterBlock('All'); setFilterGp('All'); 
-                    setDateFrom(''); setDateTo(''); setAppliedFilters([]);
-                  }} className="text-[11px] text-blue-300 hover:text-white underline ml-2 transition-colors cursor-pointer">
-                    Clear All
-                  </button>
-                </div>
-              )}
-
-
-
-              
-            {/* Conditional Reports */}
-            {reportType === 'agewise' ? (
-              <div className="bg-white rounded-md p-6 shadow-sm border border-gray-200 mt-8 overflow-x-auto">
-                <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
                   <div>
-                    <h3 className="font-bold text-[#002b5e] text-[16px]">District-wise Agewise Pending Complaints</h3>
-                    <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">As per standard meeting report format</p>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">From Date</label>
+                    <input 
+                      type="date" 
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2 py-1.5 text-[10px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 transition-all"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
                   </div>
-                  <button onClick={handleDownloadExcel} className="bg-[#1e7b34] text-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#145a24] transition-colors flex items-center gap-1 shadow-sm">
-                    <Download size={14} /> Export Table Data
-                  </button>
-                </div>
-                
-                <table className="w-full text-[12px] border-collapse text-center">
-                  <thead>
-                    <tr className="bg-gray-100 text-[#002b5e] font-bold text-[13px]">
-                      <th className="border border-gray-300 px-2 py-2.5 w-12">S.NO.</th>
-                      <th className="border border-gray-300 px-2 py-2.5 text-left min-w-[120px]">District Name</th>
-                      <th className="border border-gray-300 px-2 py-2.5">Total complaint</th>
-                      <th className="border border-gray-300 px-2 py-2.5">Disposed</th>
-                      <th className="border border-gray-300 px-2 py-2.5">Pending at district level</th>
-                      <th className="border border-gray-300 px-2 py-2.5" colSpan="3">Agewise Pending complaints</th>
-                    </tr>
-                    <tr className="bg-gray-50 text-gray-700 font-bold text-[11px]">
-                      <th className="border border-gray-300 px-2 py-1.5">1</th>
-                      <th className="border border-gray-300 px-2 py-1.5 text-left">2</th>
-                      <th className="border border-gray-300 px-2 py-1.5">3</th>
-                      <th className="border border-gray-300 px-2 py-1.5">4</th>
-                      <th className="border border-gray-300 px-2 py-1.5 bg-orange-50 text-orange-800">5 (6+7+8)</th>
-                      <th className="border border-gray-300 px-2 py-1.5">0-3 month</th>
-                      <th className="border border-gray-300 px-2 py-1.5">3-6 month</th>
-                      <th className="border border-gray-300 px-2 py-1.5">above 6 month</th>
-                    </tr>
-                    <tr className="bg-gray-100 text-gray-500 font-semibold text-[10px]">
-                      <th className="border border-gray-300 px-2 py-1"></th>
-                      <th className="border border-gray-300 px-2 py-1"></th>
-                      <th className="border border-gray-300 px-2 py-1"></th>
-                      <th className="border border-gray-300 px-2 py-1"></th>
-                      <th className="border border-gray-300 px-2 py-1 bg-orange-50"></th>
-                      <th className="border border-gray-300 px-2 py-1">6</th>
-                      <th className="border border-gray-300 px-2 py-1">7</th>
-                      <th className="border border-gray-300 px-2 py-1">8</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { s: 1, name: 'Jaisalmer', t: 5, d: 2, p: 3, p1: 2, p2: 0, p3: 1 },
-                      { s: 2, name: 'Bikaner', t: 6, d: 5, p: 1, p1: 0, p2: 0, p3: 1 },
-                      { s: 3, name: 'Alwar', t: 12, d: 10, p: 2, p1: 1, p2: 1, p3: 0 },
-                      { s: 4, name: 'Bharatpur', t: 5, d: 3, p: 2, p1: 0, p2: 0, p3: 2 },
-                      { s: 5, name: 'Jaipur', t: 7, d: 5, p: 2, p1: 1, p2: 1, p3: 0 },
-                      { s: 6, name: 'Bhilwara', t: 5, d: 4, p: 1, p1: 0, p2: 0, p3: 1 },
-                      { s: 7, name: 'Ajmer', t: 7, d: 6, p: 1, p1: 1, p2: 0, p3: 0 },
-                      { s: 8, name: 'Banswara', t: 1, d: 0, p: 1, p1: 0, p2: 0, p3: 1 },
-                      { s: 9, name: 'Baran', t: 2, d: 2, p: 0, p1: 0, p2: 0, p3: 0 },
-                      { s: 10, name: 'Barmer', t: 4, d: 4, p: 0, p1: 0, p2: 0, p3: 0 },
-                      { s: 11, name: 'Dausa', t: 4, d: 3, p: 1, p1: 1, p2: 0, p3: 0 },
-                      { s: 12, name: 'Dholpur', t: 2, d: 1, p: 1, p1: 0, p2: 1, p3: 0 },
-                      { s: 13, name: 'Hanumangarh', t: 5, d: 4, p: 1, p1: 1, p2: 0, p3: 0 },
-                      { s: 14, name: 'Jodhpur', t: 5, d: 5, p: 0, p1: 0, p2: 0, p3: 0 },
-                    ]
-                    .filter(row => filterDist === 'All' || row.name === filterDist)
-                    .map((row, index) => (
-                      <tr key={row.s} className="hover:bg-blue-50 text-gray-800 font-semibold border-b border-gray-200 transition-colors">
-                        <td className="border border-gray-300 px-2 py-2">{index + 1}</td>
-                        <td className="border border-gray-300 px-2 py-2 text-left">{row.name}</td>
-                        <td className="border border-gray-300 px-2 py-2 bg-gray-50">{row.t}</td>
-                        <td className="border border-gray-300 px-2 py-2 text-green-700">{row.d}</td>
-                        <td className="border border-gray-300 px-2 py-2 bg-orange-50 text-red-600 font-bold">{row.p}</td>
-                        <td className="border border-gray-300 px-2 py-2">{row.p1}</td>
-                        <td className="border border-gray-300 px-2 py-2">{row.p2}</td>
-                        <td className="border border-gray-300 px-2 py-2 font-bold">{row.p3 > 0 ? <span className="text-red-500">{row.p3}</span> : row.p3}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="bg-white rounded-md p-6 shadow-sm border border-gray-200 mt-8 overflow-x-auto">
-                <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
                   <div>
-                    <h3 className="font-bold text-[#002b5e] text-[16px]">Detailed Grievance Dataset</h3>
-                    <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Comprehensive list of all registered complaints</p>
+                    <label className="text-[9px] font-black text-teal-700 uppercase tracking-widest block mb-1">To Date</label>
+                    <input 
+                      type="date" 
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2 py-1.5 text-[10px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 transition-all"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
                   </div>
-                  <button onClick={handleDownloadExcel} className="bg-[#1e7b34] text-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-sm hover:bg-[#145a24] transition-colors flex items-center gap-1 shadow-sm">
-                    <Download size={14} /> Export Dataset
+                </div>
+
+                <div className="flex gap-2 mt-2 pt-3 border-t border-gray-100">
+                  <button 
+                    onClick={handleApplyFilters}
+                    className="flex-[2] bg-teal-700 text-white rounded-xl py-2.5 font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-lg shadow-teal-100 hover:bg-teal-800 transition-all active:scale-95"
+                  >
+                    <Filter size={12} /> Apply
+                  </button>
+                  <button className="flex-1 bg-gray-50 text-gray-700 rounded-xl py-2 border border-gray-200 font-bold text-[8px] uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-white transition-all whitespace-nowrap">
+                    <FileSpreadsheet size={13} className="text-green-600" /> Excel
+                  </button>
+                  <button className="flex-1 bg-gray-50 text-gray-700 rounded-xl py-2 border border-gray-200 font-bold text-[8px] uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-white transition-all whitespace-nowrap">
+                    <FileText size={13} className="text-red-600" /> PDF
+                  </button>
+                  <button 
+                    onClick={clearFilters}
+                    className="flex-none px-3 border border-gray-200 text-gray-500 rounded-xl font-bold text-[9px] uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95"
+                  >
+                    <X size={12} />
                   </button>
                 </div>
-                <table className="w-full text-[12px] border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100 text-[#002b5e] font-bold">
-                      <th className="border border-gray-300 px-3 py-2 text-center">S.No</th>
-                      <th className="border border-gray-300 px-3 py-2">District</th>
-                      <th className="border border-gray-300 px-3 py-2">Block</th>
-                      <th className="border border-gray-300 px-3 py-2">Panchayat</th>
-                      <th className="border border-gray-300 px-3 py-2">FY</th>
-                      <th className="border border-gray-300 px-3 py-2">Complaint Description</th>
-                      <th className="border border-gray-300 px-3 py-2">Date</th>
-                      <th className="border border-gray-300 px-3 py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { s: 1, dist: 'Jaipur', block: 'Amber', gp: 'GP-1', fy: '2025-26', dept: 'Panchayati Raj', scheme: 'MGNREGA', desc: 'Delay in MNREGA payments', date: '2026-01-15', status: 'Pending' },
-                      { s: 2, dist: 'Jodhpur', block: 'Luni', gp: 'GP-4', fy: '2025-26', dept: 'PHED', scheme: 'Jal Jeevan Mission', desc: 'Quality of road construction', date: '2026-01-18', status: 'Resolved' },
-                      { s: 3, dist: 'Udaipur', block: 'Girwa', gp: 'GP-2', fy: '2024-25', dept: 'Revenue', scheme: 'Rural Infrastructure', desc: 'Water supply issue in village', date: '2025-12-05', status: 'Pending' },
-                      { s: 4, dist: 'Ajmer', block: 'Arain', gp: 'GP-7', fy: '2025-26', dept: 'Medical', scheme: 'Hariyalo Rajasthan', desc: 'Illegal encroachment on public land', date: '2026-02-01', status: 'Rejected' },
-                      { s: 5, dist: 'Bikaner', block: 'Lunkaransar', gp: 'GP-12', fy: '2025-26', dept: 'Panchayati Raj', scheme: 'PM Awas Yojana', desc: 'Issues with pension scheme', date: '2026-01-20', status: 'Resolved' },
-                      { s: 6, dist: 'Jaipur', block: 'Amber', gp: 'GP-2', fy: '2025-26', dept: 'Medical', scheme: 'Mission Amrit Sarovar', desc: 'Medicine shortage in PHC', date: '2026-02-10', status: 'Pending' },
-                      { s: 7, dist: 'Jaipur', block: 'Phagi', gp: 'GP-1', fy: '2025-26', dept: 'Revenue', scheme: 'Rural Infrastructure', desc: 'Land record dispute', date: '2026-02-12', status: 'Resolved' },
-                    ]
-                    .filter(row => (
-                      (filterScheme === 'All' || row.scheme === filterScheme) &&
-                      (filterDist === 'All' || row.dist === filterDist) &&
-                      (filterFy === 'All' || row.fy === filterFy) &&
-                      (filterStatus === 'All' || row.status === filterStatus)
-                    ))
-                    .map((row, index) => (
-                      <tr key={row.s} className="hover:bg-blue-50 text-gray-700 border-b border-gray-200 transition-colors">
-                        <td className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-500">{index + 1}</td>
-                        <td className="border border-gray-300 px-3 py-2 font-semibold">{row.dist}</td>
-                        <td className="border border-gray-300 px-3 py-2">{row.block}</td>
-                        <td className="border border-gray-300 px-3 py-2">{row.gp}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-center">{row.fy}</td>
-                        <td className="border border-gray-300 px-3 py-2 max-w-xs truncate">{row.desc}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-center">{row.date}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            row.status === 'Pending' ? 'bg-orange-100 text-orange-700' : 
-                            row.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {/* Stat Cards */}
-              <div className="bg-white border-t-4 border-blue-600 p-5 rounded-sm text-center shadow-sm">
-                <div className="w-8 h-8 mx-auto bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-2">
-                  <FileText size={16} />
-                </div>
-                <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Total Received</div>
-                <div className="text-2xl font-bold text-[#002b5e]">2,450,192</div>
-              </div>
-              
-              <div className="bg-white border-t-4 border-green-600 p-5 rounded-sm text-center shadow-sm">
-                <div className="w-8 h-8 mx-auto bg-green-50 text-green-700 rounded-full flex items-center justify-center mb-2">
-                  <CheckCircle size={16} />
-                </div>
-                <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Total Disposed</div>
-                <div className="text-2xl font-bold text-green-700">2,380,441</div>
-              </div>
-
-              <div className="bg-white border-t-4 border-orange-500 p-5 rounded-sm text-center shadow-sm">
-                <div className="w-8 h-8 mx-auto bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-2">
-                  <RefreshCw size={16} />
-                </div>
-                <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Pending Cases</div>
-                <div className="text-2xl font-bold text-orange-600">45,337</div>
-              </div>
-
-              <div className="bg-white border-t-4 border-purple-600 p-5 rounded-sm text-center shadow-sm">
-                <div className="w-8 h-8 mx-auto bg-purple-50 text-purple-700 rounded-full flex items-center justify-center mb-2">
-                  <BarChart2 size={16} />
-                </div>
-                <div className="text-gray-500 mb-1 font-semibold uppercase text-[10px]">Avg. Resolution</div>
-                <div className="text-2xl font-bold text-purple-700">14 Days</div>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Donut Chart Block */}
-              <div className="bg-white rounded-md p-6 shadow-sm flex flex-col items-center justify-center border border-gray-200">
-                <h3 className="font-bold text-[#002b5e] text-[15px] mb-6 self-start border-b border-gray-200 w-full pb-2">Disposal Breakdown</h3>
-                <div className="w-40 h-40 rounded-full relative shadow-inner mb-6 border border-gray-100" style={{ background: 'conic-gradient(#1e88e5 0% 63.5%, #43a047 63.5% 83.5%, #fb8c00 83.5% 100%)' }}>
-                  <div className="absolute inset-0 m-auto w-24 h-24 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
-                     <span className="text-2xl font-bold text-gray-800">97%</span>
-                     <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mt-0.5">Disposed</span>
-                  </div>
-                </div>
-                <div className="w-full grid grid-cols-1 gap-2 text-[12px] font-medium px-2">
-                   <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#1e88e5]"></div><span className="text-gray-700">Accepted</span></div><span className="text-[#002b5e] font-bold">63.5%</span></div>
-                   <div className="flex justify-between items-center border-b border-gray-50 pb-1"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#43a047]"></div><span className="text-gray-700">Alternate</span></div><span className="text-[#002b5e] font-bold">20.0%</span></div>
-                   <div className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#fb8c00]"></div><span className="text-gray-700">Rejected</span></div><span className="text-[#002b5e] font-bold">16.5%</span></div>
-                </div>
-              </div>
+        </div>
 
-              {/* Department Performance Bar Chart */}
-              <div className="bg-white rounded-md p-6 shadow-sm md:col-span-2 border border-gray-200">
-                <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
-                  <h3 className="font-bold text-[#002b5e] text-[15px]">Top Performing Departments</h3>
-                  <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-gray-400 rounded-sm"></div><span className="text-gray-600">Total</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div><span className="text-green-700">Resolved</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-red-500 rounded-sm"></div><span className="text-red-600">Rejected</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-orange-400 rounded-sm"></div><span className="text-orange-600">Pending</span></div>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                   {[
-                     {name: 'Panchayati Raj & Rural Development', total: 12450, resolved: 12201, rejected: 150, pending: 99, color: 'bg-[#1e7b34]', textColor: 'text-[#1e7b34]'},
-                     {name: 'Public Health Engineering (PHED)', total: 8920, resolved: 8384, rejected: 310, pending: 226, color: 'bg-[#0059b3]', textColor: 'text-[#0059b3]'},
-                     {name: 'Revenue & Colonization Department', total: 15600, resolved: 13884, rejected: 980, pending: 736, color: 'bg-[#002b5e]', textColor: 'text-[#002b5e]'},
-                     {name: 'Medical & Health Services', total: 6420, resolved: 5521, rejected: 400, pending: 499, color: 'bg-[#e65100]', textColor: 'text-[#e65100]'},
-                   ].map((dept, i) => {
-                     const resolvePercent = ((dept.resolved / dept.total) * 100).toFixed(1);
-                     return (
-                       <div key={i}>
-                         <div className="flex justify-between items-end text-[12px] font-bold text-gray-800 mb-1.5">
-                           <span>{dept.name}</span>
-                           <span className={`${dept.textColor} font-bold text-[13px]`}>{resolvePercent}% Resolved</span>
-                         </div>
-                         <div className="w-full bg-gray-100 h-2.5 rounded-sm overflow-hidden mb-2 flex">
-                           <div className="bg-green-500 h-full" style={{width: `${(dept.resolved / dept.total) * 100}%`}} title={`Resolved: ${dept.resolved}`}></div>
-                           <div className="bg-red-500 h-full" style={{width: `${(dept.rejected / dept.total) * 100}%`}} title={`Rejected: ${dept.rejected}`}></div>
-                           <div className="bg-orange-400 h-full" style={{width: `${(dept.pending / dept.total) * 100}%`}} title={`Pending: ${dept.pending}`}></div>
-                         </div>
-                         <div className="grid grid-cols-4 gap-2 text-[12px] font-bold text-center pt-1">
-                            <div className="text-gray-600">{dept.total.toLocaleString()}</div>
-                            <div className="text-green-600">{dept.resolved.toLocaleString()}</div>
-                            <div className="text-red-500">{dept.rejected.toLocaleString()}</div>
-                            <div className="text-orange-500">{dept.pending.toLocaleString()}</div>
-                         </div>
-                       </div>
-                     );
-                   })}
-                </div>
-              </div>
+        {/* Analytics Chart Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6 overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <div>
+              <h3 className="text-base font-black text-gray-900">Performance</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Grievance Trends</p>
             </div>
+            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+               <select className="bg-white border-none rounded-lg px-2 py-1 text-[10px] font-bold text-teal-700 focus:outline-none shadow-sm cursor-pointer">
+                  <option>Volume</option>
+                  <option>Resolution</option>
+               </select>
+               <select className="bg-transparent border-none px-2 py-1 text-[10px] font-bold text-gray-400 focus:outline-none cursor-pointer">
+                  <option>Descending</option>
+                  <option>Ascending</option>
+               </select>
+            </div>
+          </div>
 
+          {/* New Horizontal Sub-Filters for Chart */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 p-2.5 bg-teal-50/20 rounded-xl border border-teal-100/30">
+            <div className="space-y-0.5">
+              <label className="text-[8px] font-black text-teal-700 uppercase tracking-tighter flex items-center gap-1">
+                <MapPin size={8} /> Location
+              </label>
+              <select 
+                className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-gray-600 focus:outline-none shadow-sm"
+                value={filterDist}
+                onChange={(e) => setFilterDist(e.target.value)}
+              >
+                <option value="All">All Districts</option>
+                <option value="Jaipur">Jaipur</option>
+                <option value="Jodhpur">Jodhpur</option>
+              </select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-[8px] font-black text-teal-700 uppercase tracking-tighter flex items-center gap-1">
+                <Building2 size={8} /> Dept
+              </label>
+              <select 
+                className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-gray-600 focus:outline-none shadow-sm"
+                value={filterScheme}
+                onChange={(e) => setFilterScheme(e.target.value)}
+              >
+                <option value="All">All Departments</option>
+                <option value="Panchayati Raj">Panchayati Raj</option>
+                <option value="Medical">Medical</option>
+              </select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-[8px] font-black text-teal-700 uppercase tracking-tighter flex items-center gap-1">
+                <LayoutGrid size={8} /> Scheme
+              </label>
+              <select 
+                className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-gray-600 focus:outline-none shadow-sm"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="All">All Schemes</option>
+                <option value="MGNREGA">MGNREGA</option>
+                <option value="PM Awas">PM Awas</option>
+              </select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-[8px] font-black text-teal-700 uppercase tracking-tighter flex items-center gap-1">
+                <Calendar size={8} /> Year
+              </label>
+              <select 
+                className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-gray-600 focus:outline-none shadow-sm"
+                value={filterFy}
+                onChange={(e) => setFilterFy(e.target.value)}
+              >
+                <option value="All">All Years</option>
+                <option value="2027-28">2027-28</option>
+                <option value="2026-27">2026-27</option>
+                <option value="2025-26">2025-26</option>
+                <option value="2024-25">2024-25</option>
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2021-22">2021-22</option>
+                <option value="2020-21">2020-21</option>
+              </select>
+            </div>
+          </div>
 
+          <div className="h-[340px] w-full">
+            <CanvasJSChart options={chartOptions} />
           </div>
         </div>
-      </div>
+
+        {/* Data Table Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 className="text-base font-black text-gray-900">Grievance Records</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Live Complaints Feed</p>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-grow sm:flex-grow-0">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 w-full sm:w-48"
+                />
+              </div>
+              <button 
+                onClick={() => navigate('/history')}
+                className="bg-gray-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
+              >
+                <History size={14} /> History
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <th className="px-5 py-3">S.No</th>
+                  <th className="px-5 py-3">District</th>
+                  <th className="px-5 py-3">Department</th>
+                  <th className="px-5 py-3">Description</th>
+                  <th className="px-5 py-3 text-right">Status</th>
+                  <th className="px-5 py-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="text-[12px] font-semibold text-gray-700">
+                {[
+                  { s: 1, dist: 'Jaipur', block: 'Amber', dept: 'Panchayati Raj', desc: 'Delay in MNREGA payments', status: 'Pending' },
+                  { s: 2, dist: 'Jodhpur', block: 'Luni', dept: 'PHED', desc: 'Water quality issue in ward 4', status: 'Resolved' },
+                  { s: 3, dist: 'Udaipur', block: 'Girwa', dept: 'Revenue', desc: 'Land record dispute at tehsil', status: 'Pending' },
+                  { s: 4, dist: 'Ajmer', block: 'Arain', dept: 'Medical', desc: 'Shortage of essential medicines', status: 'Rejected' },
+                  { s: 5, dist: 'Bikaner', block: 'Lunkaransar', dept: 'PHED', desc: 'Pipeline leakage in main road', status: 'Resolved' },
+                ].map((row, idx) => (
+                  <tr key={row.s} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-5 py-3 text-gray-400 font-bold">{row.s}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col">
+                        <span className="text-gray-900 leading-tight">{row.dist}</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-wider">{row.block}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 font-bold uppercase">{row.dept}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <p className="max-w-[200px] truncate text-gray-500">{row.desc}</p>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        row.status === 'Pending' ? 'bg-orange-100 text-orange-700' : 
+                        row.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <button className="text-teal-600 hover:text-teal-800 font-bold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
+             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">2.4M Records</span>
+             <div className="flex gap-1.5">
+                <button className="px-2.5 py-1 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-400 hover:bg-white transition-all">Prev</button>
+                <button className="px-2.5 py-1 bg-teal-700 text-white rounded-lg text-[10px] font-bold shadow-sm shadow-teal-100">1</button>
+                <button className="px-2.5 py-1 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-400 hover:bg-white transition-all">Next</button>
+             </div>
+          </div>
+        </div>
+      </main>
 
       <Footer />
     </div>
   );
 };
 
-export default Dashboard;
+export default Dashboard;

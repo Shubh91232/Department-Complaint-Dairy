@@ -3,7 +3,7 @@ import { useLanguage } from '../LanguageContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search, Clock } from 'lucide-react';
+import { UserCheck, User, MapPin, Phone, FileText, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, Shield, CheckCircle, Search, Clock, Printer, FileUp, Trash2 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
 import { draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, deleteDraftAPI } from '../../apiHandler/apis';
@@ -39,6 +39,8 @@ const ComplainForm = () => {
   const [apiDistricts, setApiDistricts] = useState([]);
   const [apiBlocks, setApiBlocks] = useState([]);
   const [apiGPs, setApiGPs] = useState([]);
+  const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
+  const [advancedDocs, setAdvancedDocs] = useState({});
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
 
   const showAlert = (message, type = 'error') => {
@@ -81,7 +83,7 @@ const ComplainForm = () => {
     source: 'PR',
     serialNumber: '',
     departmentRef: '',
-    financialYear: '2025-2026',
+    financialYear: '2026-27',
     dateReceived: '',
     district: '',
     block: '',
@@ -92,9 +94,21 @@ const ComplainForm = () => {
     complaintCategory: '',
     description: '',
     responsibleOfficer: '',
-    currentStatus: 'Pending',
     actionTaken: '',
-    remarks: ''
+    remarks: '',
+    // Advanced Details
+    caseStatus: 'Pending',
+    pendingLevel: '',
+    accountFreeze: 'No',
+    firInstruction: 'No',
+    enquiryStatus: 'Pending',
+    deptLetter: 'No',
+    recoverableAmount: '',
+    amountRecovered: '',
+    showCauseNotice: 'No',
+    suspensionOrdered: 'No',
+    terminationOrdered: 'No',
+    firCasesFiled: ''
   });
 
   // Load from Draft if navigated via "Resume" or URL param
@@ -102,7 +116,22 @@ const ComplainForm = () => {
     const queryParams = new URLSearchParams(location.search);
     const urlDraftId = queryParams.get('draftId');
 
-    if (location.state?.draftData) {
+    if (location.state?.formData) {
+      // Returning from Summary Page
+      const restoredApplicant = location.state.applicantData || { name: '', mobile: '', address: '' };
+      const restoredForm = location.state.formData;
+      
+      setApplicantData(restoredApplicant);
+      setFormData(restoredForm);
+      if (location.state.apiBlocks) setApiBlocks(location.state.apiBlocks);
+      if (location.state.apiGPs) setApiGPs(location.state.apiGPs);
+      setStep(2);
+
+      // If confirmed, trigger submission immediately with restored data
+      if (location.state.confirmed && !isSubmitting && !showReceipt) {
+        confirmSubmit(restoredForm, restoredApplicant);
+      }
+    } else if (location.state?.draftData) {
       const draft = location.state.draftData;
       setDraftId(draft._id);
       setShortDraftId(draft.draftId || `D-${draft._id.slice(-6).toUpperCase()}`);
@@ -112,6 +141,18 @@ const ComplainForm = () => {
       setShortDraftId(`D-${urlDraftId.slice(-6).toUpperCase()}`);
     }
   }, [location.state, location.search]);
+
+  // Lock body scroll when advanced details modal is open
+  React.useEffect(() => {
+    if (showAdvancedDetails) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [showAdvancedDetails]);
 
   const loadDraftData = async (draft) => {
     setApplicantData({
@@ -125,7 +166,7 @@ const ComplainForm = () => {
       source: draft.source || 'PR',
       serialNumber: draft.serialNumber || '',
       departmentRef: draft.departmentRef || '',
-      financialYear: draft.financialYear || '2025-2026',
+      financialYear: draft.financialYear || '2026-27',
       dateReceived: draft.dateReceived || '',
       district: draft.district || '',
       block: draft.block || '',
@@ -138,7 +179,19 @@ const ComplainForm = () => {
       responsibleOfficer: draft.responsibleOfficer || '',
       currentStatus: draft.currentStatus || 'Pending',
       actionTaken: draft.actionTaken || '',
-      remarks: draft.remarks || ''
+      remarks: draft.remarks || '',
+      caseStatus: draft.caseStatus || 'Pending',
+      pendingLevel: draft.pendingLevel || '',
+      accountFreeze: draft.accountFreeze || 'No',
+      firInstruction: draft.firInstruction || 'No',
+      enquiryStatus: draft.enquiryStatus || 'Pending',
+      deptLetter: draft.deptLetter || 'No',
+      recoverableAmount: draft.recoverableAmount || '',
+      amountRecovered: draft.amountRecovered || '',
+      showCauseNotice: draft.showCauseNotice || 'No',
+      suspensionOrdered: draft.suspensionOrdered || 'No',
+      terminationOrdered: draft.terminationOrdered || 'No',
+      firCasesFiled: draft.firCasesFiled || ''
     }));
 
     // Cascade Location Data
@@ -384,8 +437,23 @@ const ComplainForm = () => {
       showAlert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha', 'error');
       return;
     }
-    if (!formData.district || !formData.department || !formData.scheme || !formData.complaintCategory || !formData.description) {
-      showAlert(lang === 'hi' ? 'कृपया सभी अनिवार्य फ़ील्ड भरें (ज़िला, विभाग, योजना, श्रेणी और विवरण)' : 'Please fill all mandatory fields (District, Department, Scheme, Category and Description)', 'error');
+    if (
+      !formData.serialNumber || 
+      !formData.dateReceived || 
+      !formData.level || 
+      !formData.district || 
+      !formData.department || 
+      !formData.scheme || 
+      !formData.complaintCategory || 
+      !formData.description || 
+      !formData.responsibleOfficer
+    ) {
+      showAlert(
+        lang === 'hi' 
+          ? 'कृपया सभी अनिवार्य फ़ील्ड भरें (क्र.स., प्राप्त तिथि, स्तर, ज़िला, विभाग, योजना, श्रेणी, विवरण और अधिकारी)' 
+          : 'Please fill all mandatory fields (Serial No, Date, Level, District, Dept, Scheme, Category, Description and Officer)', 
+        'error'
+      );
       return;
     }
 
@@ -395,11 +463,20 @@ const ComplainForm = () => {
       captchaRef.current?.refresh();
       return;
     }
-    setShowPreview(true);
+    
+    // Navigate to summary page instead of showing modal
+    navigate('/complain-summary', { 
+      state: { 
+        applicantData, 
+        formData, 
+        apiDistricts, 
+        apiBlocks 
+      } 
+    });
   };
 
-  const confirmSubmit = async () => {
-    if (!formData.scheme) {
+  const confirmSubmit = async (finalForm = formData, finalApplicant = applicantData) => {
+    if (!finalForm.scheme) {
       showAlert(lang === 'hi' ? 'योजना का चयन अनिवार्य है!' : 'Scheme selection is mandatory!', 'error');
       setIsSubmitting(false);
       return;
@@ -408,10 +485,10 @@ const ComplainForm = () => {
     setIsSubmitting(true);
     try {
       const payload = {
-        applicantName: applicantData.name,
-        mobile: applicantData.mobile,
-        address: applicantData.address,
-        ...formData
+        applicantName: finalApplicant.name,
+        mobile: finalApplicant.mobile,
+        address: finalApplicant.address,
+        ...finalForm
       };
       if (draftId) payload.draftId = draftId;
 
@@ -482,7 +559,68 @@ const ComplainForm = () => {
           )}
         </div>
 
-        {step === 1 ? (
+        {showReceipt && receiptData ? (
+          // --- SUCCESS RECEIPT PAGE ---
+          <div className="animate-in zoom-in-95 duration-500 max-w-2xl mx-auto">
+            <div className="bg-white rounded-md shadow-2xl overflow-hidden border border-gray-200">
+               <div className="bg-[#1e7b34] p-10 text-white text-center">
+                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-white/40">
+                     <Check size={48} className="text-white" />
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tight mb-2">{lang === 'hi' ? 'सबमिशन सफल!' : 'Submission Successful!'}</h2>
+                  <p className="text-green-50 font-medium text-lg">{lang === 'hi' ? 'शिकायत मास्टर सूची में सफलतापूर्वक दर्ज की गई है।' : 'The grievance has been successfully recorded in the master list.'}</p>
+               </div>
+
+               <div className="p-10 space-y-8">
+                  <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-8 rounded-md text-center">
+                     <span className="text-gray-500 text-[13px] font-bold uppercase block mb-2 tracking-wider">Grievance Case Number</span>
+                     <span className="text-5xl font-black text-[#002b5e] tracking-tighter">{receiptData.caseNumber}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px]">
+                     <div className="space-y-1">
+                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Submitted On</span>
+                        <span className="font-bold text-gray-800 text-[15px]">{receiptData.submissionDate}</span>
+                     </div>
+                     <div className="space-y-1">
+                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Officer ID</span>
+                        <span className="font-bold text-gray-800 text-[15px]">{activeUser?.id}</span>
+                     </div>
+                     <div className="space-y-1">
+                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Complainant</span>
+                        <span className="font-bold text-gray-800 text-[15px]">{receiptData.applicantName || 'Anonymous'}</span>
+                     </div>
+                     <div className="space-y-1">
+                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Location</span>
+                        <span className="font-bold text-gray-800 text-[15px]">
+                           {apiDistricts.find(d => d.value == receiptData.district)?.label || receiptData.district}
+                           {receiptData.block && ` / ${apiBlocks.find(b => b.value == receiptData.block)?.label || receiptData.block}`}
+                        </span>
+                     </div>
+                  </div>
+
+                  <div className="pt-8 border-t border-gray-100 flex flex-col gap-4">
+                     <button 
+                        onClick={() => window.print()} 
+                        className="w-full py-4 bg-[#002b5e] text-white font-black rounded-sm shadow-md hover:bg-[#001c3d] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[14px]"
+                      >
+                        <Printer size={20} /> {lang === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
+                     </button>
+                     <button 
+                        onClick={() => navigate('/')} 
+                        className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-sm hover:bg-gray-200 transition-all uppercase tracking-widest text-[12px] border border-gray-200"
+                      >
+                        {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
+                     </button>
+                  </div>
+               </div>
+
+               <div className="bg-gray-50 px-8 py-6 border-t text-center">
+                  <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">© 2026 Department of Rural Development, Rajasthan</p>
+               </div>
+            </div>
+          </div>
+        ) : step === 1 ? (
           // --- STEP 1: COMPLAINANT DETAILS ---
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6">
@@ -683,7 +821,7 @@ const ComplainForm = () => {
                 <div className="lg:col-span-5 space-y-6">
 
                   {/* Origin & Reference */}
-                  <div className="bg-white p-5 rounded-sm shadow-sm border-t-4 border-t-[#002b5e] border border-gray-200">
+                  <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                       <Calendar size={18} className="text-[#1976d2]" />
                       <h2 className="font-bold text-[15px] text-[#002b5e]">{lang === 'hi' ? 'मूल स्रोत और संदर्भ' : 'Origin & Reference'}</h2>
@@ -702,9 +840,14 @@ const ComplainForm = () => {
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'वित्तीय वर्ष' : 'Financial Year'} {requiredSpan}</label>
                           <select name="financialYear" value={formData.financialYear} onChange={handleFormChange} required className={inputClass}>
-                            <option value="2024-2025">2024-2025</option>
-                            <option value="2025-2026">2025-2026</option>
-                            <option value="2026-2027">2026-2027</option>
+                            <option value="2027-28">2027-28</option>
+                            <option value="2026-27">2026-27</option>
+                            <option value="2025-26">2025-26</option>
+                            <option value="2024-25">2024-25</option>
+                            <option value="2023-24">2023-24</option>
+                            <option value="2022-23">2022-23</option>
+                            <option value="2021-22">2021-22</option>
+                            <option value="2020-21">2020-21</option>
                           </select>
                         </div>
                       </div>
@@ -722,7 +865,7 @@ const ComplainForm = () => {
                   </div>
 
                   {/* Geographic Location */}
-                  <div className="bg-white p-5 rounded-sm shadow-sm border-t-4 border-t-[#e65100] border border-gray-200">
+                  <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                       <MapPin size={18} className="text-[#e65100]" />
                       <h2 className="font-bold text-[15px] text-[#002b5e]">{lang === 'hi' ? 'भौगोलिक स्थान' : 'Geographic Location'}</h2>
@@ -767,12 +910,168 @@ const ComplainForm = () => {
                         </select>
                       </div>
                     </div>
+
+                    <div className="pt-4 mt-2">
+                      <button 
+                        type="button"
+                        onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
+                        className={`w-full py-3 px-4 rounded-sm font-bold text-[13px] flex items-center justify-center gap-3 transition-all border-2 ${
+                          showAdvancedDetails 
+                            ? 'bg-orange-600 text-white border-orange-600 shadow-md' 
+                            : 'bg-white text-orange-600 border-orange-600 hover:bg-orange-50'
+                        }`}
+                      >
+                        {showAdvancedDetails ? <Minimize size={18} /> : <LayoutList size={18} />}
+                        {showAdvancedDetails 
+                          ? (lang === 'hi' ? 'अतिरिक्त विवरण छिपाएं' : 'Hide Advanced Details') 
+                          : (lang === 'hi' ? 'अतिरिक्त विवरण (More Details)' : 'Show Advanced Details')}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Advanced Case Details Modal */}
+                  {showAdvancedDetails && (
+                    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-hidden animate-in fade-in duration-200">
+                      <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Modal Header */}
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-orange-50/50">
+                          <div className="flex items-center gap-3 text-orange-600">
+                            <Activity size={22} className="animate-pulse" />
+                            <div>
+                              <h2 className="font-black text-[16px] text-gray-900 uppercase tracking-tight">{lang === 'hi' ? 'अग्रिम प्रशासनिक विवरण' : 'Advanced Administrative Details'}</h2>
+                              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">{lang === 'hi' ? 'गोपनीय प्रशासनिक पहुंच' : 'Confidential Administrative Access'}</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => setShowAdvancedDetails(false)}
+                            className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors border border-transparent hover:border-gray-100"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+
+                        {/* Modal Content - Scrollable */}
+                        <div className="flex-grow p-6 overflow-y-auto no-scrollbar bg-gray-50/30">
+                          <div className="space-y-8">
+                            {/* Action Matrix Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {[
+                                { id: 'accountFreeze', label: 'Account Freeze Action', hi: 'खाता फ्रीज कार्रवाई' },
+                                { id: 'firInstruction', label: 'FIR Instruction Issued', hi: 'FIR निर्देश जारी' },
+                                { id: 'deptLetter', label: 'Dept Letter Issued', hi: 'विभागीय पत्र जारी' },
+                                { id: 'showCauseNotice', label: 'Show Cause Issued', hi: 'कारण बताओ नोटिस' },
+                                { id: 'suspensionOrdered', label: 'Suspension Ordered', hi: 'निलंबन आदेश' },
+                                { id: 'terminationOrdered', label: 'Termination Ordered', hi: 'सेवा समाप्ति आदेश' },
+                              ].map((item) => (
+                                <div key={item.id} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-4">
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-bold text-[14px] text-gray-800">{lang === 'hi' ? item.hi : item.label}</span>
+                                    <div className="flex gap-1 bg-gray-50 p-1 rounded-md border border-gray-100">
+                                      {['Yes', 'No'].map(opt => (
+                                        <button 
+                                          key={opt} 
+                                          type="button" 
+                                          onClick={() => setFormData(prev => ({...prev, [item.id]: opt}))} 
+                                          className={`px-4 py-1.5 rounded-md font-black text-[10px] uppercase transition-all ${formData[item.id] === opt ? 'bg-orange-600 text-white shadow-sm' : 'bg-transparent text-gray-400'}`}
+                                        >
+                                          {opt}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="pt-3 border-t border-gray-50">
+                                    {advancedDocs[item.id] ? (
+                                      <div className="flex items-center justify-between bg-green-50 px-4 py-3 rounded-lg border border-green-100">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                            <CheckCircle size={16} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] font-black text-green-700 truncate max-w-[150px]">{advancedDocs[item.id]}</p>
+                                            <p className="text-[9px] text-green-600/70 font-bold uppercase tracking-widest">Document Verified</p>
+                                          </div>
+                                        </div>
+                                        <button type="button" onClick={() => setAdvancedDocs(prev => {const next = {...prev}; delete next[item.id]; return next;})} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
+                                          <X size={16} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <label className="cursor-pointer group block">
+                                        <input 
+                                          type="file" 
+                                          className="hidden" 
+                                          accept=".pdf" 
+                                          onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) setAdvancedDocs(prev => ({...prev, [item.id]: file.name}));
+                                          }}
+                                        />
+                                        <div className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-gray-200 rounded-lg group-hover:border-orange-400 group-hover:bg-orange-50/50 transition-all">
+                                          <UploadCloud size={18} className="text-gray-300 group-hover:text-orange-600" />
+                                          <span className="text-[12px] font-bold text-gray-400 group-hover:text-orange-600 uppercase tracking-wide">{lang === 'hi' ? 'प्रमाण पत्र अपलोड करें' : 'Upload Support Doc'}</span>
+                                        </div>
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Quantitative Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
+                                <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Status & Legal</h4>
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'जांच रिपोर्ट की स्थिति' : 'Enquiry Report Status'}</label>
+                                    <select name="enquiryStatus" value={formData.enquiryStatus} onChange={handleFormChange} className={`${inputClass} !bg-gray-50 border-gray-200`}>
+                                      <option value="Pending">Pending</option>
+                                      <option value="Completed">Completed</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'दर्ज FIR की संख्या' : 'Number of FIR Cases Filed'}</label>
+                                    <input type="number" name="firCasesFiled" value={formData.firCasesFiled} onChange={handleFormChange} placeholder="e.g. 5" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
+                                <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Financial Recovery</h4>
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'वसूली योग्य राशि' : 'Recoverable Amount (₹)'}</label>
+                                    <input type="number" name="recoverableAmount" value={formData.recoverableAmount} onChange={handleFormChange} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'वसूली की गई राशि' : 'Amount Recovered (₹)'}</label>
+                                    <input type="number" name="amountRecovered" value={formData.amountRecovered} onChange={handleFormChange} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-gray-100 bg-white flex justify-end">
+                          <button 
+                            type="button" 
+                            onClick={() => setShowAdvancedDetails(false)}
+                            className="bg-[#002b5e] text-white px-10 py-3 rounded-lg font-black text-[14px] uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-[#001c3d] transition-all transform active:scale-95"
+                          >
+                            {lang === 'hi' ? 'सहेजें और बंद करें' : 'Done & Update'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="lg:col-span-7 space-y-6">
                   {/* Case Specifics */}
-                  <div className="bg-white p-5 rounded-sm shadow-sm border-t-4 border-t-[#2e7d32] border border-gray-200">
+                  <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                       <ShieldAlert size={18} className="text-[#2e7d32]" />
                       <h2 className="font-bold text-[15px] text-[#002b5e]">{lang === 'hi' ? 'प्रकरण का विवरण' : 'Case Specifics'}</h2>
@@ -978,7 +1277,7 @@ const ComplainForm = () => {
                   </div>
 
                   {/* Enforcement & Status */}
-                  <div className="bg-white p-5 rounded-sm shadow-sm border-t-4 border-t-[#6a1b9a] border border-gray-200">
+                  <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                       <Activity size={18} className="text-[#6a1b9a]" />
                       <h2 className="font-bold text-[15px] text-[#002b5e]">{lang === 'hi' ? 'कार्रवाई और वर्तमान स्थिति' : 'Enforcement & Current Status'}</h2>
@@ -986,7 +1285,7 @@ const ComplainForm = () => {
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className={labelClass}>{lang === 'hi' ? 'संबंधित अधिकारी का नाम/पद' : 'Responsible Officer'} {requiredSpan}</label>
+                          <label className={labelClass}>{lang === 'hi' ? 'संबंधित अधिकारी का नाम/पद' : 'Investigating Officer'} {requiredSpan}</label>
                           <input type="text" name="responsibleOfficer" value={formData.responsibleOfficer} onChange={handleFormChange} required placeholder="e.g. BDO, Sarpanch, Zila Parishad CEO" className={inputClass} />
                         </div>
                         <div>
@@ -1047,191 +1346,6 @@ const ComplainForm = () => {
                 </div>
               </div>
             </form>
-
-            {/* Official Document Preview Modal */}
-            {showPreview && (
-              <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
-                <div className="bg-white shadow-2xl w-full max-w-4xl min-h-[90vh] flex flex-col my-8 rounded-sm">
-                  {/* Modal Header */}
-                  <div className="bg-gray-100 px-6 py-4 border-b flex justify-between items-center print:hidden">
-                    <h2 className="font-bold text-[#002b5e] flex items-center gap-2 text-lg uppercase tracking-tight">
-                      <FileText size={20} /> {lang === 'hi' ? 'दस्तावेज़ पूर्वावलोकन' : 'Official Document Preview'}
-                    </h2>
-                    <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-red-500 transition-colors"><X size={28} /></button>
-                  </div>
-
-                  {/* Document Body */}
-                  <div className="flex-grow p-10 md:p-16 bg-white overflow-y-auto custom-scrollbar">
-                    <div className="border-[3px] border-double border-gray-800 p-8 md:p-12 relative">
-                      {/* Document Watermark/Header Decoration */}
-                      <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-gray-200"></div>
-                      <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-gray-200"></div>
-                      <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-gray-200"></div>
-                      <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-gray-200"></div>
-
-                      <div className="text-center mb-10">
-                        <h1 className="text-2xl font-black uppercase text-gray-900 mb-1">Government of Rajasthan</h1>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2 uppercase">Department of Rural Development & Panchayati Raj</h2>
-                        <div className="h-1 w-24 bg-gray-900 mx-auto mb-6"></div>
-                        <h3 className="text-lg font-black bg-gray-100 py-2 inline-block px-8 border border-gray-300">
-                          {lang === 'hi' ? 'शिकायत/मामला प्रविष्टि सारांश' : 'Grievance / Case Entry Summary'}
-                        </h3>
-                      </div>
-
-                      {/* Info Grid */}
-                      <div className="space-y-8 text-gray-900">
-                        {/* Section: Applicant */}
-                        <div>
-                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
-                            <User size={16} /> {lang === 'hi' ? 'आवेदक का विवरण' : 'I. Complainant Information'}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-y-4 px-2">
-                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Full Name</span> <span className="font-bold border-b border-gray-100 pb-1">{applicantData.name || 'NOT PROVIDED'}</span></p>
-                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Mobile Number</span> <span className="font-bold border-b border-gray-100 pb-1">{applicantData.mobile || 'N/A'}</span></p>
-                            <p className="col-span-2 flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Postal Address</span> <span className="font-semibold">{applicantData.address || 'N/A'}</span></p>
-                          </div>
-                        </div>
-
-                        {/* Section: Metadata */}
-                        <div>
-                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
-                            <Calendar size={16} /> {lang === 'hi' ? 'संदर्भ और स्थान' : 'II. Reference & Geographic Scope'}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-x-12 gap-y-4 px-2">
-                            <div className="space-y-4">
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Source</span> <span className="font-bold">{formData.source}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Serial No</span> <span className="font-black text-blue-800">{formData.serialNumber}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Fin. Year</span> <span className="font-bold">{formData.financialYear}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Received Date</span> <span className="font-bold">{formData.dateReceived}</span></p>
-                            </div>
-                            <div className="space-y-4">
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Admin Level</span> <span className="font-bold">{formData.level}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">District</span> <span className="font-bold">{apiDistricts.find(d => d.value === formData.district)?.label || formData.district}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Block</span> <span className="font-bold">{apiBlocks.find(b => b.value === formData.block)?.label || formData.block || '-'}</span></p>
-                              <p className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500 font-bold uppercase text-[10px]">Gram Panchayat</span> <span className="font-bold">{formData.panchayat || '-'}</span></p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Section: Grievance */}
-                        <div>
-                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
-                            <ShieldAlert size={16} /> {lang === 'hi' ? 'शिकायत विवरण' : 'III. Grievance Specifics'}
-                          </h4>
-                          <div className="px-2 space-y-4">
-                            <div className="grid grid-cols-2 gap-8">
-                               <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Department</span> <span className="font-bold">{formData.department}</span></p>
-                               <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Scheme Name</span> <span className="font-bold">{formData.scheme}</span></p>
-                            </div>
-                            <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Complaint Category</span> <span className="font-black text-gray-900 border-l-4 border-gray-800 pl-3 py-1 bg-gray-50">{formData.complaintCategory}</span></p>
-                            <p className="flex flex-col gap-1">
-                              <span className="text-[11px] font-bold text-gray-500 uppercase">Detailed Description</span>
-                              <span className="text-[14px] leading-relaxed italic bg-gray-50 p-4 border border-dashed border-gray-300">"{formData.description}"</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Section: Action */}
-                        <div>
-                          <h4 className="font-black border-b-2 border-gray-800 pb-1 mb-4 flex items-center gap-2 text-[14px] uppercase tracking-wide">
-                            <Activity size={16} /> {lang === 'hi' ? 'प्रवर्तन और स्थिति' : 'IV. Status & Enforcement Details'}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-8 px-2">
-                             <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Responsible Officer</span> <span className="font-bold">{formData.responsibleOfficer}</span></p>
-                             <p className="flex flex-col"><span className="text-[11px] font-bold text-gray-500 uppercase">Current Case Status</span> <span className="font-black uppercase text-[#1976d2]">{formData.currentStatus}</span></p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Document Footer */}
-                      <div className="mt-16 flex justify-between items-end">
-                        <div className="text-[11px] text-gray-400 font-bold uppercase italic">
-                           System Generated Preview • {new Date().toLocaleString()}
-                        </div>
-                        <div className="text-center">
-                          <div className="w-48 h-12 border-b-2 border-gray-200 mb-1"></div>
-                          <p className="text-[10px] font-black uppercase text-gray-500">Authorized Officer Signature</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Footer */}
-                  <div className="bg-gray-50 p-6 border-t flex justify-end gap-4 print:hidden">
-                    <button onClick={() => setShowPreview(false)} disabled={isSubmitting} className="px-8 py-3 bg-white border-2 border-gray-300 font-black text-gray-700 hover:bg-gray-100 transition-all rounded-sm uppercase tracking-widest text-[12px]">
-                      {lang === 'hi' ? 'संशोधन करें' : 'Edit Information'}
-                    </button>
-                    <button onClick={confirmSubmit} disabled={isSubmitting} className="px-10 py-3 bg-[#1e7b34] text-white font-black hover:bg-[#155a26] transition-all rounded-sm shadow-lg flex items-center gap-3 uppercase tracking-widest text-[12px]">
-                      {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                      {isSubmitting ? (lang === 'hi' ? 'सबमिट हो रहा है...' : 'Finalizing Submission...') : (lang === 'hi' ? 'डेटा सबमिट करें' : 'Confirm & Submit to Master')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Submission Receipt Modal */}
-            {showReceipt && receiptData && (
-              <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-md overflow-y-auto">
-                <div className="bg-white rounded-md shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                   <div className="bg-[#1e7b34] p-8 text-white text-center">
-                      <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white/40">
-                         <Check size={40} className="text-white" />
-                      </div>
-                      <h2 className="text-2xl font-black uppercase tracking-tight">{lang === 'hi' ? 'सबमिशन सफल!' : 'Submission Successful!'}</h2>
-                      <p className="text-green-50 font-medium mt-2">{lang === 'hi' ? 'शिकायत मास्टर सूची में सफलतापूर्वक दर्ज की गई है।' : 'The grievance has been successfully recorded in the master list.'}</p>
-                   </div>
-
-                   <div className="p-8 space-y-6">
-                      <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-6 rounded-md text-center">
-                         <span className="text-gray-500 text-[12px] font-bold uppercase block mb-1">Grievance Case Number</span>
-                         <span className="text-4xl font-black text-[#002b5e] tracking-tighter">{receiptData.caseNumber}</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-6 text-[13px]">
-                         <div>
-                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Submitted On</span>
-                            <span className="font-bold text-gray-800">{receiptData.submissionDate}</span>
-                         </div>
-                         <div>
-                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Officer ID</span>
-                            <span className="font-bold text-gray-800">{activeUser?.id}</span>
-                         </div>
-                         <div>
-                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Complainant</span>
-                            <span className="font-bold text-gray-800">{receiptData.applicantName || 'Anonymous'}</span>
-                         </div>
-                         <div>
-                            <span className="text-gray-400 font-bold uppercase text-[10px] block">Location</span>
-                            <span className="font-bold text-gray-800">
-                               {apiDistricts.find(d => d.value === receiptData.district)?.label || receiptData.district}
-                               {receiptData.block && ` / ${apiBlocks.find(b => b.value === receiptData.block)?.label || receiptData.block}`}
-                            </span>
-                         </div>
-                      </div>
-
-                      <div className="pt-6 border-t border-gray-100 flex flex-col gap-3">
-                         <button 
-                            onClick={() => window.print()} 
-                            className="w-full py-4 bg-[#002b5e] text-white font-black rounded-sm shadow-md hover:bg-[#001c3d] transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[13px]"
-                          >
-                            <FileText size={18} /> {lang === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
-                         </button>
-                         <button 
-                            onClick={() => navigate('/')} 
-                            className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-sm hover:bg-gray-200 transition-all uppercase tracking-widest text-[11px]"
-                          >
-                            {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
-                         </button>
-                      </div>
-                   </div>
-
-                   <div className="bg-gray-50 px-8 py-4 border-t text-center">
-                      <p className="text-[11px] font-bold text-gray-400 uppercase">© 2026 Department of Rural Development, Rajasthan</p>
-                   </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 

@@ -16,7 +16,7 @@ const Notification = () => {
   const [filters, setFilters] = useState({
     scheme: 'All Schemes',
     project: 'All Projects',
-    finYear: 'All Years',
+    finYear: '2026-27',
     status: 'All Statuses',
     fromDate: '',
     toDate: '',
@@ -207,8 +207,14 @@ const Notification = () => {
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Financial Year</label>
                       <select name="finYear" value={filters.finYear} onChange={handleFilterChange} className="w-full bg-white/10 border border-white/20 text-white px-3 py-2.5 rounded-sm text-[12px] focus:outline-none focus:bg-white focus:text-gray-900 transition-all cursor-pointer">
                         <option className="text-gray-900">All Years</option>
-                        <option className="text-gray-900">2025-2026</option>
-                        <option className="text-gray-900">2026-2027</option>
+                        <option className="text-gray-900">2027-28</option>
+                        <option className="text-gray-900">2026-27</option>
+                        <option className="text-gray-900">2025-26</option>
+                        <option className="text-gray-900">2024-25</option>
+                        <option className="text-gray-900">2023-24</option>
+                        <option className="text-gray-900">2022-23</option>
+                        <option className="text-gray-900">2021-22</option>
+                        <option className="text-gray-900">2020-21</option>
                       </select>
                     </div>
                     <div>
