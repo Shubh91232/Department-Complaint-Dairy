@@ -16,8 +16,8 @@ const EnforcementStatus = React.memo(({ lang, formData, handleFormChange, labelC
           </div>
           <div>
             <label className={labelClass}>{lang === 'hi' ? 'वर्तमान स्थिति' : 'Current Status'} {requiredSpan}</label>
-            <select name="currentStatus" value={formData.currentStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.currentStatus === 'Pending' ? 'text-red-600' :
-              formData.currentStatus === 'Resolved' ? 'text-green-600' :
+            <select name="caseStatus" value={formData.caseStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.caseStatus === 'Pending' ? 'text-red-600' :
+              formData.caseStatus === 'Resolved' ? 'text-green-600' :
                 'text-blue-600'
               }`}>
               <option value="Pending">{lang === 'hi' ? 'लंबित (Pending)' : 'Pending'}</option>
@@ -25,10 +25,6 @@ const EnforcementStatus = React.memo(({ lang, formData, handleFormChange, labelC
               <option value="Resolved">{lang === 'hi' ? 'निस्तारित (Resolved)' : 'Resolved'}</option>
               <option value="Rejected">{lang === 'hi' ? 'अस्वीकृत (Rejected)' : 'Rejected'}</option>
             </select>
-          </div>
-          <div>
-            <label className={labelClass}>{lang === 'hi' ? 'विभागीय संदर्भ क्र.' : 'Dept Ref No.'}</label>
-            <input type="text" name="departmentRef" value={formData.departmentRef} onChange={handleFormChange} placeholder="e.g. CS-2026-X" className={inputClass} />
           </div>
         </div>
         <div>

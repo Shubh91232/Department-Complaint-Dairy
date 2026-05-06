@@ -52,56 +52,69 @@ const AdvancedDetailsModal = ({
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[14px] text-gray-800">{lang === 'hi' ? item.hi : item.label}</span>
                     <div className="flex gap-1 bg-gray-50 p-1 rounded-md border border-gray-100">
-                      {['Yes', 'No'].map(opt => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, [item.id]: opt }))}
-                          className={`px-4 py-1.5 rounded-md font-black text-[10px] uppercase transition-all ${formData[item.id] === opt ? 'bg-orange-600 text-white shadow-sm' : 'bg-transparent text-gray-400'}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
+                      {['Yes', 'No'].map(opt => {
+                        const section = ['accountFreeze', 'firInstruction', 'deptLetter'].includes(item.id) ? 'AccountStatus' : 'LegalActionStatus';
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              [section]: {
+                                ...prev[section],
+                                [item.id]: opt
+                              }
+                            }))}
+                            className={`px-4 py-1.5 rounded-md font-black text-[10px] uppercase transition-all ${formData[section][item.id] === opt ? 'bg-orange-600 text-white shadow-sm' : 'bg-transparent text-gray-400'}`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-gray-50">
-                    {formData[item.id] === 'Yes' ? (
-                      <div className="animate-in slide-in-from-top-2 duration-300">
-                        {advancedDocs[item.id] ? (
-                          <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-100">
-                            <div className="flex items-center gap-3">
-                              <CheckCircle size={18} className="text-green-600" />
-                              <div>
-                                <p className="text-[11px] font-black text-green-700 truncate max-w-[150px]">{advancedDocs[item.id]?.name || (typeof advancedDocs[item.id] === 'string' ? advancedDocs[item.id].split('/').pop() : 'Document')}</p>
-                                <p className="text-[9px] text-green-600/70 font-bold uppercase tracking-widest">Document Verified</p>
+                    {(() => {
+                      const section = ['accountFreeze', 'firInstruction', 'deptLetter'].includes(item.id) ? 'AccountStatus' : 'LegalActionStatus';
+                      if (formData[section][item.id] === 'Yes') {
+                        return (
+                          <div className="animate-in slide-in-from-top-2 duration-300">
+                            {advancedDocs[item.id] ? (
+                              <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-100">
+                                <div className="flex items-center gap-3">
+                                  <CheckCircle size={18} className="text-green-600" />
+                                  <div>
+                                    <p className="text-[11px] font-black text-green-700 truncate max-w-[150px]">{advancedDocs[item.id]?.name || (typeof advancedDocs[item.id] === 'string' ? advancedDocs[item.id].split('/').pop() : 'Document')}</p>
+                                    <p className="text-[9px] text-green-600/70 font-bold uppercase tracking-widest">Document Verified</p>
+                                  </div>
+                                </div>
+                                <button type="button" onClick={() => setAdvancedDocs(prev => { const next = { ...prev }; delete next[item.id]; return next; })} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
+                                  <X size={16} />
+                                </button>
                               </div>
-                            </div>
-                            <button type="button" onClick={() => setAdvancedDocs(prev => { const next = { ...prev }; delete next[item.id]; return next; })} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
-                              <X size={16} />
-                            </button>
+                            ) : (
+                              <label className="cursor-pointer group block">
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) setAdvancedDocs(prev => ({ ...prev, [item.id]: file }));
+                                  }}
+                                />
+                                <div className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-gray-200 rounded-lg group-hover:border-orange-400 group-hover:bg-orange-50/50 transition-all">
+                                  <UploadCloud size={18} className="text-gray-300 group-hover:text-orange-600" />
+                                  <span className="text-[12px] font-bold text-gray-400 group-hover:text-orange-600 uppercase tracking-wide">{lang === 'hi' ? 'प्रमाण पत्र अपलोड करें' : 'Upload Support Doc'}</span>
+                                </div>
+                              </label>
+                            )}
                           </div>
-                        ) : (
-                          <label className="cursor-pointer group block">
-                            <input
-                              type="file"
-                              className="hidden"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) setAdvancedDocs(prev => ({ ...prev, [item.id]: file }));
-                              }}
-                            />
-                            <div className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-gray-200 rounded-lg group-hover:border-orange-400 group-hover:bg-orange-50/50 transition-all">
-                              <UploadCloud size={18} className="text-gray-300 group-hover:text-orange-600" />
-                              <span className="text-[12px] font-bold text-gray-400 group-hover:text-orange-600 uppercase tracking-wide">{lang === 'hi' ? 'प्रमाण पत्र अपलोड करें' : 'Upload Support Doc'}</span>
-                            </div>
-                          </label>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-gray-400 italic">No document required for 'No' status.</p>
-                    )}
+                        );
+                      }
+                      return <p className="text-[10px] text-gray-400 italic">No document required for 'No' status.</p>;
+                    })()}
                   </div>
                 </div>
               ))}
@@ -114,14 +127,14 @@ const AdvancedDetailsModal = ({
                 <div className="space-y-4">
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'जांच रिपोर्ट की स्थिति' : 'Enquiry Report Status'}</label>
-                    <select name="enquiryStatus" value={formData.enquiryStatus} onChange={handleFormChange} className={`${inputClass} !bg-gray-50 border-gray-200`}>
+                    <select name="enquiryStatus" value={formData.AccountStatus.enquiryStatus} onChange={(e) => handleFormChange(e, 'AccountStatus')} className={`${inputClass} !bg-gray-50 border-gray-200`}>
                       <option value="Pending">Pending</option>
                       <option value="Completed">Completed</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'दर्ज FIR की संख्या' : 'Number of FIR Cases Filed'}</label>
-                    <input type="number" name="firCasesFiled" value={formData.firCasesFiled} onChange={handleFormChange} placeholder="e.g. 5" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                    <input type="number" name="firCasesFiled" value={formData.LegalActionStatus.firCasesFiled} onChange={(e) => handleFormChange(e, 'LegalActionStatus')} placeholder="e.g. 5" className={`${inputClass} !bg-gray-50 border-gray-200`} />
                   </div>
                 </div>
               </div>
@@ -130,11 +143,11 @@ const AdvancedDetailsModal = ({
                 <div className="space-y-4">
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'वसूली योग्य राशि' : 'Recoverable Amount (₹)'}</label>
-                    <input type="number" name="recoverableAmount" value={formData.recoverableAmount} onChange={handleFormChange} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                    <input type="number" name="recoverableAmount" value={formData.FinancialStatus.recoverableAmount} onChange={(e) => handleFormChange(e, 'FinancialStatus')} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
                   </div>
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">{lang === 'hi' ? 'वसूली की गई राशि' : 'Amount Recovered (₹)'}</label>
-                    <input type="number" name="amountRecovered" value={formData.amountRecovered} onChange={handleFormChange} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
+                    <input type="number" name="amountRecovered" value={formData.FinancialStatus.amountRecovered} onChange={(e) => handleFormChange(e, 'FinancialStatus')} placeholder="Enter amount" className={`${inputClass} !bg-gray-50 border-gray-200`} />
                   </div>
                 </div>
               </div>

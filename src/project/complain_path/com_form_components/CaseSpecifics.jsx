@@ -77,7 +77,14 @@ const CaseSpecifics = React.memo(({
                         key={dept.department_id}
                         className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, department: dept.department_name_en, scheme: '' }));
+                          setFormData(prev => ({
+                            ...prev,
+                            case_information: {
+                              ...prev.case_information,
+                              department: dept.department_name_en,
+                              scheme: ''
+                            }
+                          }));
                           setShowDeptOptions(false);
                           setDeptSearch('');
                         }}
@@ -139,9 +146,12 @@ const CaseSpecifics = React.memo(({
                         onClick={() => {
                           setFormData(prev => ({
                             ...prev,
-                            department: scheme.deptNameEn || prev.department,
-                            scheme: scheme.scheme_name_en,
-                            complaintCategory: autoSelectCategory(scheme.type)
+                            case_information: {
+                              ...prev.case_information,
+                              department: scheme.deptNameEn || prev.case_information.department,
+                              scheme: scheme.scheme_name_en,
+                              complaintCategory: autoSelectCategory(scheme.type)
+                            }
                           }));
                           setShowSchemeOptions(false);
                           setSchemeSearch('');
@@ -217,7 +227,13 @@ const CaseSpecifics = React.memo(({
                       key={idx}
                       className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, complaintCategory: cat }));
+                        setFormData(prev => ({
+                          ...prev,
+                          case_information: {
+                            ...prev.case_information,
+                            complaintCategory: cat
+                          }
+                        }));
                         setShowCategoryOptions(false);
                         setCategorySearch('');
                       }}

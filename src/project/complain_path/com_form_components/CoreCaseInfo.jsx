@@ -24,6 +24,10 @@ const CoreCaseInfo = React.memo(({ lang, formData, handleFormChange, labelClass,
           <input type="text" name="serialNumber" value={formData.serialNumber} onChange={handleFormChange} required placeholder="e.g. RJ-2026-001" className={inputClass} />
         </div>
         <div>
+          <label className={labelClass}>{lang === 'hi' ? 'विभागीय संदर्भ क्र.' : 'Dept Ref No.'}</label>
+          <input type="text" name="departmentRef" value={formData.departmentRef} onChange={handleFormChange} placeholder="e.g. CS-2026-X" className={inputClass} />
+        </div>
+        <div>
           <label className={labelClass}>{lang === 'hi' ? 'प्राप्त तिथि' : 'Date Received'} {requiredSpan}</label>
           <input type="date" name="dateReceived" value={formData.dateReceived} onChange={handleFormChange} required className={inputClass} />
         </div>

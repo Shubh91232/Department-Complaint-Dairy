@@ -72,34 +72,48 @@ const ComplainForm = () => {
       mobile: '',
       address: ''
     },
-    source: 'PR',
-    serialNumber: '',
-    departmentRef: '',
-    financialYear: '2026-27',
-    dateReceived: '',
-    district: '',
-    block: '',
-    panchayat: '',
-    level: 'District',
-    department: '',
-    scheme: '',
-    complaintCategory: '',
-    description: '',
-    responsibleOfficer: '',
-    actionTaken: '',
-    remarks: '',
-    caseStatus: 'Pending',
-    pendingLevel: '',
-    accountFreeze: 'No',
-    firInstruction: 'No',
-    enquiryStatus: 'Pending',
-    deptLetter: 'No',
-    recoverableAmount: '',
-    amountRecovered: '',
-    showCauseNotice: 'No',
-    suspensionOrdered: 'No',
-    terminationOrdered: 'No',
-    firCasesFiled: ''
+    CoreCaseInfo: {
+      source: 'PR',
+      serialNumber: '',
+      departmentRef: '',
+      financialYear: '2026-27',
+      dateReceived: '',
+    },
+    geographic_information: {
+      district: '',
+      block: '',
+      panchayat: '',
+      level: 'District',
+    },
+    case_information: {
+      department: '',
+      scheme: '',
+      complaintCategory: '',
+      description: '',
+    },
+    EnforcementStatus: {
+      responsibleOfficer: '',
+      actionTaken: '',
+      remarks: '',
+      caseStatus: 'Pending',
+      pendingLevel: '',
+    },
+    AccountStatus: {
+      accountFreeze: 'No',
+      firInstruction: 'No',
+      enquiryStatus: 'Pending',
+      deptLetter: 'No',
+    },
+    FinancialStatus: {
+      recoverableAmount: '',
+      amountRecovered: '',
+    },
+    LegalActionStatus: {
+      showCauseNotice: 'No',
+      suspensionOrdered: 'No',
+      terminationOrdered: 'No',
+      firCasesFiled: ''
+    }
   });
 
   // Load from Draft if navigated via "Resume" or URL param
@@ -324,7 +338,10 @@ const ComplainForm = () => {
       })));
   }, [departments, deptData]);
 
-  const selectedDept = departments.find(d => d.department_name_en === formData.department || d.department_name_hi === formData.department);
+  const selectedDept = departments.find(d => 
+    d.department_name_en === formData.case_information?.department || 
+    d.department_name_hi === formData.case_information?.department
+  );
   const currentSchemes = selectedDept ? selectedDept.schemes : allSchemes;
 
 
@@ -343,42 +360,66 @@ const ComplainForm = () => {
     return mapping[type] || 'Other';
   };
 
-  const handleFormChange = React.useCallback(async (e) => {
+  const handleFormChange = React.useCallback(async (e, section) => {
     const { name, value } = e.target;
 
     setFormData(prev => {
-      const newData = { ...prev, [name]: value };
-      if (name === 'department') newData.scheme = '';
-      if (name === 'district') { newData.block = ''; newData.panchayat = ''; }
-      if (name === 'block') newData.panchayat = '';
+      const newData = { ...prev };
+      
+      if (section) {
+        newData[section] = {
+          ...prev[section],
+          [name]: value
+        };
+      } else {
+        newData[name] = value;
+      }
+
+      // Cascading logic
+      if (section === 'case_information' && name === 'department') {
+        newData.case_information.scheme = '';
+      }
+      if (section === 'geographic_information') {
+        if (name === 'district') {
+          newData.geographic_information.block = '';
+          newData.geographic_information.panchayat = '';
+        }
+        if (name === 'block') {
+          newData.geographic_information.panchayat = '';
+        }
+      }
+
       return newData;
     });
 
-    // Cascading Location Fetching
-    if (name === 'district') {
+    // Cascading Location Fetching (Visual only, state handled above)
+    if (name === 'district' && value) {
       setApiBlocks([]);
       setApiGPs([]);
-      if (value) {
-        try {
-          const res = await fetchBlocksAPI(value);
-          if (res.success) setApiBlocks(res.data);
-        } catch (err) { console.error("Error fetching blocks:", err); }
-      }
+      try {
+        const res = await fetchBlocksAPI(value);
+        if (res.success) setApiBlocks(res.data);
+      } catch (err) { console.error("Error fetching blocks:", err); }
     }
 
-    if (name === 'block') {
+    if (name === 'block' && value) {
       setApiGPs([]);
-      if (value) {
-        try {
-          const res = await fetchGPsAPI(value);
-          if (res.success) setApiGPs(res.data);
-        } catch (err) { console.error("Error fetching GPs:", err); }
-      }
+      try {
+        const res = await fetchGPsAPI(value);
+        if (res.success) setApiGPs(res.data);
+      } catch (err) { console.error("Error fetching GPs:", err); }
     }
   }, []);
 
   const handleApplicantChange = (e) => {
-    setApplicantData({ ...applicantData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      applicantData: {
+        ...prev.applicantData,
+        [name]: value
+      }
+    }));
   };
 
   const handleProceed = () => {
@@ -467,7 +508,33 @@ const ComplainForm = () => {
     setTimeout(() => {
       setFormData(prev => ({
         ...prev,
-        ...randomCase
+        CoreCaseInfo: {
+          ...prev.CoreCaseInfo,
+          source: randomCase.source,
+          serialNumber: randomCase.serialNumber,
+          departmentRef: randomCase.departmentRef,
+          financialYear: randomCase.financialYear,
+          dateReceived: randomCase.dateReceived,
+        },
+        geographic_information: {
+          ...prev.geographic_information,
+          district: randomCase.district,
+          level: randomCase.level,
+        },
+        case_information: {
+          ...prev.case_information,
+          department: randomCase.department,
+          scheme: randomCase.scheme,
+          complaintCategory: randomCase.complaintCategory,
+          description: randomCase.description,
+        },
+        EnforcementStatus: {
+          ...prev.EnforcementStatus,
+          responsibleOfficer: randomCase.responsibleOfficer,
+          caseStatus: randomCase.currentStatus,
+          actionTaken: randomCase.actionTaken,
+          remarks: randomCase.remarks,
+        }
       }));
       setIsUploading(false);
       showAlert(lang === 'hi' ? 'दस्तावेज़ से डेटा सफलतापूर्वक निकाला गया!' : 'Data successfully extracted from document!', 'success');
@@ -477,17 +544,28 @@ const ComplainForm = () => {
   const saveAsDraft = async () => {
     setIsDrafting(true);
     try {
-      const data = new FormData();
-
-      // Basic Info
-      data.append('applicantName', applicantData.name);
-      data.append('mobile', applicantData.mobile);
-      data.append('address', applicantData.address);
-
-      // Form Fields
-      Object.keys(formData).forEach(key => {
-        data.append(key, formData[key]);
-      });
+      // Flatten nested formData for API
+      const appendFlattened = (obj) => {
+        Object.keys(obj).forEach(key => {
+          const value = obj[key];
+          if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof File)) {
+            appendFlattened(value);
+          } else {
+            // Map 'name' in applicantData to 'applicantName' for API consistency if needed
+            // However, the original code had explicit appends. Let's do that.
+            if (key !== 'applicantData') {
+               data.append(key, value);
+            }
+          }
+        });
+      };
+      
+      // Explicitly append applicant info with correct keys
+      data.append('applicantName', formData.applicantData.name);
+      data.append('mobile', formData.applicantData.mobile);
+      data.append('address', formData.applicantData.address);
+      
+      appendFlattened(formData);
 
       // Draft ID if exists
       if (draftId) data.append('draftId', draftId);
@@ -557,8 +635,8 @@ const ComplainForm = () => {
     // Navigate to summary page instead of showing modal
     navigate('/complain-summary', {
       state: {
-        applicantData,
-        formData,
+        applicantData: formData.applicantData,
+        formData: formData,
         apiDistricts,
         apiBlocks
       }
@@ -576,15 +654,26 @@ const ComplainForm = () => {
     try {
       const data = new FormData();
 
-      // Basic Info
-      data.append('applicantName', finalApplicant.name);
-      data.append('mobile', finalApplicant.mobile);
-      data.append('address', finalApplicant.address);
-
-      // Form Fields
-      Object.keys(finalForm).forEach(key => {
-        data.append(key, finalForm[key]);
-      });
+      // Flatten nested formData for API
+      const appendFlattened = (obj) => {
+        Object.keys(obj).forEach(key => {
+          const value = obj[key];
+          if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof File)) {
+            appendFlattened(value);
+          } else {
+            if (key !== 'applicantData') {
+              data.append(key, value);
+            }
+          }
+        });
+      };
+      
+      // Explicitly append applicant info
+      data.append('applicantName', finalForm.applicantData.name);
+      data.append('mobile', finalForm.applicantData.mobile);
+      data.append('address', finalForm.applicantData.address);
+      
+      appendFlattened(finalForm);
 
       // Draft ID if exists - Backend will handle deletion
       if (draftId) data.append('draftId', draftId);
@@ -604,14 +693,14 @@ const ComplainForm = () => {
       const res = await submitComplaintAPI(data);
       if (res.success) {
         const finalReceiptData = {
-          applicantName: finalApplicant.name,
-          mobile: finalApplicant.mobile,
-          address: finalApplicant.address,
-          district: finalForm.district,
-          block: finalForm.block,
-          department: finalForm.department,
-          scheme: finalForm.scheme,
-          description: finalForm.description,
+          applicantName: finalForm.applicantData.name,
+          mobile: finalForm.applicantData.mobile,
+          address: finalForm.applicantData.address,
+          district: finalForm.geographic_information.district,
+          block: finalForm.geographic_information.block,
+          department: finalForm.case_information.department,
+          scheme: finalForm.case_information.scheme,
+          description: finalForm.case_information.description,
           caseNumber: res.data?.complainId || res.data?.caseNumber || `RD-${Date.now().toString().slice(-6)}`,
           submissionDate: new Date().toLocaleString()
         };
@@ -681,7 +770,7 @@ const ComplainForm = () => {
             lang={lang}
             shortDraftId={shortDraftId}
             activeUser={activeUser}
-            applicantData={applicantData}
+            applicantData={formData.applicantData}
             handleApplicantChange={handleApplicantChange}
             handleProceed={handleProceed}
             labelClass={labelClass}
@@ -704,7 +793,7 @@ const ComplainForm = () => {
                 <div className="flex items-center gap-2 ml-10">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   <p className="text-gray-500 text-[12px] font-bold uppercase tracking-wider">
-                    {lang === 'hi' ? 'परिवादी:' : 'Complainant:'} <span className="text-[#1976d2]">{applicantData.name || 'Anonymous'}</span>
+                    {lang === 'hi' ? 'परिवादी:' : 'Complainant:'} <span className="text-[#1976d2]">{formData.applicantData.name || 'Anonymous'}</span>
                   </p>
                 </div>
               </div>
@@ -739,8 +828,8 @@ const ComplainForm = () => {
               {/* Core Case Information */}
               <CoreCaseInfo
                 lang={lang}
-                formData={formData}
-                handleFormChange={handleFormChange}
+                formData={formData.CoreCaseInfo}
+                handleFormChange={(e) => handleFormChange(e, 'CoreCaseInfo')}
                 labelClass={labelClass}
                 inputClass={inputClass}
                 requiredSpan={requiredSpan}
@@ -751,8 +840,8 @@ const ComplainForm = () => {
                   {/* Geographic Location */}
                   <GeographicLocation
                     lang={lang}
-                    formData={formData}
-                    handleFormChange={handleFormChange}
+                    formData={formData.geographic_information}
+                    handleFormChange={(e) => handleFormChange(e, 'geographic_information')}
                     levels={levels}
                     apiDistricts={apiDistricts}
                     apiBlocks={apiBlocks}
@@ -783,9 +872,9 @@ const ComplainForm = () => {
             {/* Case Specifics */}
                   <CaseSpecifics
                     lang={lang}
-                    formData={formData}
+                    formData={formData.case_information}
                     setFormData={setFormData}
-                    handleFormChange={handleFormChange}
+                    handleFormChange={(e) => handleFormChange(e, 'case_information')}
                     departments={departments}
                     currentSchemes={currentSchemes}
                     categories={categories}
@@ -799,8 +888,8 @@ const ComplainForm = () => {
             {/* Enforcement & Status */}
                   <EnforcementStatus
                     lang={lang}
-                    formData={formData}
-                    handleFormChange={handleFormChange}
+                    formData={formData.EnforcementStatus}
+                    handleFormChange={(e) => handleFormChange(e, 'EnforcementStatus')}
                     labelClass={labelClass}
                     inputClass={inputClass}
                     requiredSpan={requiredSpan}
