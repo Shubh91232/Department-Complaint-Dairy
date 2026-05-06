@@ -596,14 +596,22 @@ const ComplainForm = () => {
       if (formData.applicantData.address) data.set('address', formData.applicantData.address);
 
       // Map internal state keys to legacy backend names if necessary
-      if (formData.CoreCaseInfo.serialNumber) data.set('serialNumber', formData.CoreCaseInfo.serialNumber);
+      if (formData.CoreCaseInfo.serialNumber) data.set('serial_no', formData.CoreCaseInfo.serialNumber);
+      if (formData.CoreCaseInfo.departmentRef) data.set('department_ref', formData.CoreCaseInfo.departmentRef);
       if (formData.CoreCaseInfo.financialYear) data.set('fy', formData.CoreCaseInfo.financialYear);
       if (formData.CoreCaseInfo.dateReceived) data.set('date', formData.CoreCaseInfo.dateReceived);
       
       if (formData.geographic_information.panchayat) data.set('gram_panchayat', formData.geographic_information.panchayat);
       
+      if (formData.case_information.department) data.set('department', formData.case_information.department);
+      if (formData.case_information.scheme) data.set('scheme', formData.case_information.scheme);
       if (formData.case_information.complaintCategory) data.set('complaint_category', formData.case_information.complaintCategory);
       if (formData.case_information.description) data.set('complain_details', formData.case_information.description);
+
+      if (formData.EnforcementStatus.responsibleOfficer) data.set('responsible_officer', formData.EnforcementStatus.responsibleOfficer);
+      if (formData.EnforcementStatus.actionTaken) data.set('action_taken', formData.EnforcementStatus.actionTaken);
+      if (formData.EnforcementStatus.caseStatus) data.set('current_status', formData.EnforcementStatus.caseStatus);
+      if (formData.EnforcementStatus.remarks) data.set('remarks', formData.EnforcementStatus.remarks);
 
       // Draft Persistence: Send current draftId if we are updating an existing draft
       if (draftId) data.append('draftId', draftId);
@@ -644,15 +652,15 @@ const ComplainForm = () => {
       return;
     }
     if (
-      !formData.serialNumber ||
-      !formData.dateReceived ||
-      !formData.level ||
-      !formData.district ||
-      !formData.department ||
-      !formData.scheme ||
-      !formData.complaintCategory ||
-      !formData.description ||
-      !formData.responsibleOfficer
+      !formData.CoreCaseInfo?.serialNumber ||
+      !formData.CoreCaseInfo?.dateReceived ||
+      !formData.geographic_information?.level ||
+      !formData.geographic_information?.district ||
+      !formData.case_information?.department ||
+      !formData.case_information?.scheme ||
+      !formData.case_information?.complaintCategory ||
+      !formData.case_information?.description ||
+      !formData.EnforcementStatus?.responsibleOfficer
     ) {
       showAlert(
         lang === 'hi'
@@ -716,12 +724,25 @@ const ComplainForm = () => {
       data.set('address', finalForm.applicantData.address);
 
       // Map to backend keys
-      data.set('serialNumber', finalForm.CoreCaseInfo.serialNumber);
+      data.set('serial_no', finalForm.CoreCaseInfo.serialNumber);
+      data.set('department_ref', finalForm.CoreCaseInfo.departmentRef);
       data.set('fy', finalForm.CoreCaseInfo.financialYear);
       data.set('date', finalForm.CoreCaseInfo.dateReceived);
+
+      data.set('district', finalForm.geographic_information.district);
+      data.set('block', finalForm.geographic_information.block);
       data.set('gram_panchayat', finalForm.geographic_information.panchayat);
+      data.set('level', finalForm.geographic_information.level);
+
+      data.set('department', finalForm.case_information.department);
+      data.set('scheme', finalForm.case_information.scheme);
       data.set('complaint_category', finalForm.case_information.complaintCategory);
       data.set('complain_details', finalForm.case_information.description);
+
+      data.set('responsible_officer', finalForm.EnforcementStatus.responsibleOfficer);
+      data.set('action_taken', finalForm.EnforcementStatus.actionTaken);
+      data.set('current_status', finalForm.EnforcementStatus.caseStatus);
+      data.set('remarks', finalForm.EnforcementStatus.remarks);
 
       // Link to draft for cleanup
       if (draftId) data.append('draftId', draftId);
