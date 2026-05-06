@@ -62,15 +62,17 @@ const ComplainForm = () => {
 
   const activeUser = loggedInUserData || userDetails;
 
-  // Step 1 State
-  const [applicantData, setApplicantData] = useState({
-    name: '',
-    mobile: '',
-    address: ''
-  });
-
   // Step 2 State
   const [formData, setFormData] = useState({
+    submittingOfficer: {
+      id: activeUser?.id || '',
+    },
+    applicantData: {
+      name: '',
+      mobile: '',
+      address: ''
+    },
+
     source: 'PR',
     serialNumber: '',
     departmentRef: '',

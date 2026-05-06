@@ -90,7 +90,7 @@ const Step1Applicant = ({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                 <div>
-                  <label className={labelClass}>{lang === 'hi' ? 'परिवादी का नाम' : 'Complainant Name'} {requiredSpan}</label>
+                  <label className={labelClass}>{lang === 'hi' ? 'परिवादी का नाम' : 'Complainant Name'}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                       <User size={16} />
@@ -106,7 +106,7 @@ const Step1Applicant = ({
                   </div>
                 </div>
                 <div>
-                  <label className={labelClass}>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile Number'} {requiredSpan}</label>
+                  <label className={labelClass}>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile Number'}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                       <Smartphone size={16} />
@@ -124,7 +124,7 @@ const Step1Applicant = ({
               </div>
 
               <div>
-                <label className={labelClass}>{lang === 'hi' ? 'परिवादी का पता' : 'Complainant Address'} {requiredSpan}</label>
+                <label className={labelClass}>{lang === 'hi' ? 'परिवादी का पता' : 'Complainant Address'}</label>
                 <div className="relative">
                   <div className="absolute top-3 left-0 pl-3 pointer-events-none text-gray-400">
                     <Home size={16} />
@@ -155,6 +155,7 @@ const Step1Applicant = ({
             </div>
           </div>
         </div>
+        
       </div>
     </div>
   );
