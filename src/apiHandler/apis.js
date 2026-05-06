@@ -217,6 +217,10 @@ export const fetchDraftsAPI = async () => {
   return await getAuthAPI(URLS.COMPLAINTS.DRAFTS);
 };
 
+export const fetchDraftByIdAPI = async (id) => {
+  return await getAuthAPI(URLS.COMPLAINTS.DRAFT_BY_ID(id));
+};
+
 export const fetchDeptSchemesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.DEPARTMENTS_LIST, true); // Cache true as schemes rarely change
 };

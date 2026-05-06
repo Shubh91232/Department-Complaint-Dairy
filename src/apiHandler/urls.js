@@ -25,6 +25,7 @@ export const URLS = {
     SCHEMES_LIST: `${BASE_URL}/complaints/schemes`,
     CATEGORIES_LIST: `${BASE_URL}/complaints/categories`,
     HISTORY: `${BASE_URL}/complaints/history`,
-    DELETE_DRAFT: (id) => `${BASE_URL}/complaints/draft/${id}`
+    DELETE_DRAFT: (id) => `${BASE_URL}/complaints/draft/${id}`,
+    DRAFT_BY_ID: (id) => `${BASE_URL}/complaints/draft/${id}`
   }
 };
