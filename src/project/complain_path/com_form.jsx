@@ -72,7 +72,6 @@ const ComplainForm = () => {
       mobile: '',
       address: ''
     },
-
     source: 'PR',
     serialNumber: '',
     departmentRef: '',
