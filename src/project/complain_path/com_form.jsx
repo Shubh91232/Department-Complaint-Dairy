@@ -27,6 +27,7 @@ const ComplainForm = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [fileType, setFileType] = useState(null);
   const [isDocFullscreen, setIsDocFullscreen] = useState(false);
+  const [ocrFile, setOcrFile] = useState(null);
   const [deptData, setDeptData] = useState(null);
   const [deptSearch, setDeptSearch] = useState('');
   const [schemeSearch, setSchemeSearch] = useState('');
@@ -120,7 +121,7 @@ const ComplainForm = () => {
       // Returning from Summary Page
       const restoredApplicant = location.state.applicantData || { name: '', mobile: '', address: '' };
       const restoredForm = location.state.formData;
-      
+
       setApplicantData(restoredApplicant);
       setFormData(restoredForm);
       if (location.state.apiBlocks) setApiBlocks(location.state.apiBlocks);
@@ -201,7 +202,7 @@ const ComplainForm = () => {
         if (bRes.success) setApiBlocks(bRes.data);
       } catch (err) { console.error("Resume: Block fetch error", err); }
     }
-    
+
     if (draft.block) {
       try {
         const gRes = await fetchGPsAPI(draft.block);
@@ -293,7 +294,7 @@ const ComplainForm = () => {
     s.scheme_name_hi.includes(schemeSearch)
   );
 
-  const filteredCategories = categories.filter(c => 
+  const filteredCategories = categories.filter(c =>
     c.toLowerCase().includes(categorySearch.toLowerCase())
   );
 
@@ -313,10 +314,10 @@ const ComplainForm = () => {
 
   const handleFormChange = async (e) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-      if (name === 'department') newData.scheme = ''; 
+      if (name === 'department') newData.scheme = '';
       if (name === 'district') { newData.block = ''; newData.panchayat = ''; }
       if (name === 'block') newData.panchayat = '';
       return newData;
@@ -376,15 +377,28 @@ const ComplainForm = () => {
 
     setFileType(file.type);
     setPreviewUrl(URL.createObjectURL(file));
-    setIsUploading(true);
+    setOcrFile(file);
 
+    // Automatically link this to the official complaint copy field for submission
+    setAdvancedDocs(prev => ({ ...prev, complaintCopy: file }));
+
+    showAlert(lang === 'hi' ? 'दस्तावेज़ सफलतापूर्वक लिंक किया गया!' : 'Document ready for entry & archive!', 'success');
+  };
+
+  const handleAutoFillScan = () => {
+    if (!ocrFile) {
+      showAlert(lang === 'hi' ? 'कृपया पहले दस्तावेज़ अपलोड करें!' : 'Please upload a document first!', 'error');
+      return;
+    }
+
+    setIsUploading(true);
     setTimeout(() => {
       setFormData(prev => ({
         ...prev,
         source: 'CS',
         serialNumber: 'CS-2026-8921',
         departmentRef: 'DEP/2026/04/99',
-        financialYear: '2026-2027',
+        financialYear: '2026-27',
         dateReceived: '2026-04-28',
         district: 'Jaipur',
         level: 'District',
@@ -405,15 +419,29 @@ const ComplainForm = () => {
   const saveAsDraft = async () => {
     setIsDrafting(true);
     try {
-      const payload = {
-        applicantName: applicantData.name,
-        mobile: applicantData.mobile,
-        address: applicantData.address,
-        ...formData
-      };
-      if (draftId) payload.draftId = draftId;
+      const data = new FormData();
 
-      const res = await draftComplaintAPI(payload);
+      // Basic Info
+      data.append('applicantName', applicantData.name);
+      data.append('mobile', applicantData.mobile);
+      data.append('address', applicantData.address);
+
+      // Form Fields
+      Object.keys(formData).forEach(key => {
+        data.append(key, formData[key]);
+      });
+
+      // Draft ID if exists
+      if (draftId) data.append('draftId', draftId);
+
+      // Advanced Documents
+      Object.keys(advancedDocs).forEach(key => {
+        if (advancedDocs[key] instanceof File) {
+          data.append(key, advancedDocs[key]);
+        }
+      });
+
+      const res = await draftComplaintAPI(data);
       if (res.success) {
         const newId = res.data?._id;
         const shortId = res.data?.draftId || `D-${newId.slice(-6).toUpperCase()}`;
@@ -438,20 +466,20 @@ const ComplainForm = () => {
       return;
     }
     if (
-      !formData.serialNumber || 
-      !formData.dateReceived || 
-      !formData.level || 
-      !formData.district || 
-      !formData.department || 
-      !formData.scheme || 
-      !formData.complaintCategory || 
-      !formData.description || 
+      !formData.serialNumber ||
+      !formData.dateReceived ||
+      !formData.level ||
+      !formData.district ||
+      !formData.department ||
+      !formData.scheme ||
+      !formData.complaintCategory ||
+      !formData.description ||
       !formData.responsibleOfficer
     ) {
       showAlert(
-        lang === 'hi' 
-          ? 'कृपया सभी अनिवार्य फ़ील्ड भरें (क्र.स., प्राप्त तिथि, स्तर, ज़िला, विभाग, योजना, श्रेणी, विवरण और अधिकारी)' 
-          : 'Please fill all mandatory fields (Serial No, Date, Level, District, Dept, Scheme, Category, Description and Officer)', 
+        lang === 'hi'
+          ? 'कृपया सभी अनिवार्य फ़ील्ड भरें (क्र.स., प्राप्त तिथि, स्तर, ज़िला, विभाग, योजना, श्रेणी, विवरण और अधिकारी)'
+          : 'Please fill all mandatory fields (Serial No, Date, Level, District, Dept, Scheme, Category, Description and Officer)',
         'error'
       );
       return;
@@ -463,15 +491,15 @@ const ComplainForm = () => {
       captchaRef.current?.refresh();
       return;
     }
-    
+
     // Navigate to summary page instead of showing modal
-    navigate('/complain-summary', { 
-      state: { 
-        applicantData, 
-        formData, 
-        apiDistricts, 
-        apiBlocks 
-      } 
+    navigate('/complain-summary', {
+      state: {
+        applicantData,
+        formData,
+        apiDistricts,
+        apiBlocks
+      }
     });
   };
 
@@ -484,16 +512,29 @@ const ComplainForm = () => {
 
     setIsSubmitting(true);
     try {
-      const payload = {
-        applicantName: finalApplicant.name,
-        mobile: finalApplicant.mobile,
-        address: finalApplicant.address,
-        ...finalForm
-      };
-      if (draftId) payload.draftId = draftId;
+      const data = new FormData();
 
-      console.log("Final Submission Payload:", payload);
-      const res = await submitComplaintAPI(payload);
+      // Basic Info
+      data.append('applicantName', finalApplicant.name);
+      data.append('mobile', finalApplicant.mobile);
+      data.append('address', finalApplicant.address);
+
+      // Form Fields
+      Object.keys(finalForm).forEach(key => {
+        data.append(key, finalForm[key]);
+      });
+
+      // Draft ID if exists
+      if (draftId) data.append('draftId', draftId);
+
+      // Advanced Documents
+      Object.keys(advancedDocs).forEach(key => {
+        if (advancedDocs[key] instanceof File) {
+          data.append(key, advancedDocs[key]);
+        }
+      });
+
+      const res = await submitComplaintAPI(data);
       if (res.success) {
         // Delete draft if it exists
         if (draftId) {
@@ -503,12 +544,16 @@ const ComplainForm = () => {
             console.error("Failed to delete draft:", err);
           }
         }
-        
-        setReceiptData({
-          ...payload,
+
+        const finalReceiptData = {
+          applicantName: finalApplicant.name,
+          district: finalForm.district,
+          block: finalForm.block,
           caseNumber: res.data?.complainId || res.data?.caseNumber || `RD-${Date.now().toString().slice(-6)}`,
           submissionDate: new Date().toLocaleString()
-        });
+        };
+
+        setReceiptData(finalReceiptData);
         setShowPreview(false);
         setShowReceipt(true);
         showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.', 'success');
@@ -563,61 +608,61 @@ const ComplainForm = () => {
           // --- SUCCESS RECEIPT PAGE ---
           <div className="animate-in zoom-in-95 duration-500 max-w-2xl mx-auto">
             <div className="bg-white rounded-md shadow-2xl overflow-hidden border border-gray-200">
-               <div className="bg-[#1e7b34] p-10 text-white text-center">
-                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-white/40">
-                     <Check size={48} className="text-white" />
-                  </div>
-                  <h2 className="text-3xl font-black uppercase tracking-tight mb-2">{lang === 'hi' ? 'सबमिशन सफल!' : 'Submission Successful!'}</h2>
-                  <p className="text-green-50 font-medium text-lg">{lang === 'hi' ? 'शिकायत मास्टर सूची में सफलतापूर्वक दर्ज की गई है।' : 'The grievance has been successfully recorded in the master list.'}</p>
-               </div>
+              <div className="bg-[#1e7b34] p-10 text-white text-center">
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-white/40">
+                  <Check size={48} className="text-white" />
+                </div>
+                <h2 className="text-3xl font-black uppercase tracking-tight mb-2">{lang === 'hi' ? 'सबमिशन सफल!' : 'Submission Successful!'}</h2>
+                <p className="text-green-50 font-medium text-lg">{lang === 'hi' ? 'शिकायत मास्टर सूची में सफलतापूर्वक दर्ज की गई है।' : 'The grievance has been successfully recorded in the master list.'}</p>
+              </div>
 
-               <div className="p-10 space-y-8">
-                  <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-8 rounded-md text-center">
-                     <span className="text-gray-500 text-[13px] font-bold uppercase block mb-2 tracking-wider">Grievance Case Number</span>
-                     <span className="text-5xl font-black text-[#002b5e] tracking-tighter">{receiptData.caseNumber}</span>
-                  </div>
+              <div className="p-10 space-y-8">
+                <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-8 rounded-md text-center">
+                  <span className="text-gray-500 text-[13px] font-bold uppercase block mb-2 tracking-wider">Grievance Case Number</span>
+                  <span className="text-5xl font-black text-[#002b5e] tracking-tighter">{receiptData.caseNumber}</span>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px]">
-                     <div className="space-y-1">
-                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Submitted On</span>
-                        <span className="font-bold text-gray-800 text-[15px]">{receiptData.submissionDate}</span>
-                     </div>
-                     <div className="space-y-1">
-                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Officer ID</span>
-                        <span className="font-bold text-gray-800 text-[15px]">{activeUser?.id}</span>
-                     </div>
-                     <div className="space-y-1">
-                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Complainant</span>
-                        <span className="font-bold text-gray-800 text-[15px]">{receiptData.applicantName || 'Anonymous'}</span>
-                     </div>
-                     <div className="space-y-1">
-                        <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Location</span>
-                        <span className="font-bold text-gray-800 text-[15px]">
-                           {apiDistricts.find(d => d.value == receiptData.district)?.label || receiptData.district}
-                           {receiptData.block && ` / ${apiBlocks.find(b => b.value == receiptData.block)?.label || receiptData.block}`}
-                        </span>
-                     </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px]">
+                  <div className="space-y-1">
+                    <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Submitted On</span>
+                    <span className="font-bold text-gray-800 text-[15px]">{receiptData.submissionDate}</span>
                   </div>
-
-                  <div className="pt-8 border-t border-gray-100 flex flex-col gap-4">
-                     <button 
-                        onClick={() => window.print()} 
-                        className="w-full py-4 bg-[#002b5e] text-white font-black rounded-sm shadow-md hover:bg-[#001c3d] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[14px]"
-                      >
-                        <Printer size={20} /> {lang === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
-                     </button>
-                     <button 
-                        onClick={() => navigate('/')} 
-                        className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-sm hover:bg-gray-200 transition-all uppercase tracking-widest text-[12px] border border-gray-200"
-                      >
-                        {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
-                     </button>
+                  <div className="space-y-1">
+                    <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Officer ID</span>
+                    <span className="font-bold text-gray-800 text-[15px]">{activeUser?.id}</span>
                   </div>
-               </div>
+                  <div className="space-y-1">
+                    <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Complainant</span>
+                    <span className="font-bold text-gray-800 text-[15px]">{receiptData.applicantName || 'Anonymous'}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-gray-400 font-bold uppercase text-[11px] block tracking-wider">Location</span>
+                    <span className="font-bold text-gray-800 text-[15px]">
+                      {apiDistricts.find(d => d.value == receiptData.district)?.label || receiptData.district}
+                      {receiptData.block && ` / ${apiBlocks.find(b => b.value == receiptData.block)?.label || receiptData.block}`}
+                    </span>
+                  </div>
+                </div>
 
-               <div className="bg-gray-50 px-8 py-6 border-t text-center">
-                  <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">© 2026 Department of Rural Development, Rajasthan</p>
-               </div>
+                <div className="pt-8 border-t border-gray-100 flex flex-col gap-4">
+                  <button
+                    onClick={() => window.print()}
+                    className="w-full py-4 bg-[#002b5e] text-white font-black rounded-sm shadow-md hover:bg-[#001c3d] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[14px]"
+                  >
+                    <Printer size={20} /> {lang === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-sm hover:bg-gray-200 transition-all uppercase tracking-widest text-[12px] border border-gray-200"
+                  >
+                    {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-8 py-6 border-t text-center">
+                <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">© 2026 Department of Rural Development, Rajasthan</p>
+              </div>
             </div>
           </div>
         ) : step === 1 ? (
@@ -754,8 +799,8 @@ const ComplainForm = () => {
             </div>
 
             {/* OCR File Upload Section */}
-            <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch">
-              <div className="flex-grow bg-[#e3f2fd] border-2 border-dashed border-[#90caf9] p-6 rounded-sm text-center flex flex-col items-center justify-center transition-colors hover:bg-[#bbdefb]">
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className={`flex-grow border-2 border-dashed rounded-sm p-6 flex flex-col items-center justify-center text-center transition-all ${ocrFile ? 'bg-green-50/50 border-green-500/50' : 'bg-blue-50/30 border-blue-500/30'}`}>
                 <input type="file" id="ocr-upload" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
                 {isUploading ? (
                   <div className="flex flex-col items-center gap-2 text-[#1565c0]">
@@ -763,23 +808,49 @@ const ComplainForm = () => {
                     <p className="font-bold text-[14px]">{lang === 'hi' ? 'दस्तावेज़ से डेटा निकाला जा रहा है (OCR)...' : 'Extracting Data from Document (OCR)...'}</p>
                   </div>
                 ) : (
-                  <label htmlFor="ocr-upload" className="cursor-pointer flex flex-col items-center gap-2 text-[#1565c0] w-full h-full">
-                    <UploadCloud size={32} />
-                    <p className="font-bold text-[14px]">{lang === 'hi' ? 'ऑटो-फिल के लिए दस्तावेज़ अपलोड करें (OCR)' : 'Upload Document for Auto-fill (OCR)'}</p>
-                    <p className="text-[12px] font-medium opacity-80">{lang === 'hi' ? 'समर्थित फ़ाइलें: PDF, JPG, PNG (Max 5MB)' : 'Supported files: PDF, JPG, PNG (Max 5MB)'}</p>
+                  <label htmlFor="ocr-upload" className="cursor-pointer flex flex-col items-center gap-2 w-full">
+                    {ocrFile ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="p-3 bg-green-100 text-green-600 rounded-full">
+                          <CheckCircle size={32} />
+                        </div>
+                        <p className="font-bold text-[14px] text-green-700">{lang === 'hi' ? 'दस्तावेज़ अपलोड किया गया' : 'Document Uploaded'}</p>
+                        <p className="text-[12px] font-medium text-green-600/70 truncate max-w-[300px]">{ocrFile.name}</p>
+                        <button type="button" onClick={(e) => { e.preventDefault(); setOcrFile(null); setPreviewUrl(null); }} className="text-[10px] uppercase tracking-widest font-black text-red-500 hover:text-red-700 mt-1">{lang === 'hi' ? 'हटाएं' : 'Remove'}</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
+                          <UploadCloud size={32} />
+                        </div>
+                        <p className="font-bold text-[14px] text-[#1565c0]">{lang === 'hi' ? 'ऑटो-फिल के लिए दस्तावेज़ अपलोड करें (OCR)' : 'Upload Document for Rapid Entry (OCR)'}</p>
+                        <p className="text-[12px] font-medium opacity-60 text-blue-800/70">{lang === 'hi' ? 'समर्थित फ़ाइलें: PDF, JPG, PNG (Max 5MB)' : 'Supported files: PDF, JPG, PNG (Max 5MB)'}</p>
+                      </>
+                    )}
                   </label>
                 )}
               </div>
 
               {previewUrl && !isUploading && (
-                <button
-                  onClick={() => setIsDocFullscreen(true)}
-                  className="md:w-48 bg-white border-2 border-[#1976d2] text-[#1976d2] p-4 rounded-sm flex flex-col items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-sm"
-                >
-                  <Eye size={32} />
-                  <span className="font-bold text-[13px]">{lang === 'hi' ? 'दस्तावेज़ देखें' : 'View Document'}</span>
-                  <span className="text-[10px] opacity-70 uppercase font-bold">{fileType?.split('/')[1]}</span>
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDocFullscreen(true)}
+                    className="md:w-48 bg-white border-2 border-[#1976d2] text-[#1976d2] p-4 rounded-sm flex flex-col items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-sm"
+                  >
+                    <Eye size={32} />
+                    <span className="font-bold text-[13px]">{lang === 'hi' ? 'दस्तावेज़ देखें' : 'View Document'}</span>
+                    <span className="text-[10px] opacity-70 uppercase font-bold">{fileType?.split('/')[1]}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillScan}
+                    className="md:w-48 bg-[#002b5e] text-white p-3 rounded-sm flex items-center justify-center gap-2 hover:bg-[#001c3d] transition-all shadow-md uppercase font-black text-[11px] tracking-widest group"
+                  >
+                    <RefreshCw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+                    {lang === 'hi' ? 'ऑटो-फिल स्कैन' : 'Auto-fill Scan'}
+                  </button>
+                </div>
               )}
             </div>
 
@@ -912,18 +983,17 @@ const ComplainForm = () => {
                     </div>
 
                     <div className="pt-4 mt-2">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
-                        className={`w-full py-3 px-4 rounded-sm font-bold text-[13px] flex items-center justify-center gap-3 transition-all border-2 ${
-                          showAdvancedDetails 
-                            ? 'bg-orange-600 text-white border-orange-600 shadow-md' 
+                        className={`w-full py-3 px-4 rounded-sm font-bold text-[13px] flex items-center justify-center gap-3 transition-all border-2 ${showAdvancedDetails
+                            ? 'bg-orange-600 text-white border-orange-600 shadow-md'
                             : 'bg-white text-orange-600 border-orange-600 hover:bg-orange-50'
-                        }`}
+                          }`}
                       >
                         {showAdvancedDetails ? <Minimize size={18} /> : <LayoutList size={18} />}
-                        {showAdvancedDetails 
-                          ? (lang === 'hi' ? 'अतिरिक्त विवरण छिपाएं' : 'Hide Advanced Details') 
+                        {showAdvancedDetails
+                          ? (lang === 'hi' ? 'अतिरिक्त विवरण छिपाएं' : 'Hide Advanced Details')
                           : (lang === 'hi' ? 'अतिरिक्त विवरण (More Details)' : 'Show Advanced Details')}
                       </button>
                     </div>
@@ -942,8 +1012,8 @@ const ComplainForm = () => {
                               <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">{lang === 'hi' ? 'गोपनीय प्रशासनिक पहुंच' : 'Confidential Administrative Access'}</p>
                             </div>
                           </div>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => setShowAdvancedDetails(false)}
                             className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors border border-transparent hover:border-gray-100"
                           >
@@ -969,10 +1039,10 @@ const ComplainForm = () => {
                                     <span className="font-bold text-[14px] text-gray-800">{lang === 'hi' ? item.hi : item.label}</span>
                                     <div className="flex gap-1 bg-gray-50 p-1 rounded-md border border-gray-100">
                                       {['Yes', 'No'].map(opt => (
-                                        <button 
-                                          key={opt} 
-                                          type="button" 
-                                          onClick={() => setFormData(prev => ({...prev, [item.id]: opt}))} 
+                                        <button
+                                          key={opt}
+                                          type="button"
+                                          onClick={() => setFormData(prev => ({ ...prev, [item.id]: opt }))}
                                           className={`px-4 py-1.5 rounded-md font-black text-[10px] uppercase transition-all ${formData[item.id] === opt ? 'bg-orange-600 text-white shadow-sm' : 'bg-transparent text-gray-400'}`}
                                         >
                                           {opt}
@@ -980,7 +1050,7 @@ const ComplainForm = () => {
                                       ))}
                                     </div>
                                   </div>
-                                  
+
                                   <div className="pt-3 border-t border-gray-50">
                                     {advancedDocs[item.id] ? (
                                       <div className="flex items-center justify-between bg-green-50 px-4 py-3 rounded-lg border border-green-100">
@@ -989,23 +1059,23 @@ const ComplainForm = () => {
                                             <CheckCircle size={16} />
                                           </div>
                                           <div>
-                                            <p className="text-[11px] font-black text-green-700 truncate max-w-[150px]">{advancedDocs[item.id]}</p>
+                                            <p className="text-[11px] font-black text-green-700 truncate max-w-[150px]">{advancedDocs[item.id]?.name || (typeof advancedDocs[item.id] === 'string' ? advancedDocs[item.id].split('/').pop() : 'Document')}</p>
                                             <p className="text-[9px] text-green-600/70 font-bold uppercase tracking-widest">Document Verified</p>
                                           </div>
                                         </div>
-                                        <button type="button" onClick={() => setAdvancedDocs(prev => {const next = {...prev}; delete next[item.id]; return next;})} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
+                                        <button type="button" onClick={() => setAdvancedDocs(prev => { const next = { ...prev }; delete next[item.id]; return next; })} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
                                           <X size={16} />
                                         </button>
                                       </div>
                                     ) : (
                                       <label className="cursor-pointer group block">
-                                        <input 
-                                          type="file" 
-                                          className="hidden" 
-                                          accept=".pdf" 
+                                        <input
+                                          type="file"
+                                          className="hidden"
+                                          accept=".pdf,.jpg,.jpeg,.png"
                                           onChange={(e) => {
                                             const file = e.target.files[0];
-                                            if (file) setAdvancedDocs(prev => ({...prev, [item.id]: file.name}));
+                                            if (file) setAdvancedDocs(prev => ({ ...prev, [item.id]: file }));
                                           }}
                                         />
                                         <div className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-gray-200 rounded-lg group-hover:border-orange-400 group-hover:bg-orange-50/50 transition-all">
@@ -1056,8 +1126,8 @@ const ComplainForm = () => {
 
                         {/* Modal Footer */}
                         <div className="p-4 border-t border-gray-100 bg-white flex justify-end">
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => setShowAdvancedDetails(false)}
                             className="bg-[#002b5e] text-white px-10 py-3 rounded-lg font-black text-[14px] uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-[#001c3d] transition-all transform active:scale-95"
                           >
@@ -1221,7 +1291,7 @@ const ComplainForm = () => {
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत की श्रेणी' : 'Complaint Category'} {requiredSpan}</label>
                         <div className="relative">
-                          <div 
+                          <div
                             className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.complaintCategory ? 'text-gray-400' : 'text-[#002b5e] font-semibold'}`}
                             onClick={() => setShowCategoryOptions(!showCategoryOptions)}
                           >
@@ -1234,9 +1304,9 @@ const ComplainForm = () => {
                               <div className="p-3 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
                                 <div className="relative">
                                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
-                                  <input 
-                                    type="text" 
-                                    placeholder={lang === 'hi' ? 'श्रेणी खोजें...' : 'Search category...'} 
+                                  <input
+                                    type="text"
+                                    placeholder={lang === 'hi' ? 'श्रेणी खोजें...' : 'Search category...'}
                                     className="w-full pl-10 pr-3 py-2 text-[13px] border border-blue-100 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
                                     value={categorySearch}
                                     onChange={(e) => setCategorySearch(e.target.value)}
@@ -1247,7 +1317,7 @@ const ComplainForm = () => {
                               </div>
                               <div className="max-h-60 overflow-y-auto custom-scrollbar">
                                 {filteredCategories.length > 0 ? filteredCategories.map((cat, idx) => (
-                                  <div 
+                                  <div
                                     key={idx}
                                     className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
                                     onClick={() => {
@@ -1271,7 +1341,7 @@ const ComplainForm = () => {
                       </div>
                       <div>
                         <label className={labelClass}>{lang === 'hi' ? 'शिकायत / प्रकरण का विवरण' : 'Complaint / Case Description'} {requiredSpan}</label>
-                        <textarea name="description" value={formData.description} onChange={handleFormChange} rows="5" required placeholder="Enter exact details as written in the Excel sheet..." className={`${inputClass} bg-yellow-50/30 leading-relaxed`}></textarea>
+                        <textarea name="description" value={formData.description} onChange={handleFormChange} rows="5" required placeholder="Enter exact details as written in the Excel sheet..." className={`${inputClass} bg-yellow-50/30 leading-relaxed mb-4`}></textarea>
                       </div>
                     </div>
                   </div>
@@ -1291,8 +1361,8 @@ const ComplainForm = () => {
                         <div>
                           <label className={labelClass}>{lang === 'hi' ? 'वर्तमान स्थिति' : 'Current Status'} {requiredSpan}</label>
                           <select name="currentStatus" value={formData.currentStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.currentStatus === 'Pending' ? 'text-red-600' :
-                              formData.currentStatus === 'Resolved' ? 'text-green-600' :
-                                'text-blue-600'
+                            formData.currentStatus === 'Resolved' ? 'text-green-600' :
+                              'text-blue-600'
                             }`}>
                             <option value="Pending">{lang === 'hi' ? 'लंबित (Pending)' : 'Pending'}</option>
                             <option value="In Progress">{lang === 'hi' ? 'प्रक्रिया में (In Progress)' : 'In Progress'}</option>
@@ -1327,16 +1397,16 @@ const ComplainForm = () => {
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
-                  <button 
-                    type="button" 
-                    onClick={saveAsDraft} 
+                  <button
+                    type="button"
+                    onClick={saveAsDraft}
                     disabled={isDrafting}
                     className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70"
                   >
                     {isDrafting ? <Loader2 size={18} className="animate-spin" /> : <Clock size={18} />}
                     {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft')}
                   </button>
-                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0,0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
+                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
                   </button>
                   <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">

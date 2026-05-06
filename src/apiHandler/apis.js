@@ -94,6 +94,32 @@ export const postAuthAPI = async (url, payload = {}) => {
 };
 
 /**
+ * Global POST handler for Multipart Form Data with Authorization (Bearer token)
+ */
+export const postAuthFormDataAPI = async (url, formData) => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    
+    const headers = {}; // Fetch automatically sets Content-Type for FormData
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in Auth POST Form ${url}:`, error);
+    throw error;
+  }
+};
+
+
+/**
  * Global DELETE handler with Authorization (Bearer token)
  */
 export const deleteAuthAPI = async (url) => {
@@ -170,12 +196,21 @@ export const fetchGPsAPI = async (blockId) => {
 };
 
 export const submitComplaintAPI = async (payload) => {
+  // If payload is FormData, use postAuthFormDataAPI
+  if (payload instanceof FormData) {
+    return await postAuthFormDataAPI(URLS.COMPLAINTS.SUBMIT, payload);
+  }
   return await postAuthAPI(URLS.COMPLAINTS.SUBMIT, payload);
 };
 
 export const draftComplaintAPI = async (payload) => {
+  // If payload is FormData, use postAuthFormDataAPI
+  if (payload instanceof FormData) {
+    return await postAuthFormDataAPI(URLS.COMPLAINTS.DRAFT, payload);
+  }
   return await postAuthAPI(URLS.COMPLAINTS.DRAFT, payload);
 };
+
 
 export const fetchDraftsAPI = async () => {
   return await getAuthAPI(URLS.COMPLAINTS.DRAFTS);
