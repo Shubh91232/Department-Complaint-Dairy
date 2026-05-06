@@ -131,9 +131,9 @@ const ComplainForm = () => {
       if (location.state.apiDistricts) setApiDistricts(location.state.apiDistricts);
       if (location.state.apiBlocks) setApiBlocks(location.state.apiBlocks);
       if (location.state.apiGPs) setApiGPs(location.state.apiGPs);
-      
+
       if (restoredForm.district && (!location.state.apiBlocks || location.state.apiBlocks.length === 0)) {
-         fetchBlocksAPI(restoredForm.district).then(res => res.success && setApiBlocks(res.data));
+        fetchBlocksAPI(restoredForm.district).then(res => res.success && setApiBlocks(res.data));
       }
 
       if (location.state.confirmed && !isSubmitting && !showReceipt) {
@@ -338,8 +338,8 @@ const ComplainForm = () => {
       })));
   }, [departments, deptData]);
 
-  const selectedDept = departments.find(d => 
-    d.department_name_en === formData.case_information?.department || 
+  const selectedDept = departments.find(d =>
+    d.department_name_en === formData.case_information?.department ||
     d.department_name_hi === formData.case_information?.department
   );
   const currentSchemes = selectedDept ? selectedDept.schemes : allSchemes;
@@ -365,7 +365,7 @@ const ComplainForm = () => {
 
     setFormData(prev => {
       const newData = { ...prev };
-      
+
       if (section) {
         newData[section] = {
           ...prev[section],
@@ -554,17 +554,17 @@ const ComplainForm = () => {
             // Map 'name' in applicantData to 'applicantName' for API consistency if needed
             // However, the original code had explicit appends. Let's do that.
             if (key !== 'applicantData') {
-               data.append(key, value);
+              data.append(key, value);
             }
           }
         });
       };
-      
+
       // Explicitly append applicant info with correct keys
       data.append('applicantName', formData.applicantData.name);
       data.append('mobile', formData.applicantData.mobile);
       data.append('address', formData.applicantData.address);
-      
+
       appendFlattened(formData);
 
       // Draft ID if exists
@@ -667,12 +667,12 @@ const ComplainForm = () => {
           }
         });
       };
-      
+
       // Explicitly append applicant info
       data.append('applicantName', finalForm.applicantData.name);
       data.append('mobile', finalForm.applicantData.mobile);
       data.append('address', finalForm.applicantData.address);
-      
+
       appendFlattened(finalForm);
 
       // Draft ID if exists - Backend will handle deletion
@@ -708,7 +708,7 @@ const ComplainForm = () => {
         setReceiptData(finalReceiptData);
         setShowPreview(false);
         setShowReceipt(true);
-        
+
         // Clear draft state after successful submission
         setDraftId(null);
         setShortDraftId(null);
@@ -744,7 +744,7 @@ const ComplainForm = () => {
         </div>
       )}
 
-      <Header />
+      <Header draf_btn={true} />
 
       <div className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
 
@@ -869,7 +869,7 @@ const ComplainForm = () => {
 
 
                 <div className="lg:col-span-7 space-y-6">
-            {/* Case Specifics */}
+                  {/* Case Specifics */}
                   <CaseSpecifics
                     lang={lang}
                     formData={formData.case_information}
@@ -885,7 +885,7 @@ const ComplainForm = () => {
                     autoSelectCategory={autoSelectCategory}
                   />
 
-            {/* Enforcement & Status */}
+                  {/* Enforcement & Status */}
                   <EnforcementStatus
                     lang={lang}
                     formData={formData.EnforcementStatus}
@@ -894,36 +894,36 @@ const ComplainForm = () => {
                     inputClass={inputClass}
                     requiredSpan={requiredSpan}
                   />
-          </div>
-        </div>
+                </div>
+              </div>
 
-        <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="w-full md:w-auto min-w-[250px]">
-            <Captcha
-              ref={captchaRef}
-              onCodeChange={(code, token) => setCaptchaData({ code, token })}
-            />
-          </div>
+              <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="w-full md:w-auto min-w-[250px]">
+                  <Captcha
+                    ref={captchaRef}
+                    onCodeChange={(code, token) => setCaptchaData({ code, token })}
+                  />
+                </div>
 
-          <div className="flex gap-4 w-full md:w-auto">
-            <button
-              type="button"
-              onClick={saveAsDraft}
-              disabled={isDrafting}
-              className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70"
-            >
-              {isDrafting ? <Loader2 size={18} className="animate-spin" /> : <Clock size={18} />}
-              {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft')}
-            </button>
-            <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
-              {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
-            </button>
-            <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">
-              <Database size={18} />
-              {lang === 'hi' ? 'डेटा सत्यापित करें' : 'Verify Data Entry'}
-            </button>
-          </div>
-        </div>
+                <div className="flex gap-4 w-full md:w-auto">
+                  <button
+                    type="button"
+                    onClick={saveAsDraft}
+                    disabled={isDrafting}
+                    className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70"
+                  >
+                    {isDrafting ? <Loader2 size={18} className="animate-spin" /> : <Clock size={18} />}
+                    {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft')}
+                  </button>
+                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
+                    {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
+                  </button>
+                  <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">
+                    <Database size={18} />
+                    {lang === 'hi' ? 'डेटा सत्यापित करें' : 'Verify Data Entry'}
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         )}

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
-import { Bell, Menu, X, ChevronDown, User, Globe, Type } from 'lucide-react';
+import { Bell, Menu, X, ChevronDown, User, Globe, Type, Database } from 'lucide-react';
 
-const Header = () => {
+const Header = ({ draf_btn }) => {
   const location = useLocation();
   const { lang, setLang, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -98,6 +98,7 @@ const Header = () => {
         <div className="container mx-auto px-0 xl:px-4 flex flex-col xl:flex-row text-white text-[13px] font-bold">
           {[
             {label: t.nav.home, path: '/'}, 
+            {label: lang === 'hi' ? 'ड्राफ्ट्स' : 'Saved Drafts', path: '/history', state: { activeTab: 'drafts' }, isDraft: true},
             {label: t.nav.act, path: '/act'}, 
             {label: t.nav.format, path: '/format'}, 
             {label: t.nav.faq, path: '/faq'}, 
@@ -106,16 +107,20 @@ const Header = () => {
             {label: t.nav.photo, path: '/photo-gallery'}, 
             {label: t.nav.video, path: '/video-gallery'}, 
             {label: t.nav.contact, path: '/contact-us'}
-          ].map((item, idx) => {
+          ].filter(item => !item.isDraft || draf_btn).map((item, idx) => {
             const isActive = location.pathname === item.path;
             return (
               <Link 
                 key={idx} 
                 to={item.path} 
+                state={item.state}
                 onClick={() => setIsMenuOpen(false)}
-                className={`px-6 py-3 xl:px-5 xl:py-2.5 hover:bg-[#cc4800] border-b xl:border-b-0 xl:border-r border-white/20 xl:border-[#f26a1d] last:border-0 transition-all duration-200 flex items-center justify-between xl:justify-start ${isActive ? 'bg-[#002b5e] hover:bg-[#001f44]' : ''}`}
+                className={`px-6 py-3 xl:px-5 xl:py-2.5 hover:bg-[#cc4800] border-b xl:border-b-0 xl:border-r border-white/20 xl:border-[#f26a1d] last:border-0 transition-all duration-200 flex items-center justify-between xl:justify-start ${isActive ? 'bg-[#002b5e] hover:bg-[#001f44]' : ''} ${item.isDraft ? 'bg-orange-500/10 xl:bg-white/10' : ''}`}
               >
-                <span>{item.label}</span>
+                <div className="flex items-center gap-2">
+                  {item.isDraft && <Database size={14} className="text-yellow-300" />}
+                  <span>{item.label}</span>
+                </div>
                 <Menu size={14} className="xl:hidden opacity-30" />
               </Link>
             );

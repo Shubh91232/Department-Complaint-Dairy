@@ -71,7 +71,7 @@ const Step1Applicant = ({
                 <span>{lang === 'hi' ? 'मोबाइल नंबर पर OTP प्राप्त हो सकता है।' : 'Mobile number may receive OTP updates.'}</span>
               </li>
             </ul>
-          </div>
+          </div> 
         </div>
 
         {/* Right Column - Complainant Form */}
@@ -115,9 +115,24 @@ const Step1Applicant = ({
                       type="text"
                       name="mobile"
                       value={applicantData.mobile}
-                      onChange={handleApplicantChange}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        // Create a synthetic event or just call with modified value
+                        handleApplicantChange({
+                          target: {
+                            name: 'mobile',
+                            value: val
+                          }
+                        });
+                      }}
                       placeholder="10-digit mobile number"
-                      className={`${inputClass} pl-10`}
+                      className={`${inputClass} pl-10 transition-all ${
+                        applicantData.mobile?.length === 10 
+                          ? 'border-green-500 focus:border-green-600 focus:ring-green-100' 
+                          : applicantData.mobile?.length > 0 
+                            ? 'border-red-400 focus:border-red-500 focus:ring-red-50' 
+                            : ''
+                      }`}
                     />
                   </div>
                 </div>

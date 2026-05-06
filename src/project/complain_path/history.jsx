@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../LanguageContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { 
@@ -32,15 +32,17 @@ import { fetchDraftsAPI, fetchGrievanceHistoryAPI, deleteDraftAPI } from '../../
 const WorkHistory = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const [history, setHistory] = useState([]);
   const [drafts, setDrafts] = useState([]);
-  const [activeTab, setActiveTab] = useState('history'); // 'history' or 'drafts'
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'history'); // 'history' or 'drafts'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [sortOrder, setSortOrder] = useState('newest');
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isFetched = useRef(false);
 
   const showAlert = (message, type = 'error') => {
     setCustomAlert({ show: true, message, type });
@@ -50,6 +52,8 @@ const WorkHistory = () => {
   };
 
   useEffect(() => {
+    if (isFetched.current) return;
+
     const loadData = async () => {
       try {
         // Load history from API
@@ -63,6 +67,7 @@ const WorkHistory = () => {
         if (draftRes.success) {
           setDrafts(draftRes.data || []);
         }
+        isFetched.current = true;
       } catch (err) {
         console.error('Error loading history data:', err);
       }
@@ -70,21 +75,29 @@ const WorkHistory = () => {
     loadData();
   }, []);
 
-  const filteredHistory = history
-    .filter(item => {
-      const matchesSearch = 
-        item.core_case_information?.serial_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.complain_profile?.complainer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.case_specifics?.complain_details?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = filterStatus === 'All' || item.case_specifics?.current_status === filterStatus;
-      
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortOrder === 'newest') return new Date(b.timestamp) - new Date(a.timestamp);
-      return new Date(a.timestamp) - new Date(b.timestamp);
-    });
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
+  const filteredHistory = useMemo(() => {
+    return history
+      .filter(item => {
+        const matchesSearch = 
+          item.core_case_information?.serial_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.complain_profile?.complainer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.case_specifics?.complain_details?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = filterStatus === 'All' || item.case_specifics?.current_status === filterStatus;
+        
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'newest') return new Date(b.timestamp) - new Date(a.timestamp);
+        return new Date(a.timestamp) - new Date(b.timestamp);
+      });
+  }, [history, searchTerm, filterStatus, sortOrder]);
 
   const handleDeleteRecord = (id) => {
     if (deleteConfirmId !== id) {
