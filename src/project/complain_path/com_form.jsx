@@ -180,7 +180,12 @@ const ComplainForm = () => {
     const core = draft.core_case_information || {};
     const geo = draft.geographic_information || {};
     const specifics = draft.case_specifics || {};
-    const advanced = draft.advanced_details || {};
+    
+    // New modular status sections from backend
+    const enforcement = draft.enforcement_status || {};
+    const account = draft.account_status || {};
+    const financial = draft.financial_status || {};
+    const legal = draft.legal_action_status || {};
 
     setFormData(prev => ({
       ...prev,
@@ -209,39 +214,47 @@ const ComplainForm = () => {
         description: specifics.complain_details || draft.description || '',
       },
       EnforcementStatus: {
-        responsibleOfficer: specifics.responsible_officer || draft.responsibleOfficer || '',
-        actionTaken: specifics.action_taken || draft.actionTaken || '',
-        remarks: specifics.remarks || draft.remarks || '',
-        caseStatus: specifics.current_status || draft.currentStatus || 'Pending',
-        pendingLevel: advanced.pending_level || draft.pendingLevel || '',
+        responsibleOfficer: enforcement.responsible_officer || specifics.responsible_officer || '',
+        actionTaken: enforcement.action_taken || specifics.action_taken || '',
+        remarks: enforcement.remarks || specifics.remarks || '',
+        caseStatus: enforcement.case_status || specifics.current_status || 'Pending',
+        pendingLevel: enforcement.pending_level || '',
       },
       AccountStatus: {
-        accountFreeze: advanced.account_freeze || draft.accountFreeze || 'No',
-        firInstruction: advanced.fir_instruction || draft.firInstruction || 'No',
-        enquiryStatus: advanced.enquiry_status || draft.enquiryStatus || 'Pending',
-        deptLetter: advanced.dept_letter || draft.deptLetter || 'No',
+        accountFreeze: account.account_freeze || 'No',
+        firInstruction: account.fir_instruction || 'No',
+        enquiryStatus: account.enquiry_status || 'Pending',
+        deptLetter: account.dept_letter || 'No',
       },
       FinancialStatus: {
-        recoverableAmount: advanced.recoverable_amount || draft.recoverableAmount || '',
-        amountRecovered: advanced.amount_recovered || draft.amountRecovered || '',
+        recoverableAmount: financial.recoverable_amount || '',
+        amountRecovered: financial.amount_recovered || '',
       },
       LegalActionStatus: {
-        showCauseNotice: advanced.show_cause_notice || draft.showCauseNotice || 'No',
-        suspensionOrdered: advanced.suspension_ordered || draft.suspensionOrdered || 'No',
-        terminationOrdered: advanced.termination_ordered || draft.terminationOrdered || 'No',
-        firCasesFiled: advanced.fir_cases_filed || draft.firCasesFiled || ''
+        showCauseNotice: legal.show_cause_notice || 'No',
+        suspensionOrdered: legal.suspension_ordered || 'No',
+        terminationOrdered: legal.termination_ordered || 'No',
+        firCasesFiled: legal.fir_cases_filed || ''
       }
     }));
 
-    // Restore Advanced Docs (Paths from DB)
+    // Restore Advanced Docs (Paths from DB) - updated for modular schema
     const docs = {};
     if (profile.document) docs.complaintCopy = profile.document;
-    if (advanced.account_freeze_doc) docs.accountFreeze = advanced.account_freeze_doc;
-    if (advanced.fir_instruction_doc) docs.firInstruction = advanced.fir_instruction_doc;
-    if (advanced.dept_letter_doc) docs.deptLetter = advanced.dept_letter_doc;
-    if (advanced.show_cause_notice_doc) docs.showCauseNotice = advanced.show_cause_notice_doc;
-    if (advanced.suspension_ordered_doc) docs.suspensionOrdered = advanced.suspension_ordered_doc;
-    if (advanced.termination_ordered_doc) docs.terminationOrdered = advanced.termination_ordered_doc;
+    
+    // Check both new modular sections and legacy advanced_details for compatibility
+    const adv = draft.advanced_details || {};
+    const acc = draft.account_status || {};
+    const leg = draft.legal_action_status || {};
+
+    if (acc.account_freeze_doc || adv.account_freeze_doc) docs.accountFreeze = acc.account_freeze_doc || adv.account_freeze_doc;
+    if (acc.fir_instruction_doc || adv.fir_instruction_doc) docs.firInstruction = acc.fir_instruction_doc || adv.fir_instruction_doc;
+    if (acc.dept_letter_doc || adv.dept_letter_doc) docs.deptLetter = acc.dept_letter_doc || adv.dept_letter_doc;
+    
+    if (leg.show_cause_notice_doc || adv.show_cause_notice_doc) docs.showCauseNotice = leg.show_cause_notice_doc || adv.show_cause_notice_doc;
+    if (leg.suspension_ordered_doc || adv.suspension_ordered_doc) docs.suspensionOrdered = leg.suspension_ordered_doc || adv.suspension_ordered_doc;
+    if (leg.termination_ordered_doc || adv.termination_ordered_doc) docs.terminationOrdered = leg.termination_ordered_doc || adv.termination_ordered_doc;
+    
     setAdvancedDocs(docs);
 
     // Fetch dependent location options
@@ -612,6 +625,20 @@ const ComplainForm = () => {
       if (formData.EnforcementStatus.actionTaken) data.set('action_taken', formData.EnforcementStatus.actionTaken);
       if (formData.EnforcementStatus.caseStatus) data.set('current_status', formData.EnforcementStatus.caseStatus);
       if (formData.EnforcementStatus.remarks) data.set('remarks', formData.EnforcementStatus.remarks);
+      if (formData.EnforcementStatus.pendingLevel) data.set('pending_level', formData.EnforcementStatus.pendingLevel);
+
+      if (formData.AccountStatus.accountFreeze) data.set('account_freeze', formData.AccountStatus.accountFreeze);
+      if (formData.AccountStatus.firInstruction) data.set('fir_instruction', formData.AccountStatus.firInstruction);
+      if (formData.AccountStatus.enquiryStatus) data.set('enquiry_status', formData.AccountStatus.enquiryStatus);
+      if (formData.AccountStatus.deptLetter) data.set('dept_letter', formData.AccountStatus.deptLetter);
+
+      if (formData.FinancialStatus.recoverableAmount) data.set('recoverable_amount', formData.FinancialStatus.recoverableAmount);
+      if (formData.FinancialStatus.amountRecovered) data.set('amount_recovered', formData.FinancialStatus.amountRecovered);
+
+      if (formData.LegalActionStatus.showCauseNotice) data.set('show_cause_notice', formData.LegalActionStatus.showCauseNotice);
+      if (formData.LegalActionStatus.suspensionOrdered) data.set('suspension_ordered', formData.LegalActionStatus.suspensionOrdered);
+      if (formData.LegalActionStatus.terminationOrdered) data.set('termination_ordered', formData.LegalActionStatus.terminationOrdered);
+      if (formData.LegalActionStatus.firCasesFiled) data.set('fir_cases_filed', formData.LegalActionStatus.firCasesFiled);
 
       // Draft Persistence: Send current draftId if we are updating an existing draft
       if (draftId) data.append('draftId', draftId);
@@ -743,6 +770,20 @@ const ComplainForm = () => {
       data.set('action_taken', finalForm.EnforcementStatus.actionTaken);
       data.set('current_status', finalForm.EnforcementStatus.caseStatus);
       data.set('remarks', finalForm.EnforcementStatus.remarks);
+      data.set('pending_level', finalForm.EnforcementStatus.pendingLevel);
+
+      data.set('account_freeze', finalForm.AccountStatus.accountFreeze);
+      data.set('fir_instruction', finalForm.AccountStatus.firInstruction);
+      data.set('enquiry_status', finalForm.AccountStatus.enquiryStatus);
+      data.set('dept_letter', finalForm.AccountStatus.deptLetter);
+
+      data.set('recoverable_amount', finalForm.FinancialStatus.recoverableAmount);
+      data.set('amount_recovered', finalForm.FinancialStatus.amountRecovered);
+
+      data.set('show_cause_notice', finalForm.LegalActionStatus.showCauseNotice);
+      data.set('suspension_ordered', finalForm.LegalActionStatus.suspensionOrdered);
+      data.set('termination_ordered', finalForm.LegalActionStatus.terminationOrdered);
+      data.set('fir_cases_filed', finalForm.LegalActionStatus.firCasesFiled);
 
       // Link to draft for cleanup
       if (draftId) data.append('draftId', draftId);
