@@ -26,8 +26,8 @@ const GeographicLocation = React.memo(({
           <label className={labelClass}>{lang === 'hi' ? 'स्तर (Level)' : 'Level'} {requiredSpan}</label>
           <select name="level" value={formData.level} onChange={handleFormChange} required className={inputClass}>
             <option value="">-- Select Level --</option>
-            {levels.map(l => (
-              <option key={l._id} value={l.levelName}>{l.levelName}</option>
+            {levels.map((l, idx) => (
+              <option key={l.value || idx} value={l.value}>{l.label}</option>
             ))}
           </select>
         </div>

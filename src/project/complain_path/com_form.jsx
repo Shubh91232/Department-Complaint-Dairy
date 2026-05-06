@@ -123,21 +123,19 @@ const ComplainForm = () => {
 
     if (location.state?.formData) {
       // Returning from Summary Page
-      const restoredApplicant = location.state.applicantData || { name: '', mobile: '', address: '' };
       const restoredForm = location.state.formData;
-
-      setApplicantData(restoredApplicant);
       setFormData(restoredForm);
+      
       if (location.state.apiDistricts) setApiDistricts(location.state.apiDistricts);
       if (location.state.apiBlocks) setApiBlocks(location.state.apiBlocks);
       if (location.state.apiGPs) setApiGPs(location.state.apiGPs);
 
-      if (restoredForm.district && (!location.state.apiBlocks || location.state.apiBlocks.length === 0)) {
-        fetchBlocksAPI(restoredForm.district).then(res => res.success && setApiBlocks(res.data));
+      if (restoredForm.geographic_information?.district && (!location.state.apiBlocks || location.state.apiBlocks.length === 0)) {
+        fetchBlocksAPI(restoredForm.geographic_information.district).then(res => res.success && setApiBlocks(res.data));
       }
 
       if (location.state.confirmed && !isSubmitting && !showReceipt) {
-        confirmSubmit(restoredForm, restoredApplicant);
+        confirmSubmit(restoredForm);
       }
     } else if (location.state?.draftData) {
       const draft = location.state.draftData;
@@ -184,43 +182,55 @@ const ComplainForm = () => {
     const specifics = draft.case_specifics || {};
     const advanced = draft.advanced_details || {};
 
-    setApplicantData({
-      name: complainer.name || draft.applicantName || '',
-      mobile: complainer.mobile || draft.mobile || '',
-      address: complainer.address || draft.address || ''
-    });
-
     setFormData(prev => ({
       ...prev,
-      source: core.source || draft.source || 'PR',
-      serialNumber: core.serial_no || draft.serialNumber || '',
-      departmentRef: specifics.department_ref || draft.departmentRef || '',
-      financialYear: core.fy || draft.financialYear || '2026-27',
-      dateReceived: core.date || draft.dateReceived || '',
-      district: geo.district || draft.district || '',
-      block: geo.block || draft.block || '',
-      panchayat: geo.gram_panchayat || draft.panchayat || '',
-      level: geo.level || draft.level || 'District',
-      department: specifics.department || draft.department || '',
-      scheme: specifics.scheme || draft.scheme || '',
-      complaintCategory: specifics.complaint_category || draft.complaintCategory || '',
-      description: specifics.complain_details || draft.description || '',
-      responsibleOfficer: specifics.responsible_officer || draft.responsibleOfficer || '',
-      currentStatus: specifics.current_status || draft.currentStatus || 'Pending',
-      actionTaken: specifics.action_taken || draft.actionTaken || '',
-      remarks: specifics.remarks || draft.remarks || '',
-      caseStatus: advanced.case_status || draft.caseStatus || 'Pending',
-      pendingLevel: advanced.pending_level || draft.pendingLevel || '',
-      accountFreeze: advanced.account_freeze || draft.accountFreeze || 'No',
-      firInstruction: advanced.fir_instruction || draft.firInstruction || 'No',
-      enquiryStatus: advanced.enquiry_status || draft.enquiryStatus || 'Pending',
-      deptLetter: advanced.dept_letter || draft.deptLetter || 'No',
-      recoverableAmount: advanced.recoverable_amount || draft.recoverableAmount || '',
-      amountRecovered: advanced.amount_recovered || draft.amountRecovered || '',
-      showCauseNotice: advanced.show_cause_notice || draft.showCauseNotice || 'No',
-      suspensionOrdered: advanced.suspension_ordered || draft.suspensionOrdered || 'No',
-      terminationOrdered: advanced.termination_ordered || draft.terminationOrdered || 'No',
-      firCasesFiled: advanced.fir_cases_filed || draft.firCasesFiled || ''
+      applicantData: {
+        name: complainer.name || draft.applicantName || '',
+        mobile: complainer.mobile || draft.mobile || '',
+        address: complainer.address || draft.address || ''
+      },
+      CoreCaseInfo: {
+        source: core.source || draft.source || 'PR',
+        serialNumber: core.serial_no || draft.serialNumber || '',
+        departmentRef: specifics.department_ref || draft.departmentRef || '',
+        financialYear: core.fy || draft.financialYear || '2026-27',
+        dateReceived: core.date || draft.dateReceived || '',
+      },
+      geographic_information: {
+        district: geo.district || draft.district || '',
+        block: geo.block || draft.block || '',
+        panchayat: geo.gram_panchayat || draft.panchayat || '',
+        level: geo.level || draft.level || 'District',
+      },
+      case_information: {
+        department: specifics.department || draft.department || '',
+        scheme: specifics.scheme || draft.scheme || '',
+        complaintCategory: specifics.complaint_category || draft.complaintCategory || '',
+        description: specifics.complain_details || draft.description || '',
+      },
+      EnforcementStatus: {
+        responsibleOfficer: specifics.responsible_officer || draft.responsibleOfficer || '',
+        actionTaken: specifics.action_taken || draft.actionTaken || '',
+        remarks: specifics.remarks || draft.remarks || '',
+        caseStatus: specifics.current_status || draft.currentStatus || 'Pending',
+        pendingLevel: advanced.pending_level || draft.pendingLevel || '',
+      },
+      AccountStatus: {
+        accountFreeze: advanced.account_freeze || draft.accountFreeze || 'No',
+        firInstruction: advanced.fir_instruction || draft.firInstruction || 'No',
+        enquiryStatus: advanced.enquiry_status || draft.enquiryStatus || 'Pending',
+        deptLetter: advanced.dept_letter || draft.deptLetter || 'No',
+      },
+      FinancialStatus: {
+        recoverableAmount: advanced.recoverable_amount || draft.recoverableAmount || '',
+        amountRecovered: advanced.amount_recovered || draft.amountRecovered || '',
+      },
+      LegalActionStatus: {
+        showCauseNotice: advanced.show_cause_notice || draft.showCauseNotice || 'No',
+        suspensionOrdered: advanced.suspension_ordered || draft.suspensionOrdered || 'No',
+        terminationOrdered: advanced.termination_ordered || draft.terminationOrdered || 'No',
+        firCasesFiled: advanced.fir_cases_filed || draft.firCasesFiled || ''
+      }
     }));
 
     // Restore Advanced Docs (Paths from DB)
@@ -556,30 +566,46 @@ const ComplainForm = () => {
   const saveAsDraft = async () => {
     setIsDrafting(true);
     try {
-      // Flatten nested formData for API
+      const data = new FormData();
+
+      // Recursive helper to flatten nested formData sections into flat FormData keys
       const appendFlattened = (obj) => {
         Object.keys(obj).forEach(key => {
           const value = obj[key];
-          if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof File)) {
+          
+          // Skip null/undefined or specific complex objects handled separately
+          if (value === null || value === undefined) return;
+
+          if (typeof value === 'object' && !(value instanceof File) && !Array.isArray(value)) {
             appendFlattened(value);
           } else {
-            // Map 'name' in applicantData to 'applicantName' for API consistency if needed
-            // However, the original code had explicit appends. Let's do that.
-            if (key !== 'applicantData') {
+            // Check if key already exists to avoid duplicates if sections overlap
+            if (!data.has(key)) {
               data.append(key, value);
             }
           }
         });
       };
 
-      // Explicitly append applicant info with correct keys
-      data.append('applicantName', formData.applicantData.name);
-      data.append('mobile', formData.applicantData.mobile);
-      data.append('address', formData.applicantData.address);
-
+      // Flatten the hierarchical state
       appendFlattened(formData);
 
-      // Draft ID if exists
+      // Ensure applicant details are mapped to the keys expected by existing API/Backend
+      if (formData.applicantData.name) data.set('applicantName', formData.applicantData.name);
+      if (formData.applicantData.mobile) data.set('mobile', formData.applicantData.mobile);
+      if (formData.applicantData.address) data.set('address', formData.applicantData.address);
+
+      // Map internal state keys to legacy backend names if necessary
+      if (formData.CoreCaseInfo.serialNumber) data.set('serialNumber', formData.CoreCaseInfo.serialNumber);
+      if (formData.CoreCaseInfo.financialYear) data.set('fy', formData.CoreCaseInfo.financialYear);
+      if (formData.CoreCaseInfo.dateReceived) data.set('date', formData.CoreCaseInfo.dateReceived);
+      
+      if (formData.geographic_information.panchayat) data.set('gram_panchayat', formData.geographic_information.panchayat);
+      
+      if (formData.case_information.complaintCategory) data.set('complaint_category', formData.case_information.complaintCategory);
+      if (formData.case_information.description) data.set('complain_details', formData.case_information.description);
+
+      // Draft Persistence: Send current draftId if we are updating an existing draft
       if (draftId) data.append('draftId', draftId);
 
       // Advanced Documents & Existing Paths
@@ -588,7 +614,6 @@ const ComplainForm = () => {
         if (val instanceof File) {
           data.append(key, val);
         } else if (typeof val === 'string') {
-          // Send back the existing path so backend knows to keep it
           data.append(`${key}Doc`, val);
         }
       });
@@ -599,7 +624,8 @@ const ComplainForm = () => {
         const shortId = res.data?.draftId || `D-${newId.slice(-6).toUpperCase()}`;
         setDraftId(newId);
         setShortDraftId(shortId);
-        // Update URL with draftId
+        
+        // Update URL to reflect the saved draft state
         navigate(`/complain?draftId=${newId}`, { replace: true, state: location.state });
         showAlert(lang === 'hi' ? `प्रगति ड्राफ्ट (${shortId}) के रूप में सहेजी गई।` : `Progress saved as draft (${shortId}).`, 'success');
       }
@@ -655,8 +681,8 @@ const ComplainForm = () => {
     });
   };
 
-  const confirmSubmit = async (finalForm = formData, finalApplicant = applicantData) => {
-    if (!finalForm.scheme) {
+  const confirmSubmit = async (finalForm = formData) => {
+    if (!finalForm.case_information?.scheme) {
       showAlert(lang === 'hi' ? 'योजना का चयन अनिवार्य है!' : 'Scheme selection is mandatory!', 'error');
       setIsSubmitting(false);
       return;
@@ -666,38 +692,46 @@ const ComplainForm = () => {
     try {
       const data = new FormData();
 
-      // Flatten nested formData for API
       const appendFlattened = (obj) => {
         Object.keys(obj).forEach(key => {
           const value = obj[key];
-          if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof File)) {
+          if (value === null || value === undefined) return;
+
+          if (typeof value === 'object' && !(value instanceof File) && !Array.isArray(value)) {
             appendFlattened(value);
           } else {
-            if (key !== 'applicantData') {
+            if (!data.has(key)) {
               data.append(key, value);
             }
           }
         });
       };
 
-      // Explicitly append applicant info
-      data.append('applicantName', finalForm.applicantData.name);
-      data.append('mobile', finalForm.applicantData.mobile);
-      data.append('address', finalForm.applicantData.address);
-
+      // Flatten hierarchical state
       appendFlattened(finalForm);
 
-      // Draft ID if exists - Backend will handle deletion
+      // Explicitly map applicant info
+      data.set('applicantName', finalForm.applicantData.name);
+      data.set('mobile', finalForm.applicantData.mobile);
+      data.set('address', finalForm.applicantData.address);
+
+      // Map to backend keys
+      data.set('serialNumber', finalForm.CoreCaseInfo.serialNumber);
+      data.set('fy', finalForm.CoreCaseInfo.financialYear);
+      data.set('date', finalForm.CoreCaseInfo.dateReceived);
+      data.set('gram_panchayat', finalForm.geographic_information.panchayat);
+      data.set('complaint_category', finalForm.case_information.complaintCategory);
+      data.set('complain_details', finalForm.case_information.description);
+
+      // Link to draft for cleanup
       if (draftId) data.append('draftId', draftId);
 
-      // Advanced Documents & Existing Paths
+      // Advanced Documents
       Object.keys(advancedDocs).forEach(key => {
         const val = advancedDocs[key];
         if (val instanceof File) {
           data.append(key, val);
         } else if (typeof val === 'string') {
-          // Send back the existing path so backend knows to keep it
-          // We use the same field name suffix as the model for clarity or specific logic
           data.append(`${key}Doc`, val);
         }
       });
@@ -721,10 +755,8 @@ const ComplainForm = () => {
         setShowPreview(false);
         setShowReceipt(true);
 
-        // Clear draft state after successful submission
         setDraftId(null);
         setShortDraftId(null);
-        // Clear draftId from URL
         navigate('/complain', { replace: true, state: {} });
 
         showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.', 'success');
