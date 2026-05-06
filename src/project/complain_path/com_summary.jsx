@@ -329,4 +329,4 @@ const ComplainSummary = () => {
   );
 };
 
-export default ComplainSummary; mmary;
+export default ComplainSummary;
