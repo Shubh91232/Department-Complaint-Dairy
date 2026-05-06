@@ -31,6 +31,17 @@ const CoreCaseInfo = React.memo(({ lang, formData, handleFormChange, labelClass,
           <label className={labelClass}>{lang === 'hi' ? 'प्राप्त तिथि' : 'Date Received'} {requiredSpan}</label>
           <input type="date" name="dateReceived" value={formData.dateReceived} onChange={handleFormChange} required className={inputClass} />
         </div>
+        <div>
+          <label className={labelClass}>{lang === 'hi' ? 'वित्तीय वर्ष' : 'Financial Year'}</label>
+          <input 
+            type="text" 
+            name="financialYear" 
+            value={formData.financialYear} 
+            readOnly 
+            placeholder="Auto-calculated" 
+            className={`${inputClass} bg-gray-50 font-bold text-[#1976d2] border-blue-100`} 
+          />
+        </div>
       </div>
     </div>
   );

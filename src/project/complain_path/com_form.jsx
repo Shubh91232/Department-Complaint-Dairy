@@ -389,6 +389,18 @@ const ComplainForm = () => {
         }
       }
 
+      if (section === 'CoreCaseInfo' && name === 'dateReceived') {
+        const date = new Date(value);
+        if (!isNaN(date)) {
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1; // 1-12
+          const fy = month >= 4 
+            ? `${year}-${(year + 1).toString().slice(-2)}` 
+            : `${year - 1}-${year.toString().slice(-2)}`;
+          newData.CoreCaseInfo.financialYear = fy;
+        }
+      }
+
       return newData;
     });
 
