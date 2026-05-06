@@ -85,8 +85,8 @@ const Drafts = () => {
                   </div>
                   
                   <h3 className="font-bold text-[#002b5e] text-[15px] mb-2 leading-tight">
-                    {draft.applicantName ? (
-                      <>{lang === 'hi' ? 'परिवादी:' : 'Complainant:'} <span className="text-[#1976d2]">{draft.applicantName}</span></>
+                    {draft.complain_profile?.complainer?.name ? (
+                      <>{lang === 'hi' ? 'परिवादी:' : 'Complainant:'} <span className="text-[#1976d2]">{draft.complain_profile.complainer.name}</span></>
                     ) : (
                       <span className="italic text-gray-400">{lang === 'hi' ? 'परिवादी विवरण उपलब्ध नहीं' : 'Complainant Name Pending...'}</span>
                     )}
@@ -95,11 +95,11 @@ const Drafts = () => {
                   <div className="space-y-2 mt-4 text-[12px] text-gray-600">
                     <div className="flex items-start gap-2">
                       <Calendar size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span><strong>{lang === 'hi' ? 'प्राप्ति तिथि:' : 'Received:'}</strong> {draft.dateReceived || '-'}</span>
+                      <span><strong>{lang === 'hi' ? 'प्राप्ति तिथि:' : 'Received:'}</strong> {draft.core_case_information?.date || '-'}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span><strong>{lang === 'hi' ? 'स्थान:' : 'Location:'}</strong> {draft.district || 'Pending...'} {draft.block ? `, ${draft.block}` : ''}</span>
+                      <span><strong>{lang === 'hi' ? 'स्थान:' : 'Location:'}</strong> {draft.geographic_information?.district || 'Pending...'} {draft.geographic_information?.block ? `, ${draft.geographic_information.block}` : ''}</span>
                     </div>
                   </div>
                 </div>

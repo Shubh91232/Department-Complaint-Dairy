@@ -73,11 +73,11 @@ const WorkHistory = () => {
   const filteredHistory = history
     .filter(item => {
       const matchesSearch = 
-        item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        item.core_case_information?.serial_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.complain_profile?.complainer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.case_specifics?.complain_details?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesStatus = filterStatus === 'All' || item.currentStatus === filterStatus;
+      const matchesStatus = filterStatus === 'All' || item.case_specifics?.current_status === filterStatus;
       
       return matchesSearch && matchesStatus;
     })
@@ -133,12 +133,12 @@ const WorkHistory = () => {
     const headers = ['ID', 'Serial No', 'Date', 'Applicant', 'Department', 'Scheme', 'Status'];
     const rows = history.map(item => [
       item.id,
-      item.serialNumber,
-      item.dateReceived,
-      item.name || 'N/A',
-      item.department,
-      item.scheme,
-      item.currentStatus
+      item.core_case_information?.serial_no,
+      item.core_case_information?.date,
+      item.complain_profile?.complainer?.name || 'N/A',
+      item.case_specifics?.department,
+      item.case_specifics?.scheme,
+      item.case_specifics?.current_status
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -252,13 +252,13 @@ const WorkHistory = () => {
            <div className="text-center border-r border-gray-100 last:border-0">
               <span className="text-gray-500 text-[11px] font-bold uppercase block mb-1">Pending</span>
               <span className="text-2xl font-bold text-orange-600">
-                {history.filter(i => i.currentStatus === 'Pending').length}
+                {history.filter(i => (i.case_specifics?.current_status || i.currentStatus) === 'Pending').length}
               </span>
            </div>
            <div className="text-center border-r border-gray-100 last:border-0">
               <span className="text-gray-500 text-[11px] font-bold uppercase block mb-1">Resolved</span>
               <span className="text-2xl font-bold text-green-700">
-                {history.filter(i => i.currentStatus === 'Resolved').length}
+                {history.filter(i => (i.case_specifics?.current_status || i.currentStatus) === 'Resolved').length}
               </span>
            </div>
            <div className="text-center">
@@ -336,31 +336,31 @@ const WorkHistory = () => {
                           {index + 1}
                         </td>
                         <td className="px-4 py-4">
-                          <div className="font-bold text-[#002b5e]">{item.serialNumber}</div>
+                          <div className="font-bold text-[#002b5e]">{item.core_case_information?.serial_no}</div>
                           <div className="text-[10px] text-blue-600 font-black tracking-tight uppercase">{item.complainId || `ID: ${item._id?.substring(0, 10)}`}</div>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2 mb-1">
                             <User size={14} className="text-gray-400" />
-                            <span className="font-bold text-gray-800">{item.applicantName || 'Unknown'}</span>
+                            <span className="font-bold text-gray-800">{item.complain_profile?.complainer?.name || 'Unknown'}</span>
                           </div>
-                          <div className="text-[11px] text-gray-500 ml-5 font-medium">{item.mobile || 'No Mobile'}</div>
+                          <div className="text-[11px] text-gray-500 ml-5 font-medium">{item.complain_profile?.complainer?.mobile || 'No Mobile'}</div>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="font-bold text-gray-700 text-[12px] mb-0.5">{item.department}</div>
-                          <div className="text-[11px] text-blue-600 font-bold mb-1">{item.scheme}</div>
-                          <p className="text-[11px] text-gray-500 line-clamp-1 italic">"{item.description}"</p>
+                          <div className="font-bold text-gray-700 text-[12px] mb-0.5">{item.case_specifics?.department}</div>
+                          <div className="text-[11px] text-blue-600 font-bold mb-1">{item.case_specifics?.scheme}</div>
+                          <p className="text-[11px] text-gray-500 line-clamp-1 italic">"{item.case_specifics?.complain_details}"</p>
                         </td>
                         <td className="px-4 py-4 text-center">
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${
-                            item.currentStatus === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                            item.currentStatus === 'Resolved' ? 'bg-green-50 text-green-700 border-green-200' :
+                            (item.case_specifics?.current_status || item.currentStatus) === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            (item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? 'bg-green-50 text-green-700 border-green-200' :
                             'bg-red-50 text-red-700 border-red-200'
                           }`}>
-                            {item.currentStatus === 'Pending' ? <Clock size={10} /> : 
-                             item.currentStatus === 'Resolved' ? <CheckCircle size={10} /> : 
+                            {(item.case_specifics?.current_status || item.currentStatus) === 'Pending' ? <Clock size={10} /> : 
+                             (item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? <CheckCircle size={10} /> : 
                              <AlertCircle size={10} />}
-                            {item.currentStatus}
+                            {item.case_specifics?.current_status || item.currentStatus}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center">
@@ -451,18 +451,18 @@ const WorkHistory = () => {
                         <td className="px-4 py-4">
                           <div className="font-bold text-[#e65100] text-[10px] uppercase tracking-tighter mb-1">{draft.draftId || `TEMP-ID: ${draft._id?.substring(0, 8)}`}</div>
                           <div className="font-bold text-gray-800">
-                            {draft.applicantName || (lang === 'hi' ? 'बिना नाम का ड्राफ्ट' : 'Untitled Draft')}
+                            {draft.complain_profile?.complainer?.name || (lang === 'hi' ? 'बिना नाम का ड्राफ्ट' : 'Untitled Draft')}
                           </div>
                           <div className="text-[11px] text-gray-500">
-                            {draft.department ? `${draft.department} - ${draft.scheme}` : (lang === 'hi' ? 'विभाग नहीं चुना गया' : 'No department selected')}
+                            {draft.case_specifics?.department ? `${draft.case_specifics.department} - ${draft.case_specifics.scheme}` : (lang === 'hi' ? 'विभाग नहीं चुना गया' : 'No department selected')}
                           </div>
                         </td>
                         <td className="px-4 py-4">
                            <div className="flex items-center gap-3">
                               <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                                 <div className="bg-orange-500 h-full" style={{ width: draft.scheme ? '100%' : '50%' }}></div>
+                                 <div className="bg-orange-500 h-full" style={{ width: draft.case_specifics?.scheme ? '100%' : '50%' }}></div>
                               </div>
-                              <span className="text-[11px] font-bold text-orange-600">{draft.scheme ? 'Ready' : 'Incomplete'}</span>
+                              <span className="text-[11px] font-bold text-orange-600">{draft.case_specifics?.scheme ? 'Ready' : 'Incomplete'}</span>
                            </div>
                         </td>
                         <td className="px-4 py-4 text-center">

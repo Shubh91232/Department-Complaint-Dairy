@@ -1,4 +1,5 @@
-import { URLS } from './urls';
+import { URLS, SERVER_URL } from './urls';
+export { SERVER_URL };
 
 // In-memory cache for API responses
 const apiCache = new Map();

@@ -17,6 +17,7 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
   const [error, setError] = useState(false);
   const isFetchingRef = React.useRef(false);
   const onCodeChangeRef = React.useRef(onCodeChange);
+  const refreshTimerRef = React.useRef(null);
 
   useEffect(() => {
     onCodeChangeRef.current = onCodeChange;
@@ -25,6 +26,12 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
   const fetchCaptcha = React.useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
+    
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+
     try {
       setError(false);
       const data = await fetchCaptchaImageAPI();
@@ -32,6 +39,11 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
         setCaptchaData({ token: data.token, image: data.image });
         setInputValue('');
         if (onCodeChangeRef.current) onCodeChangeRef.current('', data.token);
+        
+        // Auto-refresh after 120 seconds (2 minutes)
+        refreshTimerRef.current = setTimeout(() => {
+          fetchCaptcha();
+        }, 120000);
       } else {
         setError(true);
       }
@@ -50,6 +62,11 @@ const Captcha = forwardRef(({ onCodeChange }, ref) => {
 
   useEffect(() => {
     fetchCaptcha();
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
   }, [fetchCaptcha]);
 
   const handleChange = (e) => {
