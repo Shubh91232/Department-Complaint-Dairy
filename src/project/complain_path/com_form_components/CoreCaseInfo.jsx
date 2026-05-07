@@ -1,7 +1,15 @@
 import React from 'react';
 import { Database } from 'lucide-react';
 
-const CoreCaseInfo = React.memo(({ lang, formData, handleFormChange, labelClass, inputClass, requiredSpan }) => {
+const CoreCaseInfo = React.memo(({
+  lang,
+  formData,
+  handleFormChange,
+  sources = [],
+  labelClass,
+  inputClass,
+  requiredSpan
+}) => {
   return (
     <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
       <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
@@ -12,11 +20,12 @@ const CoreCaseInfo = React.memo(({ lang, formData, handleFormChange, labelClass,
         <div>
           <label className={labelClass}>{lang === 'hi' ? 'स्रोत (Source)' : 'Source'}</label>
           <select name="source" value={formData.source} onChange={handleFormChange} className={inputClass}>
-            <option value="PR">PR (Panchayati Raj)</option>
-            <option value="CS">CS (Chief Secretary Office)</option>
-            <option value="MLA">MLA Reference</option>
-            <option value="MP">MP Reference</option>
-            <option value="Direct">Direct Portal</option>
+            <option value="">-- Select Source --</option>
+            {sources.map(s => (
+              <option key={s.value} value={s.value}>
+                {lang === 'hi' ? s.label_hi : s.label_en}
+              </option>
+            ))}
           </select>
         </div>
         <div>

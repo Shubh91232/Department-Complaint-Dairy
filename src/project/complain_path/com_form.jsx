@@ -6,7 +6,7 @@ import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, Smartphone, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, EyeOff, Shield, CheckCircle, Search, Clock, Printer, FileUp, Trash2, ArrowRight, ArrowLeft, FileSearch, ScanLine } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
 import Captcha, { verifyCaptcha } from './captcha';
-import { SERVER_URL, draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, deleteDraftAPI, fetchDraftByIdAPI } from '../../apiHandler/apis';
+import { SERVER_URL, draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchSourcesAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, deleteDraftAPI, fetchDraftByIdAPI } from '../../apiHandler/apis';
 
 import Step1Applicant from './com_form_components/Step1Applicant';
 import AdvancedDetailsModal from './com_form_components/AdvancedDetailsModal';
@@ -40,6 +40,7 @@ const ComplainForm = () => {
 
   const [categories, setCategories] = useState([]);
   const [levels, setLevels] = useState([]);
+  const [sources, setSources] = useState([]);
   const [apiDistricts, setApiDistricts] = useState([]);
   const [apiBlocks, setApiBlocks] = useState([]);
   const [apiGPs, setApiGPs] = useState([]);
@@ -341,10 +342,22 @@ const ComplainForm = () => {
       }
     };
 
+    const loadSources = async () => {
+      try {
+        const res = await fetchSourcesAPI();
+        if (res.success) {
+          setSources(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load sources:", err);
+      }
+    };
+
     loadDepts();
     loadCategories();
     loadLevels();
     loadDistricts();
+    loadSources();
   }, []);
 
   // Derived Departments & Schemes
@@ -939,6 +952,7 @@ const ComplainForm = () => {
                 lang={lang}
                 formData={formData.CoreCaseInfo}
                 handleFormChange={(e) => handleFormChange(e, 'CoreCaseInfo')}
+                sources={sources}
                 labelClass={labelClass}
                 inputClass={inputClass}
                 requiredSpan={requiredSpan}
@@ -951,10 +965,13 @@ const ComplainForm = () => {
                     lang={lang}
                     formData={formData.geographic_information}
                     handleFormChange={(e) => handleFormChange(e, 'geographic_information')}
+                    setFormData={setFormData}
                     levels={levels}
                     apiDistricts={apiDistricts}
                     apiBlocks={apiBlocks}
+                    setApiBlocks={setApiBlocks}
                     apiGPs={apiGPs}
+                    setApiGPs={setApiGPs}
                     showAdvancedDetails={showAdvancedDetails}
                     setShowAdvancedDetails={setShowAdvancedDetails}
                     labelClass={labelClass}

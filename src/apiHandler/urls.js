@@ -1,8 +1,8 @@
-// export const BASE_URL = 'http://localhost:5000/api';
-// export const SERVER_URL = 'http://localhost:5000';
+export const BASE_URL = 'http://localhost:5000/api';
+export const SERVER_URL = 'http://localhost:5000';
 // export const BASE_URL = 'http://192.168.1.43:5000/api';
-export const BASE_URL = 'https://geotag-api.geoplanetsolution.in/api';
-export const SERVER_URL = 'https://geotag-api.geoplanetsolution.in';
+// export const BASE_URL = 'https://geotag-api.geoplanetsolution.in/api';
+// export const SERVER_URL = 'https://geotag-api.geoplanetsolution.in';
 
 
 export const URLS = {
@@ -15,9 +15,11 @@ export const URLS = {
   META: {
     DEPARTMENT_LIST: `${BASE_URL}/department_list`,
     LEVEL_LIST: `${BASE_URL}/level_list`,
+    SOURCE_LIST: `${BASE_URL}/source_list`,
     DISTRICTS: `${BASE_URL}/locations/districts`,
     BLOCKS: (districtId) => `${BASE_URL}/locations/blocks/${districtId}`,
-    GPS: (blockId) => `${BASE_URL}/locations/gps/${blockId}`
+    GPS: (blockId) => `${BASE_URL}/locations/gps/${blockId}`,
+    SEARCH_GP: (query) => `${BASE_URL}/locations/search-gp?q=${query}`
   },
   COMPLAINTS: {
     SUBMIT: `${BASE_URL}/complaints/submit`,

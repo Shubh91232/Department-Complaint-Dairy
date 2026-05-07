@@ -184,6 +184,10 @@ export const fetchLevelsAPI = async () => {
   return await getAPI(URLS.META.LEVEL_LIST, true);
 };
 
+export const fetchSourcesAPI = async () => {
+  return await getAPI(URLS.META.SOURCE_LIST, true);
+};
+
 export const fetchDistrictsAPI = async () => {
   return await getAPI(URLS.META.DISTRICTS, true); // Cache true as districts rarely change
 };
@@ -194,6 +198,10 @@ export const fetchBlocksAPI = async (districtId) => {
 
 export const fetchGPsAPI = async (blockId) => {
   return await getAPI(URLS.META.GPS(blockId), true);
+};
+
+export const fetchSearchGPAPI = async (query) => {
+  return await getAPI(URLS.META.SEARCH_GP(query));
 };
 
 export const submitComplaintAPI = async (payload) => {
