@@ -81,8 +81,9 @@ const CaseSpecifics = React.memo(({
                             ...prev,
                             case_information: {
                               ...prev.case_information,
-                              department: dept.department_name_en,
-                              scheme: ''
+                              department: dept.department_id,
+                              scheme: '',
+                              complaintCategory: ''
                             }
                           }));
                           setShowDeptOptions(false);
@@ -118,7 +119,7 @@ const CaseSpecifics = React.memo(({
                 className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.scheme ? 'text-gray-400' : ''}`}
                 onClick={() => setShowSchemeOptions(!showSchemeOptions)}
               >
-                {formData.scheme || (lang === 'hi' ? '-- योजना चुनें --' : '-- Select Scheme --')}
+                {currentSchemes.find(s => s._id === formData.scheme || s.id === formData.scheme)?.scheme_name_en || (lang === 'hi' ? '-- योजना चुनें --' : '-- Select Scheme --')}
                 <ChevronRight size={16} className={`transform transition-transform ${showSchemeOptions ? 'rotate-90' : ''}`} />
               </div>
 
@@ -141,16 +142,16 @@ const CaseSpecifics = React.memo(({
                   <div className="max-h-80 overflow-y-auto custom-scrollbar">
                     {filteredSchemes.length > 0 ? filteredSchemes.map((scheme, idx) => (
                       <div
-                        key={idx}
+                        key={scheme._id || idx}
                         className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
                         onClick={() => {
                           setFormData(prev => ({
                             ...prev,
                             case_information: {
                               ...prev.case_information,
-                              department: scheme.deptNameEn || prev.case_information.department,
-                              scheme: scheme.scheme_name_en,
-                              complaintCategory: autoSelectCategory(scheme.type)
+                              department: scheme.department_id || scheme.deptId || prev.case_information.department,
+                              scheme: scheme._id || scheme.id,
+                              complaintCategory: '' 
                             }
                           }));
                           setShowSchemeOptions(false);
@@ -163,6 +164,9 @@ const CaseSpecifics = React.memo(({
                               {scheme.scheme_name_en}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[8px] font-black rounded border border-gray-200 uppercase tracking-tighter">
+                                {scheme.scheme_id}
+                              </span>
                               <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[8px] font-black rounded border border-gray-200 uppercase tracking-tighter">
                                 {scheme.fy || 'FY 24-25'}
                               </span>
@@ -201,7 +205,7 @@ const CaseSpecifics = React.memo(({
               className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.complaintCategory ? 'text-gray-400' : 'text-[#002b5e] font-semibold'}`}
               onClick={() => setShowCategoryOptions(!showCategoryOptions)}
             >
-              <span>{formData.complaintCategory || (lang === 'hi' ? '-- श्रेणी चुनें --' : '-- Select Category --')}</span>
+              <span>{typeof formData.complaintCategory === 'object' ? formData.complaintCategory?.name : (categories.find(c => (c._id || c.id) === formData.complaintCategory)?.name || formData.complaintCategory || (lang === 'hi' ? '-- श्रेणी चुनें --' : '-- Select Category --'))}</span>
               <ChevronRight size={16} className={`transform transition-transform ${showCategoryOptions ? 'rotate-90' : ''}`} />
             </div>
 
@@ -224,21 +228,21 @@ const CaseSpecifics = React.memo(({
                 <div className="max-h-60 overflow-y-auto custom-scrollbar">
                   {filteredCategories.length > 0 ? filteredCategories.map((cat, idx) => (
                     <div
-                      key={idx}
+                      key={cat._id || cat.id || idx}
                       className="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent cursor-pointer border-b border-gray-50 last:border-0 transition-all"
                       onClick={() => {
                         setFormData(prev => ({
                           ...prev,
                           case_information: {
                             ...prev.case_information,
-                            complaintCategory: cat
+                            complaintCategory: cat._id || cat.id || cat 
                           }
                         }));
                         setShowCategoryOptions(false);
                         setCategorySearch('');
                       }}
                     >
-                      <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{cat}</div>
+                      <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{cat.name || cat}</div>
                     </div>
                   )) : (
                     <div className="py-8 flex flex-col items-center justify-center text-gray-400 gap-2">

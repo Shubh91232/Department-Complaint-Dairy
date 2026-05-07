@@ -361,10 +361,7 @@ const ComplainForm = () => {
       })));
   }, [departments, deptData]);
 
-  const selectedDept = departments.find(d =>
-    d.department_name_en === formData.case_information?.department ||
-    d.department_name_hi === formData.case_information?.department
-  );
+  const selectedDept = departments.find(d => d.department_id === formData.case_information?.department);
   const currentSchemes = selectedDept ? selectedDept.schemes : allSchemes;
 
 
@@ -614,11 +611,11 @@ const ComplainForm = () => {
       if (formData.CoreCaseInfo.financialYear) data.set('fy', formData.CoreCaseInfo.financialYear);
       if (formData.CoreCaseInfo.dateReceived) data.set('date', formData.CoreCaseInfo.dateReceived);
       
-      if (formData.geographic_information.panchayat) data.set('gram_panchayat', formData.geographic_information.panchayat);
+      if (formData.geographic_information.panchayat) data.set('gp_id', formData.geographic_information.panchayat);
       
-      if (formData.case_information.department) data.set('department', formData.case_information.department);
-      if (formData.case_information.scheme) data.set('scheme', formData.case_information.scheme);
-      if (formData.case_information.complaintCategory) data.set('complaint_category', formData.case_information.complaintCategory);
+      if (formData.case_information.department) data.set('department_id', formData.case_information.department);
+      if (formData.case_information.scheme) data.set('scheme_id', formData.case_information.scheme);
+      if (formData.case_information.complaintCategory) data.set('category_id', formData.case_information.complaintCategory);
       if (formData.case_information.description) data.set('complain_details', formData.case_information.description);
 
       if (formData.EnforcementStatus.responsibleOfficer) data.set('responsible_officer', formData.EnforcementStatus.responsibleOfficer);
@@ -711,7 +708,10 @@ const ComplainForm = () => {
         applicantData: formData.applicantData,
         formData: formData,
         apiDistricts,
-        apiBlocks
+        apiBlocks,
+        apiGPs,
+        deptData,
+        categories
       }
     });
   };
@@ -758,12 +758,12 @@ const ComplainForm = () => {
 
       data.set('district', finalForm.geographic_information.district);
       data.set('block', finalForm.geographic_information.block);
-      data.set('gram_panchayat', finalForm.geographic_information.panchayat);
+      data.set('gp_id', finalForm.geographic_information.panchayat);
       data.set('level', finalForm.geographic_information.level);
 
-      data.set('department', finalForm.case_information.department);
-      data.set('scheme', finalForm.case_information.scheme);
-      data.set('complaint_category', finalForm.case_information.complaintCategory);
+      data.set('department_id', finalForm.case_information.department);
+      data.set('scheme_id', finalForm.case_information.scheme);
+      data.set('category_id', finalForm.case_information.complaintCategory);
       data.set('complain_details', finalForm.case_information.description);
 
       data.set('responsible_officer', finalForm.EnforcementStatus.responsibleOfficer);

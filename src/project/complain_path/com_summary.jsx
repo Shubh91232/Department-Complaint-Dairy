@@ -11,19 +11,23 @@ import {
   ShieldCheck,
   FileText,
   Eye,
-  Paperclip
+  Paperclip,
+  Loader2
 } from 'lucide-react';
 
 const ComplainSummary = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const { formData, apiDistricts, apiBlocks, apiGPs } = location.state || {
+  const { formData, apiDistricts, apiBlocks, apiGPs, deptData, categories } = location.state || {
     formData: {},
     apiDistricts: [],
     apiBlocks: [],
-    apiGPs: []
+    apiGPs: [],
+    deptData: null,
+    categories: []
   };
 
   if (!formData?.CoreCaseInfo?.serialNumber && !location.state) {
@@ -50,6 +54,18 @@ const ComplainSummary = () => {
   const getDistrictLabel = (val) => apiDistricts?.find(d => d.value == val)?.label || val;
   const getBlockLabel = (val) => apiBlocks?.find(b => b.value == val)?.label || val;
   const getGPLabel = (val) => apiGPs?.find(g => g.value == val)?.label || val;
+
+  const departments = deptData?.departments || [];
+  const getDeptLabel = (id) => departments.find(d => d.department_id === id)?.department_name_en || id;
+  const getSchemeLabel = (id) => {
+    const allSchemes = departments.flatMap(d => d.schemes || []);
+    return allSchemes.find(s => (s._id || s.id) === id)?.scheme_name_en || id;
+  };
+  const getCategoryLabel = (id) => {
+    if (typeof id === 'object') return id.name || id;
+    const cat = categories.find(c => (c._id || c.id) === id);
+    return cat ? (cat.name || cat) : id;
+  };
 
   const DataItem = ({ label, value, className = "", bold = false, color = "" }) => (
     <div className={`py-2 flex flex-col ${className}`}>
@@ -79,17 +95,26 @@ const ComplainSummary = () => {
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => navigate(-1)} className="bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 hover:bg-gray-50 transition-all uppercase tracking-wider">
+            <button 
+              onClick={() => navigate(-1)} 
+              disabled={isSubmitting}
+              className={`bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+            >
               <ChevronLeft size={14} /> Edit Form
             </button>
             <button onClick={() => window.print()} className="bg-white text-gray-900 px-4 py-2 border border-gray-900 font-bold text-[11px] flex items-center gap-2 hover:bg-gray-50 transition-all uppercase tracking-wider">
               <Printer size={14} /> Print Receipt
             </button>
             <button
-              onClick={() => navigate('/complain', { state: { ...location.state, confirmed: true } })}
-              className="bg-blue-700 text-white px-6 py-2 font-black text-[11px] flex items-center gap-2 hover:bg-blue-800 transition-all uppercase tracking-wider shadow-lg shadow-blue-100"
+              disabled={isSubmitting}
+              onClick={() => {
+                setIsSubmitting(true);
+                navigate('/complain', { state: { ...location.state, confirmed: true } });
+              }}
+              className={`bg-blue-700 text-white px-6 py-2 font-black text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider shadow-lg shadow-blue-100 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
             >
-              <Check size={14} /> Confirm & Submit
+              {isSubmitting ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />} 
+              {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
             </button>
           </div>
         </div>
@@ -139,9 +164,9 @@ const ComplainSummary = () => {
             <div className="space-y-8">
               <h3 className="text-[12px] font-black text-gray-900 uppercase tracking-widest border-l-4 border-gray-900 pl-4">Grievance Details</h3>
               <div className="grid grid-cols-4 gap-8 mb-8 border border-gray-100 p-6 bg-gray-50/30">
-                <DataItem label="Department" value={formData.case_information?.department} bold />
-                <DataItem label="Scheme" value={formData.case_information?.scheme} />
-                <DataItem label="Category" value={formData.case_information?.complaintCategory} bold />
+                <DataItem label="Department" value={getDeptLabel(formData.case_information?.department)} bold />
+                <DataItem label="Scheme" value={getSchemeLabel(formData.case_information?.scheme)} />
+                <DataItem label="Category" value={getCategoryLabel(formData.case_information?.complaintCategory)} bold />
                 <DataItem label="Financial Year" value={formData.CoreCaseInfo?.financialYear} />
               </div>
               <div className="border border-gray-200 p-8">

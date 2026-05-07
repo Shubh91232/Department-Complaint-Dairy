@@ -56,7 +56,7 @@ const GeographicLocation = React.memo(({
           <select name="panchayat" value={formData.panchayat} onChange={handleFormChange} disabled={!formData.block} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}>
             <option value="">-- Select GP --</option>
             {apiGPs.map(g => (
-              <option key={g.value} value={g.label}>{g.label}</option>
+              <option key={g.value} value={g.value}>{g.label}</option>
             ))}
           </select>
         </div>
