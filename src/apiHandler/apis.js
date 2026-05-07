@@ -240,3 +240,11 @@ export const fetchGrievanceHistoryAPI = async () => {
 export const deleteDraftAPI = async (id) => {
   return await deleteAuthAPI(URLS.COMPLAINTS.DELETE_DRAFT(id));
 };
+
+export const checkDuplicateComplaintAPI = async (payload) => {
+  return await postAuthAPI(URLS.COMPLAINTS.DUPLICATE_CHECKER, payload);
+};
+
+export const saveDuplicacyDetailsAPI = async (payload) => {
+  return await postAuthAPI(URLS.COMPLAINTS.SAVE_DUPLICACY, payload);
+};

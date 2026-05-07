@@ -15,13 +15,16 @@ import {
   Loader2
 } from 'lucide-react';
 
-import { SERVER_URL } from '../../apiHandler/apis';
+import { SERVER_URL, checkDuplicateComplaintAPI } from '../../apiHandler/apis';
 
 const ComplainSummary = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [duplicacyResult, setDuplicacyResult] = React.useState(null);
+  const [checkingDuplicacy, setCheckingDuplicacy] = React.useState(true);
+  const [errorDuplicacy, setErrorDuplicacy] = React.useState(false);
 
   const { formData, apiDistricts, apiBlocks, apiGPs, deptData, categories } = location.state || {
     formData: {},
@@ -31,6 +34,38 @@ const ComplainSummary = () => {
     deptData: null,
     categories: []
   };
+
+  const checkDuplicacy = async () => {
+    if (!formData?.CoreCaseInfo?.serialNumber) {
+      setCheckingDuplicacy(false);
+      return;
+    }
+    
+    setCheckingDuplicacy(true);
+    setErrorDuplicacy(false);
+    
+    try {
+      const res = await checkDuplicateComplaintAPI({
+        geolocation: formData.geographic_information,
+        case_specifics: formData.case_information,
+        applicantData: formData.applicantData
+      });
+      if (res.success) {
+        setDuplicacyResult(res);
+      } else {
+        setErrorDuplicacy(true);
+      }
+    } catch (err) {
+      console.error("Duplicacy check failed", err);
+      setErrorDuplicacy(true);
+    } finally {
+      setCheckingDuplicacy(false);
+    }
+  };
+
+  React.useEffect(() => {
+    checkDuplicacy();
+  }, [formData]);
 
   if (!formData?.CoreCaseInfo?.serialNumber && !location.state) {
     return (
@@ -99,8 +134,8 @@ const ComplainSummary = () => {
           <div className="flex gap-2">
             <button
               onClick={() => navigate(-1)}
-              disabled={isSubmitting}
-              className={`bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              disabled={isSubmitting || checkingDuplicacy}
+              className={`bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider ${isSubmitting || checkingDuplicacy ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
             >
               <ChevronLeft size={14} /> Edit Form
             </button>
@@ -108,18 +143,47 @@ const ComplainSummary = () => {
               <Printer size={14} /> Print Receipt
             </button>
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || checkingDuplicacy || errorDuplicacy}
               onClick={() => {
                 setIsSubmitting(true);
                 navigate('/complain', { state: { ...location.state, confirmed: true } });
               }}
-              className={`bg-blue-700 text-white px-6 py-2 font-black text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider shadow-lg shadow-blue-100 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
+              className={`bg-blue-700 text-white px-6 py-2 font-black text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider shadow-lg shadow-blue-100 ${isSubmitting || checkingDuplicacy || errorDuplicacy ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
             >
-              {isSubmitting ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />}
-              {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
+              {isSubmitting || checkingDuplicacy ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />}
+              {checkingDuplicacy ? 'Checking Duplicates...' : errorDuplicacy ? 'Verification Failed' : isSubmitting ? 'Processing...' : 'Confirm & Submit'}
             </button>
           </div>
         </div>
+
+        {/* Duplicacy Alert Banner */}
+        {duplicacyResult?.duplicacy_score > 60 && (
+          <div className="mb-8 bg-orange-50 border-2 border-orange-200 p-6 rounded-sm flex items-start gap-5 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="bg-orange-500 p-3 rounded-full text-white shrink-0">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-lg font-black text-orange-800 uppercase tracking-tight leading-none">Potential Duplicate Detected</h2>
+                <span className="bg-orange-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                  {duplicacyResult.duplicacy_score}% Similarity
+                </span>
+              </div>
+              <p className="text-[12px] text-orange-700 font-bold mb-4 leading-relaxed">
+                The system has found existing grievances with highly similar details. Please verify if this is a new case or a follow-up to avoid redundant entries.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest block w-full mb-1">Matching Records:</span>
+                {duplicacyResult.complains_list.map((match, idx) => (
+                  <div key={idx} className="bg-white border border-orange-200 px-3 py-1.5 rounded-sm flex items-center gap-2 shadow-sm">
+                    <span className="text-[11px] font-black text-orange-800">{match.complaint.complainId}</span>
+                    <span className="text-[10px] font-bold text-orange-400">({match.score}%)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Paper Document */}
         <div className="bg-white border border-gray-300 p-16 relative overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] print:border-none print:shadow-none print:p-0">
@@ -136,6 +200,36 @@ const ComplainSummary = () => {
                 <span className="text-2xl font-black text-gray-900 uppercase tracking-tight">{formData.CoreCaseInfo?.dateReceived || '---'}</span>
               </div>
             </div>
+          </div>
+
+          {/* Duplicacy Analysis Summary Bar */}
+          <div className="bg-gray-50/80 border-y border-gray-100 px-10 py-5 mb-12 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-3 h-3 rounded-full ${checkingDuplicacy ? 'bg-orange-400 animate-pulse' : errorDuplicacy ? 'bg-gray-300' : (duplicacyResult?.duplicacy_score > 60 ? 'bg-red-500' : 'bg-green-500')}`}></div>
+              <div>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Integrity Scan Status</p>
+                <p className={`text-[12px] font-black uppercase tracking-tight ${checkingDuplicacy ? 'text-orange-500' : errorDuplicacy ? 'text-gray-500' : (duplicacyResult?.duplicacy_score > 60 ? 'text-red-600' : 'text-green-600')}`}>
+                  {checkingDuplicacy ? 'Analyzing Global Records...' : errorDuplicacy ? 'Scan Failed: Not Verified' : (duplicacyResult?.duplicacy_score > 60 ? 'Duplicate Alert Detected' : 'Verified: Unique Entry')}
+                </p>
+              </div>
+            </div>
+            {!checkingDuplicacy && (
+              <div className="flex items-center gap-6">
+                {errorDuplicacy ? (
+                  <button 
+                    onClick={checkDuplicacy}
+                    className="bg-gray-900 text-white px-4 py-1.5 text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2"
+                  >
+                    <RefreshCw size={12} /> Retry Analysis
+                  </button>
+                ) : (
+                  <div className="text-right">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Reliability Score</p>
+                    <p className="text-[16px] font-black text-gray-900 tracking-tighter">{(100 - (duplicacyResult?.duplicacy_score || 0))}%</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-16">

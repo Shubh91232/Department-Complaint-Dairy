@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, User, Shield, Printer, CheckCircle, ArrowRight, MapPin, FileText, Info } from 'lucide-react';
+import { Database, User, Shield, Printer, CheckCircle, ArrowRight, MapPin, FileText, Info, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Receipt = ({ lang, receiptData }) => {

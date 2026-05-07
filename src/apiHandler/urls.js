@@ -26,6 +26,8 @@ export const URLS = {
     CATEGORIES_LIST: `${BASE_URL}/complaints/categories`,
     HISTORY: `${BASE_URL}/complaints/history`,
     DELETE_DRAFT: (id) => `${BASE_URL}/complaints/draft/${id}`,
-    DRAFT_BY_ID: (id) => `${BASE_URL}/complaints/draft/${id}`
+    DRAFT_BY_ID: (id) => `${BASE_URL}/complaints/draft/${id}`,
+    DUPLICATE_CHECKER: `${BASE_URL}/complaints/duplicateComplainChecker`,
+    SAVE_DUPLICACY: `${BASE_URL}/complaints/saveDuplicacyDetails`
   }
 };
