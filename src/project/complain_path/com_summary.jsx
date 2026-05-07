@@ -59,7 +59,7 @@ const ComplainSummary = () => {
   const getDeptLabel = (id) => departments.find(d => d.department_id === id)?.department_name_en || id;
   const getSchemeLabel = (id) => {
     const allSchemes = departments.flatMap(d => d.schemes || []);
-    return allSchemes.find(s => (s._id || s.id) === id)?.scheme_name_en || id;
+    return allSchemes.find(s => s.scheme_id === id)?.scheme_name_en || id;
   };
   const getCategoryLabel = (id) => {
     if (typeof id === 'object') return id.name || id;

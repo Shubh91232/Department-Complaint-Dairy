@@ -119,7 +119,7 @@ const CaseSpecifics = React.memo(({
                 className={`${inputClass} cursor-pointer flex justify-between items-center ${!formData.scheme ? 'text-gray-400' : ''}`}
                 onClick={() => setShowSchemeOptions(!showSchemeOptions)}
               >
-                {currentSchemes.find(s => s._id === formData.scheme || s.id === formData.scheme)?.scheme_name_en || (lang === 'hi' ? '-- योजना चुनें --' : '-- Select Scheme --')}
+                {currentSchemes.find(s => s.scheme_id === formData.scheme)?.scheme_name_en || (lang === 'hi' ? '-- योजना चुनें --' : '-- Select Scheme --')}
                 <ChevronRight size={16} className={`transform transition-transform ${showSchemeOptions ? 'rotate-90' : ''}`} />
               </div>
 
@@ -150,7 +150,7 @@ const CaseSpecifics = React.memo(({
                             case_information: {
                               ...prev.case_information,
                               department: scheme.department_id || scheme.deptId || prev.case_information.department,
-                              scheme: scheme._id || scheme.id,
+                              scheme: scheme.scheme_id,
                               complaintCategory: '' 
                             }
                           }));
