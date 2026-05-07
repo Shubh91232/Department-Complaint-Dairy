@@ -22,6 +22,7 @@ const GeographicLocation = React.memo(({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef(null);
 
@@ -73,6 +74,10 @@ const GeographicLocation = React.memo(({
   };
 
   const selectGP = async (gp) => {
+    setIsProcessing(true);
+    setShowResults(false);
+    setSearchQuery('');
+    
     // 1. Update form data for the hierarchy
     setFormData(prev => ({
       ...prev,
@@ -93,11 +98,10 @@ const GeographicLocation = React.memo(({
       if (gRes.success) setApiGPs(gRes.data);
     } catch (err) {
       console.error("Error syncing location lists:", err);
+    } finally {
+      setIsProcessing(false);
+      setSearchResults([]);
     }
-
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowResults(false);
   };
 
   return (
@@ -113,14 +117,15 @@ const GeographicLocation = React.memo(({
           <div className="relative">
             <input
               type="text"
-              placeholder={lang === 'hi' ? 'ग्राम पंचायत खोजें...' : 'Search GP by name...'}
+              placeholder={isProcessing ? (lang === 'hi' ? 'प्रसंस्करण...' : 'Processing...') : (lang === 'hi' ? 'ग्राम पंचायत खोजें...' : 'Search GP by name...')}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
-              className="w-full pl-8 pr-8 py-1.5 text-[12px] border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none"
+              disabled={isProcessing}
+              className={`w-full pl-8 pr-8 py-1.5 text-[12px] border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none ${isProcessing ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
             />
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            {isSearching ? (
+            {(isSearching || isProcessing) ? (
               <Loader2 size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-orange-500 animate-spin" />
             ) : searchQuery && (
               <button onClick={() => {setSearchQuery(''); setShowResults(false);}} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
