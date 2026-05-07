@@ -221,8 +221,8 @@ export const draftComplaintAPI = async (payload) => {
 };
 
 
-export const fetchDraftsAPI = async () => {
-  return await getAuthAPI(URLS.COMPLAINTS.DRAFTS);
+export const fetchDraftsAPI = async (page = 1, limit = 10) => {
+  return await getAuthAPI(`${URLS.COMPLAINTS.DRAFTS}?page=${page}&limit=${limit}`);
 };
 
 export const fetchDraftByIdAPI = async (id) => {
@@ -241,8 +241,8 @@ export const fetchSchemesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.SCHEMES_LIST, true);
 };
 
-export const fetchGrievanceHistoryAPI = async () => {
-  return await getAuthAPI(URLS.COMPLAINTS.HISTORY);
+export const fetchGrievanceHistoryAPI = async (page = 1, limit = 10) => {
+  return await getAuthAPI(`${URLS.COMPLAINTS.HISTORY}?page=${page}&limit=${limit}`);
 };
 
 export const deleteDraftAPI = async (id) => {

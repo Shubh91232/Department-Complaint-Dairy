@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History, Loader2, ChevronLeft } from 'lucide-react';
+import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History, Loader2, ChevronLeft, Eye, EyeOff, Shield } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import 'swiper/css';
@@ -28,6 +28,7 @@ const Home = () => {
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [notification, setNotification] = useState('');
   
   const [loggedInUserData, setLoggedInUserData] = useState(() => {
@@ -73,7 +74,7 @@ const Home = () => {
 
   const handleStatusSearch = async () => {
     if (!statusInput || !statusCaptchaData.code) {
-      showAlert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें।" : "Please fill all fields.", 'error');
+      showAlert(lang === 'hi' ? "कृपया सभी फ़ील्ड भरें。" : "Please fill all fields.", 'error');
       return;
     }
     const isValid = await verifyCaptcha(statusCaptchaData.token, statusCaptchaData.code);
@@ -116,9 +117,28 @@ const Home = () => {
           loginCaptchaRef.current?.refresh();
         }, 300);
         showAlert(lang === 'hi' ? "सफलतापूर्वक प्रवेश किया!" : "Logged in successfully!", 'success');
+      } else {
+        // Handle failure message from API
+        let errorMsg = response?.message;
+        if (errorMsg === 'Invalid password') {
+          errorMsg = lang === 'hi' ? "गलत पासवर्ड! कृपया पुनः प्रयास करें।" : "Invalid password! Please try again.";
+        } else if (errorMsg === 'User not found') {
+          errorMsg = lang === 'hi' ? "उपयोगकर्ता नहीं मिला!" : "User not found!";
+        }
+        showAlert(errorMsg || (lang === 'hi' ? "लॉगिन विफल" : "Login failed"), 'error');
+        loginCaptchaRef.current?.refresh();
       }
     } catch (err) {
-      showAlert(err.message || "Invalid Login Details!", 'error');
+      console.error("Login catch error:", err);
+      let errorMsg = err.message || "";
+      if (errorMsg.includes('Invalid password')) {
+        errorMsg = lang === 'hi' ? "गलत पासवर्ड! कृपया पुनः प्रयास करें।" : "Invalid password! Please try again.";
+      } else if (errorMsg.includes('User not found')) {
+        errorMsg = lang === 'hi' ? "उपयोगकर्ता नहीं मिला!" : "User not found!";
+      } else {
+        errorMsg = lang === 'hi' ? "सर्वर से कनेक्ट करने में त्रुटि" : "Error connecting to server";
+      }
+      showAlert(errorMsg, 'error');
       loginCaptchaRef.current?.refresh();
     } finally {
       setIsLoginLoading(false);
@@ -421,12 +441,19 @@ const Home = () => {
                       <div className="relative">
                         <span className="absolute left-3 top-2 text-gray-400"><Lock size={14} /></span>
                         <input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder={t.loginForm.passPh}
-                          className="w-full border border-gray-300 rounded-sm pl-9 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
+                          className="w-full border border-gray-300 rounded-sm pl-9 pr-10 py-1.5 text-[13px] focus:outline-none focus:border-[#002b5e] transition-colors"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                     </div>
 

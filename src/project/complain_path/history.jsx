@@ -42,7 +42,15 @@ const WorkHistory = () => {
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const isFetched = useRef(false);
+
+  // Pagination states
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [draftsPage, setDraftsPage] = useState(1);
+  const [draftsTotalPages, setDraftsTotalPages] = useState(1);
+  const itemsPerPage = 10;
 
   const showAlert = (message, type = 'error') => {
     setCustomAlert({ show: true, message, type });
@@ -51,29 +59,54 @@ const WorkHistory = () => {
     }, 4000);
   };
 
-  useEffect(() => {
-    if (isFetched.current) return;
-
-    const loadData = async () => {
-      try {
-        // Load history from API
-        const histRes = await fetchGrievanceHistoryAPI();
+  const loadData = async (targetTab = activeTab, page = 1) => {
+    setIsLoading(true);
+    try {
+      if (targetTab === 'history') {
+        const histRes = await fetchGrievanceHistoryAPI(page, itemsPerPage);
         if (histRes.success) {
           setHistory(histRes.data || []);
+          setHistoryPage(histRes.pagination?.page || 1);
+          setHistoryTotalPages(histRes.pagination?.totalPages || 1);
+        } else {
+          showAlert(histRes.message || 'Failed to load history', 'error');
         }
-
-        // Load drafts from API
-        const draftRes = await fetchDraftsAPI();
+      } else {
+        const draftRes = await fetchDraftsAPI(page, itemsPerPage);
         if (draftRes.success) {
           setDrafts(draftRes.data || []);
+          setDraftsPage(draftRes.pagination?.page || 1);
+          setDraftsTotalPages(draftRes.pagination?.totalPages || 1);
+        } else {
+          showAlert(draftRes.message || 'Failed to load drafts', 'error');
         }
-        isFetched.current = true;
-      } catch (err) {
-        console.error('Error loading history data:', err);
       }
-    };
-    loadData();
+    } catch (err) {
+      console.error('Error loading history data:', err);
+      showAlert(lang === 'hi' ? 'डेटा लोड करने में विफल: ' + err.message : 'Failed to load data: ' + err.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData('history', 1);
+    loadData('drafts', 1);
   }, []);
+
+  const handleRefresh = () => {
+    loadData(activeTab, activeTab === 'history' ? historyPage : draftsPage);
+  };
+
+  const handlePageChange = (newPage) => {
+    if (activeTab === 'history') {
+      setHistoryPage(newPage);
+      loadData('history', newPage);
+    } else {
+      setDraftsPage(newPage);
+      loadData('drafts', newPage);
+    }
+  };
 
   useEffect(() => {
     if (location.state?.activeTab) {
@@ -213,6 +246,13 @@ const WorkHistory = () => {
             
             <div className="flex gap-3">
               <button 
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="bg-[#1976d2] text-white px-4 py-2 rounded-sm text-[12px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#115293] transition-all shadow-md disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> {lang === 'hi' ? 'ताज़ा करें' : 'Refresh'}
+              </button>
+              <button 
                 onClick={exportToCSV}
                 className="bg-[#1e7b34] text-white px-4 py-2 rounded-sm text-[12px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#145a24] transition-all shadow-md"
               >
@@ -277,7 +317,7 @@ const WorkHistory = () => {
            <div className="text-center">
               <span className="text-gray-500 text-[11px] font-bold uppercase block mb-1">Last Activity</span>
               <span className="text-sm font-bold text-gray-700">
-                {history.length > 0 ? new Date(history[0].timestamp).toLocaleDateString() : 'N/A'}
+                {history.length > 0 ? new Date(history[0].createdAt || history[0].timestamp).toLocaleDateString() : 'N/A'}
               </span>
            </div>
         </div>
