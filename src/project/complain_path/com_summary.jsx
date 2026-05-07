@@ -96,7 +96,7 @@ const ComplainSummary = () => {
 
         {/* Paper Document */}
         <div className="bg-white border border-gray-300 p-16 relative overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] print:border-none print:shadow-none print:p-0">
-
+          
           {/* Document Header */}
           <div className="border-b-4 border-gray-900 pb-10 mb-12">
             <div className="flex justify-between items-end w-full">
