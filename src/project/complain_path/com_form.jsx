@@ -61,6 +61,7 @@ const ComplainForm = () => {
   }, []);
 
   const activeUser = loggedInUserData || userDetails;
+  const submissionLock = React.useRef(false);
 
   // Step 2 State
   const [formData, setFormData] = useState({
@@ -134,7 +135,8 @@ const ComplainForm = () => {
         fetchBlocksAPI(restoredForm.geographic_information.district).then(res => res.success && setApiBlocks(res.data));
       }
 
-      if (location.state.confirmed && !isSubmitting && !showReceipt) {
+      if (location.state.confirmed && !isSubmitting && !showReceipt && !submissionLock.current) {
+        submissionLock.current = true;
         confirmSubmit(restoredForm);
       }
     } else if (location.state?.draftData) {
@@ -827,6 +829,7 @@ const ComplainForm = () => {
       showAlert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
+      submissionLock.current = false;
     }
   };
 

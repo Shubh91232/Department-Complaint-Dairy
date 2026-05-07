@@ -15,6 +15,8 @@ import {
   Loader2
 } from 'lucide-react';
 
+import { SERVER_URL } from '../../apiHandler/apis';
+
 const ComplainSummary = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
@@ -95,8 +97,8 @@ const ComplainSummary = () => {
           </div>
 
           <div className="flex gap-2">
-            <button 
-              onClick={() => navigate(-1)} 
+            <button
+              onClick={() => navigate(-1)}
               disabled={isSubmitting}
               className={`bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
             >
@@ -113,7 +115,7 @@ const ComplainSummary = () => {
               }}
               className={`bg-blue-700 text-white px-6 py-2 font-black text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider shadow-lg shadow-blue-100 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-800'}`}
             >
-              {isSubmitting ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />} 
+              {isSubmitting ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />}
               {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
             </button>
           </div>
@@ -121,18 +123,18 @@ const ComplainSummary = () => {
 
         {/* Paper Document */}
         <div className="bg-white border border-gray-300 p-16 relative overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] print:border-none print:shadow-none print:p-0">
-          
+
           {/* Document Header */}
           <div className="border-b-4 border-gray-900 pb-10 mb-12">
             <div className="flex justify-between items-end w-full">
-               <div className="flex flex-col">
-                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Entry Source</span>
-                  <span className="text-2xl font-black text-gray-900 uppercase tracking-tight">{formData.CoreCaseInfo?.source || '---'}</span>
-               </div>
-               <div className="text-right flex flex-col items-end">
-                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Date of Registration</span>
-                  <span className="text-2xl font-black text-gray-900 uppercase tracking-tight">{formData.CoreCaseInfo?.dateReceived || '---'}</span>
-               </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Entry Source</span>
+                <span className="text-2xl font-black text-gray-900 uppercase tracking-tight">{formData.CoreCaseInfo?.source || '---'}</span>
+              </div>
+              <div className="text-right flex flex-col items-end">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Date of Registration</span>
+                <span className="text-2xl font-black text-gray-900 uppercase tracking-tight">{formData.CoreCaseInfo?.dateReceived || '---'}</span>
+              </div>
             </div>
           </div>
 
@@ -233,7 +235,7 @@ const ComplainSummary = () => {
                       </div>
                       <button
                         onClick={() => {
-                          const url = typeof file === 'string' ? `http://localhost:5000${file}` : URL.createObjectURL(file);
+                          const url = typeof file === 'string' ? `${SERVER_URL}/${file}` : URL.createObjectURL(file);
                           window.open(url, '_blank');
                         }}
                         className="text-blue-700 hover:text-blue-900 font-black text-[9px] uppercase tracking-widest print:hidden"
@@ -278,7 +280,59 @@ const ComplainSummary = () => {
           .bg-white { border: none !important; box-shadow: none !important; }
           @page { margin: 1.5cm; }
         }
+        @keyframes pulse-soft {
+          0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.9); }
+        }
+        .animate-pulse-soft {
+          animation: pulse-soft 2s infinite ease-in-out;
+        }
       ` }} />
+
+      {/* Full-screen Processing Animation */}
+      {isSubmitting && (
+        <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-md flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in">
+          <div className="flex flex-col items-center gap-8 max-w-sm text-center">
+            <div className="relative">
+              {/* Outer Ring */}
+              <div className="w-24 h-24 border-[3px] border-gray-100 rounded-full"></div>
+              {/* Spinning Ring */}
+              <div className="absolute inset-0 w-24 h-24 border-[3px] border-transparent border-t-blue-700 rounded-full animate-spin"></div>
+              {/* Inner Icon */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center">
+                <ShieldCheck className="text-blue-700 animate-pulse-soft" size={32} />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">
+                {lang === 'hi' ? 'शिकायत जमा की जा रही है' : 'Securing Grievance'}
+              </h2>
+              <div className="flex flex-col gap-1">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">
+                  {lang === 'hi' ? 'डेटा एन्क्रिप्ट किया जा रहा है' : 'Encrypting Data Package'}
+                </p>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest max-w-[250px] mx-auto leading-relaxed">
+                  {lang === 'hi' ? 'कृपया प्रतीक्षा करें, हम आपका शिकायत रिकॉर्ड सुरक्षित कर रहे हैं' : 'Please wait while we finalize your formal government record...'}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="w-48 h-1 bg-gray-100 rounded-full overflow-hidden mt-4">
+              <div className="h-full bg-blue-700 w-1/2 rounded-full animate-[progress_2s_infinite_ease-in-out]"></div>
+            </div>
+          </div>
+
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes progress {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(100%); }
+            }
+          `}} />
+        </div>
+      )}
     </div>
   );
 };
