@@ -3,11 +3,11 @@ import { useLanguage } from '../LanguageContext';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
-import { trackComplaintAPI } from '../../apiHandler/apis';
+import { trackComplaintAPI, updateComplaintTrackAPI, fetchComplaintStatusesAPI } from '../../apiHandler/apis';
 import {
   Home, ChevronRight, Search, CheckCircle, Clock, XCircle,
   AlertCircle, User, Calendar, MapPin, Building2, FileText,
-  Layers, ArrowRight, Phone, Shield, RefreshCw, Printer, Download
+  Layers, ArrowRight, Phone, Shield, RefreshCw, Printer, Download, ArrowLeft
 } from 'lucide-react';
 
 // ─── Mock data generator ─────────────────────────────────────────────────────
@@ -88,36 +88,71 @@ const overallBadge = {
 };
 
 // ─── Real Data Mapper ────────────────────────────────────────────────────────
-const mapRealToMock = (realData) => {
-  // Determine status color/label
-  let status = realData.enforcement_status?.case_status || 'Pending';
-  if (status === 'Approved') status = 'Resolved'; // Standardize for UI
-  
+const mapResponseToData = (complaint, tracking) => {
+  if (!complaint) return null;
+
+  // If we have real tracking data from the DB, use it
+  if (tracking) {
+    return {
+      grievanceId: complaint.complainId,
+      serialNo: complaint.core_case_information?.serial_no || 'N/A',
+      source: complaint.core_case_information?.source || 'Portal',
+      applicantName: complaint.complain_profile?.complainer?.name || 'N/A',
+      mobile: complaint.complain_profile?.complainer?.mobile || 'N/A',
+      address: complaint.complain_profile?.complainer?.address || 'N/A',
+      department: complaint.case_specifics?.department || 'N/A',
+      scheme: complaint.case_specifics?.scheme || 'N/A',
+      category: complaint.case_specifics?.complaint_category || 'N/A',
+      subject: complaint.case_specifics?.complain_details || 'N/A',
+      district: complaint.geographic_information?.district || 'N/A',
+      block: complaint.geographic_information?.block || 'N/A',
+      panchayat: complaint.geographic_information?.gram_panchayat || 'N/A',
+      dateOfFiling: complaint.core_case_information?.date || (complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A'),
+      currentLevel: tracking.current_level || 1,
+      currentStatus: tracking.current_status || 'Pending',
+      stages: tracking.stages.map(s => ({
+        level: s.level,
+        name: s.name,
+        officer: s.officer,
+        designation: s.designation,
+        location: s.location,
+        date: s.updatedAt ? new Date(s.updatedAt).toLocaleDateString() : null,
+        remarks: s.remarks,
+        status: s.status,
+        actionTaken: s.actionTaken,
+      })),
+    };
+  }
+
+  // Fallback if tracking model doesn't exist yet for this complaint
+  let status = complaint.enforcement_status?.case_status || 'Pending';
+  if (status === 'Approved') status = 'Resolved';
+
   return {
-    grievanceId: realData.complainId,
-    serialNo: realData.core_case_information?.serial_no || 'N/A',
-    source: realData.core_case_information?.source || 'Portal',
-    applicantName: realData.complain_profile?.complainer?.name || 'N/A',
-    mobile: realData.complain_profile?.complainer?.mobile || 'N/A',
-    address: realData.complain_profile?.complainer?.address || 'N/A',
-    department: realData.case_specifics?.department || 'N/A',
-    scheme: realData.case_specifics?.scheme || 'N/A',
-    category: realData.case_specifics?.complaint_category || 'N/A',
-    subject: realData.case_specifics?.complain_details || 'N/A',
-    district: realData.geographic_information?.district || 'N/A',
-    block: realData.geographic_information?.block || 'N/A',
-    panchayat: realData.geographic_information?.gram_panchayat || 'N/A',
-    dateOfFiling: realData.core_case_information?.date || (realData.createdAt ? realData.createdAt.split('T')[0] : 'N/A'),
+    grievanceId: complaint.complainId,
+    serialNo: complaint.core_case_information?.serial_no || 'N/A',
+    source: complaint.core_case_information?.source || 'Portal',
+    applicantName: complaint.complain_profile?.complainer?.name || 'N/A',
+    mobile: complaint.complain_profile?.complainer?.mobile || 'N/A',
+    address: complaint.complain_profile?.complainer?.address || 'N/A',
+    department: complaint.case_specifics?.department || 'N/A',
+    scheme: complaint.case_specifics?.scheme || 'N/A',
+    category: complaint.case_specifics?.complaint_category || 'N/A',
+    subject: complaint.case_specifics?.complain_details || 'N/A',
+    district: complaint.geographic_information?.district || 'N/A',
+    block: complaint.geographic_information?.block || 'N/A',
+    panchayat: complaint.geographic_information?.gram_panchayat || 'N/A',
+    dateOfFiling: complaint.core_case_information?.date || (complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A'),
     currentLevel: status === 'Pending' ? 1 : 2,
     currentStatus: status,
     stages: [
       {
         level: 1,
         name: 'Registration Level',
-        officer: realData.core_case_information?.entry_officer?.name || 'Portal User',
+        officer: complaint.core_case_information?.entry_officer?.name || 'Portal User',
         designation: 'Entry Officer',
-        location: `${realData.geographic_information?.district || 'Rajasthan'}`,
-        date: realData.core_case_information?.date || (realData.createdAt ? realData.createdAt.split('T')[0] : 'N/A'),
+        location: `${complaint.geographic_information?.district || 'Rajasthan'}`,
+        date: complaint.core_case_information?.date || (complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A'),
         remarks: 'Complaint successfully registered on the portal.',
         status: 'Completed',
         actionTaken: 'Registered',
@@ -125,13 +160,13 @@ const mapRealToMock = (realData) => {
       {
         level: 2,
         name: 'Processing Level',
-        officer: realData.enforcement_status?.responsible_officer || '—',
+        officer: complaint.enforcement_status?.responsible_officer || '—',
         designation: 'Designated Officer',
-        location: realData.geographic_information?.gram_panchayat || realData.geographic_information?.block || realData.geographic_information?.district || 'Pending',
-        date: realData.updatedAt ? realData.updatedAt.split('T')[0] : null,
-        remarks: realData.enforcement_status?.remarks || (status === 'Pending' ? 'Assigned to the concerned department for verification.' : 'Action has been taken on the grievance.'),
+        location: complaint.geographic_information?.gram_panchayat || complaint.geographic_information?.block || 'Pending',
+        date: complaint.updatedAt ? new Date(complaint.updatedAt).toLocaleDateString() : null,
+        remarks: complaint.enforcement_status?.remarks || (status === 'Pending' ? 'Assigned to the concerned department for verification.' : 'Action has been taken on the grievance.'),
         status: status === 'Pending' ? 'In Progress' : 'Completed',
-        actionTaken: realData.enforcement_status?.action_taken || (status === 'Pending' ? 'Under Review' : 'Processed'),
+        actionTaken: complaint.enforcement_status?.action_taken || (status === 'Pending' ? 'Under Review' : 'Processed'),
       }
     ],
   };
@@ -146,8 +181,40 @@ const TrackGrievance = () => {
 
   const [query, setQuery] = useState('');
   const [data, setData] = useState(null);
+  const [trackingRaw, setTrackingRaw] = useState(null); // Keep original tracking for updates
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statuses, setStatuses] = useState([]);
+
+  // Officer Update States
+  const [isOfficer, setIsOfficer] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateForm, setUpdateForm] = useState({
+    status: '',
+    currentLevel: 2,
+    remarks: '',
+    actionTaken: '',
+    officer: '',
+    designation: '',
+    location: ''
+  });
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    if (userData.empId) setIsOfficer(true);
+    
+    // Fetch Dynamic Statuses
+    const getStatuses = async () => {
+      try {
+        const res = await fetchComplaintStatusesAPI();
+        if (res.success) setStatuses(res.data);
+      } catch (err) {
+        console.error('Error fetching statuses:', err);
+      }
+    };
+    getStatuses();
+  }, []);
 
   // Auto-search if query was passed from home page OR URL params
   useEffect(() => {
@@ -175,9 +242,20 @@ const TrackGrievance = () => {
     try {
       // 1. Try real API first
       const response = await trackComplaintAPI(trimmed);
-      
+
       if (response.success && response.data) {
-        setData(mapRealToMock(response.data));
+        setTrackingRaw(response.tracking);
+        setData(mapResponseToData(response.data, response.tracking));
+
+        // Pre-fill update form
+        setUpdateForm(prev => ({
+          ...prev,
+          status: response.tracking?.current_status || 'In Progress',
+          currentLevel: response.tracking?.current_level || 2,
+          officer: JSON.parse(localStorage.getItem('agentUserData') || '{}').name || '',
+          designation: JSON.parse(localStorage.getItem('agentUserData') || '{}').department || '',
+          location: response.data.geographic_information?.district || ''
+        }));
       } else {
         // 2. Fallback to mock for ID "2210" (as requested by user previously)
         if (trimmed === '2210') {
@@ -206,6 +284,44 @@ const TrackGrievance = () => {
     }
   };
 
+  const handleUpdateTrack = async (e) => {
+    e.preventDefault();
+    if (!updateForm.remarks || !updateForm.actionTaken) {
+      alert('Please provide remarks and action taken.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const payload = {
+        complainId: data.grievanceId,
+        status: updateForm.status,
+        currentLevel: updateForm.currentLevel,
+        stage: {
+          level: updateForm.currentLevel,
+          name: updateForm.currentLevel === 2 ? 'Processing Level' : updateForm.currentLevel === 3 ? 'District Level' : 'State Level',
+          officer: updateForm.officer,
+          designation: updateForm.designation,
+          location: updateForm.location,
+          status: updateForm.status === 'Resolved' || updateForm.status === 'Approved' ? 'Completed' : 'In Progress',
+          remarks: updateForm.remarks,
+          actionTaken: updateForm.actionTaken
+        }
+      };
+
+      const res = await updateComplaintTrackAPI(payload);
+      if (res.success) {
+        setShowUpdateModal(false);
+        handleSearch(data.grievanceId); // Refresh data
+        alert('Tracking updated successfully!');
+      }
+    } catch (err) {
+      alert('Failed to update tracking: ' + err.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const completedCount = data ? data.stages.filter(s => s.status === 'Completed').length : 0;
   const totalStages = data ? data.stages.length : 0;
   const progressPct = data ? Math.round((completedCount / totalStages) * 100) : 0;
@@ -216,11 +332,20 @@ const TrackGrievance = () => {
 
       <div className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
 
-        {/* Breadcrumb */}
-        <div className="mb-6 flex items-center text-[12px] font-semibold text-gray-500">
-          <Link to="/" className="hover:text-[#1976d2] flex items-center gap-1"><Home size={14} /> {lang === 'hi' ? 'होम' : 'Home'}</Link>
-          <ChevronRight size={14} className="mx-2" />
-          <span className="text-[#002b5e]">{lang === 'hi' ? 'शिकायत स्थिति' : 'Track Grievance'}</span>
+        {/* Breadcrumb & Back */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center text-[12px] font-semibold text-gray-500">
+            <Link to="/" className="hover:text-[#1976d2] flex items-center gap-1"><Home size={14} /> {lang === 'hi' ? 'होम' : 'Home'}</Link>
+            <ChevronRight size={14} className="mx-2" />
+            <span className="text-[#002b5e]">{lang === 'hi' ? 'शिकायत स्थिति' : 'Track Grievance'}</span>
+          </div>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="flex items-center gap-1.5 text-[12px] font-bold text-gray-500 hover:text-[#002b5e] transition-colors"
+          >
+            <ArrowLeft size={14} />
+            {lang === 'hi' ? 'पीछे जाएं' : 'Go Back'}
+          </button>
         </div>
 
         {/* Page Header */}
@@ -241,6 +366,14 @@ const TrackGrievance = () => {
             </div>
             {data && (
               <div className="flex gap-2">
+                {isOfficer && (
+                  <button
+                    onClick={() => setShowUpdateModal(true)}
+                    className="bg-[#002b5e] text-white px-3 py-1.5 rounded-sm text-[11px] font-bold hover:bg-[#001f44] transition flex items-center gap-1.5 shadow-md border border-white/10"
+                  >
+                    <Shield size={13} /> {lang === 'hi' ? 'अपडेट स्टेटस' : 'Update Status'}
+                  </button>
+                )}
                 <button onClick={() => window.print()} className="bg-white/10 border border-white/20 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold hover:bg-white/20 transition flex items-center gap-1.5">
                   <Printer size={13} /> {lang === 'hi' ? 'प्रिंट' : 'Print'}
                 </button>
@@ -464,6 +597,101 @@ const TrackGrievance = () => {
             <p className="text-gray-400 font-semibold text-[15px]">
               {lang === 'hi' ? 'अपनी शिकायत की स्थिति जानने के लिए शिकायत आईडी या मोबाइल नंबर दर्ज करें।' : 'Enter your Grievance ID or Mobile No. to track status.'}
             </p>
+          </div>
+        )}
+
+        {/* ── Update Status Modal ── */}
+        {showUpdateModal && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-sm shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-[#002b5e]">
+              <div className="bg-[#f8fafc] px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-black text-[#002b5e] uppercase tracking-wider text-[14px] flex items-center gap-2">
+                  <Shield size={18} className="text-[#e65100]" />
+                  {lang === 'hi' ? 'शिकायत स्थिति अपडेट करें' : 'Update Grievance Status'}
+                </h3>
+                <button onClick={() => setShowUpdateModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <XCircle size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateTrack} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase">Current Status</label>
+                    <select
+                      value={updateForm.status}
+                      onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
+                      className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] font-bold focus:border-[#002b5e] outline-none"
+                    >
+                      {statuses.length > 0 ? (
+                        statuses.map(s => (
+                          <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                          <option value="Rejected">Rejected</option>
+                          <option value="Approved">Approved</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase">Process Level</label>
+                    <select
+                      value={updateForm.currentLevel}
+                      onChange={e => setUpdateForm({ ...updateForm, currentLevel: parseInt(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] font-bold focus:border-[#002b5e] outline-none"
+                    >
+                      <option value={2}>Level 2 (Processing)</option>
+                      <option value={3}>Level 3 (District)</option>
+                      <option value={4}>Level 4 (State)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase">Action Taken</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Verified with records, Physical Inspection done..."
+                    value={updateForm.actionTaken}
+                    onChange={e => setUpdateForm({ ...updateForm, actionTaken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:border-[#002b5e] outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase">Official Remarks</label>
+                  <textarea
+                    rows="3"
+                    placeholder="Provide detailed explanation of the action taken..."
+                    value={updateForm.remarks}
+                    onChange={e => setUpdateForm({ ...updateForm, remarks: e.target.value })}
+                    className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:border-[#002b5e] outline-none"
+                  ></textarea>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpdateModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-sm text-[12px] font-bold uppercase hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="flex-1 bg-[#002b5e] text-white px-4 py-2.5 rounded-sm text-[12px] font-bold uppercase hover:bg-[#001f44] flex items-center justify-center gap-2"
+                  >
+                    {isUpdating ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                    Submit Update
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

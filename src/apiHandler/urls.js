@@ -33,6 +33,8 @@ export const URLS = {
     DRAFT_BY_ID: (id) => `${BASE_URL}/complaints/draft/${id}`,
     DUPLICATE_CHECKER: `${BASE_URL}/complaints/duplicateComplainChecker`,
     SAVE_DUPLICACY: `${BASE_URL}/complaints/saveDuplicacyDetails`,
-    TRACK: (id) => `${BASE_URL}/complaints/track/${id}`
+    TRACK: (id) => `${BASE_URL}/complaints/track/${id}`,
+    UPDATE_TRACK: `${BASE_URL}/complaints/update-track`,
+    STATUS_LIST: `${BASE_URL}/complaints/statuses`
   }
 };
