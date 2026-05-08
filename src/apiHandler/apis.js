@@ -256,3 +256,7 @@ export const checkDuplicateComplaintAPI = async (payload) => {
 export const saveDuplicacyDetailsAPI = async (payload) => {
   return await postAuthAPI(URLS.COMPLAINTS.SAVE_DUPLICACY, payload);
 };
+
+export const trackComplaintAPI = async (id) => {
+  return await getAPI(URLS.COMPLAINTS.TRACK(id));
+};

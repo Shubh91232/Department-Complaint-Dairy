@@ -30,14 +30,21 @@ const ComplainSummary = () => {
   const [errorDuplicacy, setErrorDuplicacy] = React.useState(false);
   const [showReceipt, setShowReceipt] = React.useState(false);
   const [receiptData, setReceiptData] = React.useState(null);
+  
+  // Scroll to top on mount
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
-  const { formData, apiDistricts, apiBlocks, apiGPs, deptData, categories } = location.state || {
+  const { formData, apiDistricts, apiBlocks, apiGPs, deptData, categories, advancedDocs, previewUrl } = location.state || {
     formData: {},
     apiDistricts: [],
     apiBlocks: [],
     apiGPs: [],
     deptData: null,
-    categories: []
+    categories: [],
+    advancedDocs: {},
+    previewUrl: null
   };
 
   const checkDuplicacy = async () => {
@@ -216,7 +223,7 @@ const ComplainSummary = () => {
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => navigate(-1)}
+                  onClick={() => navigate('/complain', { state: { formData, apiDistricts, apiBlocks, apiGPs, deptData, categories, advancedDocs, previewUrl } })}
                   disabled={isSubmitting || checkingDuplicacy}
                   className={`bg-white text-gray-600 px-4 py-2 border border-gray-300 font-bold text-[11px] flex items-center gap-2 transition-all uppercase tracking-wider ${isSubmitting || checkingDuplicacy ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                 >

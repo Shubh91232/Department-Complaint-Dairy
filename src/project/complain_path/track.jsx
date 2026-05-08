@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../LanguageContext';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
+import { trackComplaintAPI } from '../../apiHandler/apis';
 import {
   Home, ChevronRight, Search, CheckCircle, Clock, XCircle,
   AlertCircle, User, Calendar, MapPin, Building2, FileText,
@@ -80,9 +81,60 @@ const statusConfig = {
 
 const overallBadge = {
   'In Progress': 'bg-blue-100 text-blue-700 border-blue-300',
-  Resolved: 'bg-green-100 text-green-700 border-green-300',
-  Rejected: 'bg-red-100 text-red-700 border-red-300',
-  Pending: 'bg-gray-100 text-gray-600 border-gray-300',
+  'Resolved': 'bg-green-100 text-green-700 border-green-300',
+  'Approved': 'bg-green-100 text-green-700 border-green-300',
+  'Rejected': 'bg-red-100 text-red-700 border-red-300',
+  'Pending': 'bg-gray-100 text-gray-600 border-gray-300',
+};
+
+// ─── Real Data Mapper ────────────────────────────────────────────────────────
+const mapRealToMock = (realData) => {
+  // Determine status color/label
+  let status = realData.enforcement_status?.case_status || 'Pending';
+  if (status === 'Approved') status = 'Resolved'; // Standardize for UI
+  
+  return {
+    grievanceId: realData.complainId,
+    serialNo: realData.core_case_information?.serial_no || 'N/A',
+    source: realData.core_case_information?.source || 'Portal',
+    applicantName: realData.complain_profile?.complainer?.name || 'N/A',
+    mobile: realData.complain_profile?.complainer?.mobile || 'N/A',
+    address: realData.complain_profile?.complainer?.address || 'N/A',
+    department: realData.case_specifics?.department || 'N/A',
+    scheme: realData.case_specifics?.scheme || 'N/A',
+    category: realData.case_specifics?.complaint_category || 'N/A',
+    subject: realData.case_specifics?.complain_details || 'N/A',
+    district: realData.geographic_information?.district || 'N/A',
+    block: realData.geographic_information?.block || 'N/A',
+    panchayat: realData.geographic_information?.gram_panchayat || 'N/A',
+    dateOfFiling: realData.core_case_information?.date || (realData.createdAt ? realData.createdAt.split('T')[0] : 'N/A'),
+    currentLevel: status === 'Pending' ? 1 : 2,
+    currentStatus: status,
+    stages: [
+      {
+        level: 1,
+        name: 'Registration Level',
+        officer: realData.core_case_information?.entry_officer?.name || 'Portal User',
+        designation: 'Entry Officer',
+        location: `${realData.geographic_information?.district || 'Rajasthan'}`,
+        date: realData.core_case_information?.date || (realData.createdAt ? realData.createdAt.split('T')[0] : 'N/A'),
+        remarks: 'Complaint successfully registered on the portal.',
+        status: 'Completed',
+        actionTaken: 'Registered',
+      },
+      {
+        level: 2,
+        name: 'Processing Level',
+        officer: realData.enforcement_status?.responsible_officer || '—',
+        designation: 'Designated Officer',
+        location: realData.geographic_information?.gram_panchayat || realData.geographic_information?.block || realData.geographic_information?.district || 'Pending',
+        date: realData.updatedAt ? realData.updatedAt.split('T')[0] : null,
+        remarks: realData.enforcement_status?.remarks || (status === 'Pending' ? 'Assigned to the concerned department for verification.' : 'Action has been taken on the grievance.'),
+        status: status === 'Pending' ? 'In Progress' : 'Completed',
+        actionTaken: realData.enforcement_status?.action_taken || (status === 'Pending' ? 'Under Review' : 'Processed'),
+      }
+    ],
+  };
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -90,21 +142,27 @@ const TrackGrievance = () => {
   const { lang } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [query, setQuery] = useState(location.state?.query || '');
+  const [query, setQuery] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-search if query was passed from home page
+  // Auto-search if query was passed from home page OR URL params
   useEffect(() => {
-    if (location.state?.query) {
+    const complainIdParam = searchParams.get('complain_id');
+    if (complainIdParam) {
+      setQuery(complainIdParam);
+      handleSearch(complainIdParam);
+    } else if (location.state?.query) {
+      setQuery(location.state.query);
       handleSearch(location.state.query);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams, location.state]);
 
-  const handleSearch = (q = query) => {
+  const handleSearch = async (q = query) => {
     const trimmed = q.trim();
     if (!trimmed) {
       setError(lang === 'hi' ? 'कृपया शिकायत आईडी / मोबाइल नंबर दर्ज करें।' : 'Please enter Grievance ID / Mobile No.');
@@ -113,8 +171,27 @@ const TrackGrievance = () => {
     setError('');
     setData(null);
     setLoading(true);
-    setTimeout(() => {
-      // ── TEMP: Only ID "2210" has tracking data ──
+
+    try {
+      // 1. Try real API first
+      const response = await trackComplaintAPI(trimmed);
+      
+      if (response.success && response.data) {
+        setData(mapRealToMock(response.data));
+      } else {
+        // 2. Fallback to mock for ID "2210" (as requested by user previously)
+        if (trimmed === '2210') {
+          setData(generateMockData(trimmed));
+        } else {
+          setError(
+            lang === 'hi'
+              ? `"${trimmed}" के लिए कोई शिकायत रिकॉर्ड नहीं मिला। कृपया सही शिकायत आईडी / मोबाइल नंबर दर्ज करें।`
+              : `No grievance tracking record found for "${trimmed}". Please check your Grievance ID / Mobile No. and try again.`
+          );
+        }
+      }
+    } catch (err) {
+      // Fallback for mock 2210 even if API fails
       if (trimmed === '2210') {
         setData(generateMockData(trimmed));
       } else {
@@ -124,8 +201,9 @@ const TrackGrievance = () => {
             : `No grievance tracking record found for "${trimmed}". Please check your Grievance ID / Mobile No. and try again.`
         );
       }
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
   const completedCount = data ? data.stages.filter(s => s.status === 'Completed').length : 0;
@@ -230,11 +308,16 @@ const TrackGrievance = () => {
                 {[
                   { icon: <Shield size={14} />, label: lang === 'hi' ? 'शिकायत आईडी' : 'Grievance ID', val: data.grievanceId },
                   { icon: <FileText size={14} />, label: lang === 'hi' ? 'क्रमांक' : 'Serial No.', val: data.serialNo },
+                  { icon: <Layers size={14} />, label: lang === 'hi' ? 'स्रोत' : 'Source', val: data.source },
                   { icon: <Calendar size={14} />, label: lang === 'hi' ? 'दर्ज तिथि' : 'Date of Filing', val: data.dateOfFiling },
                   { icon: <User size={14} />, label: lang === 'hi' ? 'आवेदक का नाम' : 'Applicant Name', val: data.applicantName },
                   { icon: <Phone size={14} />, label: lang === 'hi' ? 'मोबाइल' : 'Mobile', val: data.mobile },
                   { icon: <Building2 size={14} />, label: lang === 'hi' ? 'विभाग' : 'Department', val: data.department },
                   { icon: <Layers size={14} />, label: lang === 'hi' ? 'योजना' : 'Scheme', val: data.scheme },
+                  { icon: <FileText size={14} />, label: lang === 'hi' ? 'श्रेणी' : 'Category', val: data.category },
+                  { icon: <MapPin size={14} />, label: lang === 'hi' ? 'जिला' : 'District', val: data.district },
+                  { icon: <MapPin size={14} />, label: lang === 'hi' ? 'ब्लॉक' : 'Block', val: data.block },
+                  { icon: <MapPin size={14} />, label: lang === 'hi' ? 'ग्राम पंचायत' : 'Gram Panchayat', val: data.panchayat },
                   { icon: <MapPin size={14} />, label: lang === 'hi' ? 'पता' : 'Address', val: data.address, span: true },
                 ].map((f, i) => (
                   <div key={i} className={`flex items-start gap-2 ${f.span ? 'sm:col-span-2 lg:col-span-3' : ''}`}>

@@ -302,27 +302,27 @@ const Home = () => {
             >
               {[
                 {
-                  img: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&w=900&q=80',
+                  img: '/src/assets/gallery/hero_grievance.png',
                   title: lang === 'hi' ? 'लोक शिकायत निवारण कार्यालय' : 'Public Grievance Redressal Office',
                   subtitle: lang === 'hi' ? 'पारदर्शी शासन के माध्यम से नागरिकों को सशक्त बनाना' : 'Empowering citizens through transparent governance'
                 },
                 {
-                  img: 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80',
+                  img: '/src/assets/gallery/hero_rural.png',
                   title: lang === 'hi' ? 'ग्रामीण विकास एवं पंचायती राज' : 'Rural Development & Panchayati Raj',
                   subtitle: lang === 'hi' ? 'राजस्थान सरकार – गांव की ओर, विकास की राह' : 'Government of Rajasthan – Towards Villages, Path of Progress'
                 },
                 {
-                  img: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=900&q=80',
+                  img: '/src/assets/gallery/hero_digital.png',
                   title: lang === 'hi' ? 'राज न्यायसेतु पोर्टल' : 'Raj NyaySetu Portal',
                   subtitle: lang === 'hi' ? 'आपकी शिकायत, हमारी प्राथमिकता' : 'Your Grievance, Our Priority'
                 },
                 {
-                  img: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=900&q=80',
+                  img: '/src/assets/gallery/hero_public.png',
                   title: lang === 'hi' ? 'तीव्र समाधान, डिजिटल राजस्थान' : 'Fast Resolution, Digital Rajasthan',
                   subtitle: lang === 'hi' ? '97% शिकायतों का समय पर निपटान' : '97% grievances resolved within the stipulated time'
                 },
                 {
-                  img: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=900&q=80',
+                  img: '/src/assets/gallery/hero_schemes.png',
                   title: lang === 'hi' ? 'MNREGA एवं सामाजिक सुरक्षा योजनाएं' : 'MNREGA & Social Security Schemes',
                   subtitle: lang === 'hi' ? 'हर नागरिक के अधिकारों की रक्षा' : 'Protecting the rights of every citizen'
                 },

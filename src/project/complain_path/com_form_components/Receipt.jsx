@@ -158,6 +158,12 @@ const Receipt = ({ lang, receiptData }) => {
             <Printer size={18} /> {lang === 'hi' ? 'पावती प्रिंट करें' : 'Print Receipt'}
           </button>
           <button
+            onClick={() => navigate('/complain')}
+            className="flex-1 bg-[#e65100] text-white py-4 font-black shadow-lg hover:bg-[#bf4300] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
+          >
+            <FileText size={18} /> {lang === 'hi' ? 'नई प्रविष्टि' : 'Add New Entry'}
+          </button>
+          <button
             onClick={() => navigate('/')}
             className="flex-1 bg-[#002b5e] text-white py-4 font-black shadow-lg hover:bg-[#001c3d] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
           >

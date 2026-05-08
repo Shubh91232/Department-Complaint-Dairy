@@ -32,6 +32,7 @@ export const URLS = {
     DELETE_DRAFT: (id) => `${BASE_URL}/complaints/draft/${id}`,
     DRAFT_BY_ID: (id) => `${BASE_URL}/complaints/draft/${id}`,
     DUPLICATE_CHECKER: `${BASE_URL}/complaints/duplicateComplainChecker`,
-    SAVE_DUPLICACY: `${BASE_URL}/complaints/saveDuplicacyDetails`
+    SAVE_DUPLICACY: `${BASE_URL}/complaints/saveDuplicacyDetails`,
+    TRACK: (id) => `${BASE_URL}/complaints/track/${id}`
   }
 };

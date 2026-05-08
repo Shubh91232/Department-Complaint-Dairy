@@ -127,10 +127,14 @@ const ComplainForm = () => {
       // Returning from Summary Page
       const restoredForm = location.state.formData;
       setFormData(restoredForm);
+      setStep(2); // Jump to detailed form
       
       if (location.state.apiDistricts) setApiDistricts(location.state.apiDistricts);
       if (location.state.apiBlocks) setApiBlocks(location.state.apiBlocks);
       if (location.state.apiGPs) setApiGPs(location.state.apiGPs);
+      if (location.state.advancedDocs) setAdvancedDocs(location.state.advancedDocs);
+      if (location.state.previewUrl) setPreviewUrl(location.state.previewUrl);
+      window.scrollTo(0, 0);
 
       if (restoredForm.geographic_information?.district && (!location.state.apiBlocks || location.state.apiBlocks.length === 0)) {
         fetchBlocksAPI(restoredForm.geographic_information.district).then(res => res.success && setApiBlocks(res.data));
@@ -726,7 +730,9 @@ const ComplainForm = () => {
         apiBlocks,
         apiGPs,
         deptData,
-        categories
+        categories,
+        advancedDocs,
+        previewUrl
       }
     });
   };

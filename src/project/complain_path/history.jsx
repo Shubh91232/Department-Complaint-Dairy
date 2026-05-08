@@ -375,6 +375,7 @@ const WorkHistory = () => {
                     <th className="px-4 py-4 min-w-[120px]">Serial / ID</th>
                     <th className="px-4 py-4 min-w-[150px]">Applicant Info</th>
                     <th className="px-4 py-4 min-w-[180px]">Case Details</th>
+                    <th className="px-4 py-4 text-center">Similarity</th>
                     <th className="px-4 py-4 text-center">Status</th>
                     <th className="px-4 py-4 text-center">Date Filed</th>
                     <th className="px-4 py-4 text-center">Tracking</th>
@@ -405,15 +406,27 @@ const WorkHistory = () => {
                           <p className="text-[11px] text-gray-500 line-clamp-1 italic">"{item.case_specifics?.complain_details}"</p>
                         </td>
                         <td className="px-4 py-4 text-center">
+                          <div className={`inline-flex flex-col items-center justify-center p-1.5 rounded-sm border ${
+                            (item.duplicacy_score || 0) > 70 ? 'bg-red-50 border-red-100 text-red-600' : 
+                            (item.duplicacy_score || 0) > 40 ? 'bg-orange-50 border-orange-100 text-orange-600' : 
+                            'bg-green-50 border-green-100 text-green-600'
+                          }`}>
+                            <span className="text-[14px] font-black leading-none">{(item.duplicacy_score || 0)}%</span>
+                            <span className="text-[8px] font-bold uppercase tracking-tighter mt-0.5">
+                              {(item.duplicacy_score || 0) > 70 ? 'Duplicate' : (item.duplicacy_score || 0) > 40 ? 'Partial' : 'Unique'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${
-                            (item.case_specifics?.current_status || item.currentStatus) === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                            (item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? 'bg-green-50 text-green-700 border-green-200' :
+                            (item.enforcement_status?.case_status || item.case_specifics?.current_status || item.currentStatus || 'Pending') === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            (item.enforcement_status?.case_status || item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? 'bg-green-50 text-green-700 border-green-200' :
                             'bg-red-50 text-red-700 border-red-200'
                           }`}>
-                            {(item.case_specifics?.current_status || item.currentStatus) === 'Pending' ? <Clock size={10} /> : 
-                             (item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? <CheckCircle size={10} /> : 
+                            {(item.enforcement_status?.case_status || item.case_specifics?.current_status || item.currentStatus || 'Pending') === 'Pending' ? <Clock size={10} /> : 
+                             (item.enforcement_status?.case_status || item.case_specifics?.current_status || item.currentStatus) === 'Resolved' ? <CheckCircle size={10} /> : 
                              <AlertCircle size={10} />}
-                            {item.case_specifics?.current_status || item.currentStatus}
+                            {item.enforcement_status?.case_status || item.case_specifics?.current_status || item.currentStatus || 'Pending'}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center">
@@ -426,7 +439,7 @@ const WorkHistory = () => {
                         </td>
                         <td className="px-4 py-4 text-center">
                           <button 
-                            onClick={() => navigate('/track', { state: { query: '2210' } })}
+                            onClick={() => navigate('/track', { state: { query: item.complainId } })}
                             className="bg-[#002b5e] text-white px-3 py-1.5 rounded-sm font-bold text-[10px] hover:bg-[#001f44] transition-colors flex items-center gap-1.5 shadow-sm uppercase mx-auto border border-[#001533]"
                           >
                             <Activity size={12} /> {lang === 'hi' ? 'ट्रैकिंग' : 'Track Status'}
