@@ -262,10 +262,15 @@ const ComplainSummary = () => {
                   <div className="flex flex-wrap gap-2">
                     <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest block w-full mb-1">Matching Records:</span>
                     {duplicacyResult.complains_list.map((match, idx) => (
-                      <div key={idx} className="bg-white border border-orange-200 px-3 py-1.5 rounded-sm flex items-center gap-2 shadow-sm">
-                        <span className="text-[11px] font-black text-orange-800">{match.complaint.complainId}</span>
+                      <button 
+                        key={idx} 
+                        onClick={() => navigate('/track', { state: { query: match.complaint.complainId } })}
+                        className="bg-white border border-orange-200 px-3 py-1.5 rounded-sm flex items-center gap-2 shadow-sm hover:bg-orange-50 hover:border-orange-400 transition-colors cursor-pointer group"
+                        title="Click to track this grievance"
+                      >
+                        <span className="text-[11px] font-black text-orange-800 group-hover:text-orange-900">{match.complaint.complainId}</span>
                         <span className="text-[10px] font-bold text-orange-400">({match.score}%)</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
