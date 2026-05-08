@@ -7,69 +7,8 @@ import { trackComplaintAPI, updateComplaintTrackAPI, fetchComplaintStatusesAPI }
 import {
   Home, ChevronRight, Search, CheckCircle, Clock, XCircle,
   AlertCircle, User, Calendar, MapPin, Building2, FileText,
-  Layers, ArrowRight, Phone, Shield, RefreshCw, Printer, Download, ArrowLeft
+  Layers, ArrowRight, Phone, Shield, RefreshCw, Printer, Download, ArrowLeft, Paperclip
 } from 'lucide-react';
-
-// ─── Mock data generator ─────────────────────────────────────────────────────
-const generateMockData = (query) => ({
-  grievanceId: `GRV/2024/${Math.floor(10000 + Math.random() * 90000)}`,
-  serialNo: `RJ-${Math.floor(100000 + Math.random() * 900000)}`,
-  applicantName: 'Ramesh Kumar Sharma',
-  mobile: '98XXXXXX12',
-  address: 'Ward No. 4, Gram Panchayat Bamanwas, Tehsil Lalsot, District Dausa, Rajasthan - 303503',
-  department: 'Rural Development & Panchayati Raj',
-  scheme: 'MNREGA – Job Card Issuance',
-  subject: 'Delay in issuance of MNREGA Job Card despite applying 3 months ago.',
-  dateOfFiling: '2024-02-14',
-  currentLevel: 3,
-  currentStatus: 'In Progress',
-  stages: [
-    {
-      level: 1,
-      name: 'Gram Panchayat Level',
-      officer: 'Smt. Poonam Devi',
-      designation: 'Gram Panchayat Sachiv',
-      location: 'Gram Panchayat Bamanwas, Dausa',
-      date: '2024-02-15',
-      remarks: 'Complaint received and acknowledged. Forwarded to Panchayat Samiti level for action.',
-      status: 'Completed',
-      actionTaken: 'Acknowledged & Forwarded',
-    },
-    {
-      level: 2,
-      name: 'Panchayat Samiti Level',
-      officer: 'Sh. Rajveer Singh Meena',
-      designation: 'Block Development Officer (BDO)',
-      location: 'Panchayat Samiti, Lalsot, Dausa',
-      date: '2024-02-19',
-      remarks: 'Case verified with local records. Escalated to district level as the delay involves department policy.',
-      status: 'Completed',
-      actionTaken: 'Verified & Escalated',
-    },
-    {
-      level: 3,
-      name: 'District Level',
-      officer: 'Sh. Devendra Kumar Jain',
-      designation: 'District Programme Coordinator (DPC)',
-      location: 'Collectorate, Dausa',
-      date: '2024-03-01',
-      remarks: 'Under review. Supporting documents being verified. Expected resolution within 10 working days.',
-      status: 'In Progress',
-      actionTaken: 'Under Review',
-    },
-    {
-      level: 4,
-      name: 'State / Department Level',
-      officer: '—',
-      designation: 'Joint Secretary (Grievance Cell)',
-      location: 'Secretariat, Jaipur',
-      date: null,
-      remarks: 'Pending — will be escalated if not resolved at district level.',
-      status: 'Pending',
-      actionTaken: null,
-    },
-  ],
-});
 
 // ─── Status config ─────────────────────────────────────────────────────────
 const statusConfig = {
@@ -120,6 +59,7 @@ const mapResponseToData = (complaint, tracking) => {
         remarks: s.remarks,
         status: s.status,
         actionTaken: s.actionTaken,
+        attachment: s.attachment
       })),
     };
   }
@@ -182,13 +122,14 @@ const TrackGrievance = () => {
   const [query, setQuery] = useState('');
   const [data, setData] = useState(null);
   const [trackingRaw, setTrackingRaw] = useState(null); // Keep original tracking for updates
+  const [duplicates, setDuplicates] = useState([]);
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [statuses, setStatuses] = useState([]);
 
   // Officer Update States
   const [isOfficer, setIsOfficer] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateForm, setUpdateForm] = useState({
     status: '',
@@ -197,7 +138,8 @@ const TrackGrievance = () => {
     actionTaken: '',
     officer: '',
     designation: '',
-    location: ''
+    location: '',
+    attachment: null
   });
 
   useEffect(() => {
@@ -246,6 +188,7 @@ const TrackGrievance = () => {
       if (response.success && response.data) {
         setTrackingRaw(response.tracking);
         setData(mapResponseToData(response.data, response.tracking));
+        setDuplicates(response.duplicates || []);
 
         // Pre-fill update form
         setUpdateForm(prev => ({
@@ -257,28 +200,18 @@ const TrackGrievance = () => {
           location: response.data.geographic_information?.district || ''
         }));
       } else {
-        // 2. Fallback to mock for ID "2210" (as requested by user previously)
-        if (trimmed === '2210') {
-          setData(generateMockData(trimmed));
-        } else {
-          setError(
-            lang === 'hi'
-              ? `"${trimmed}" के लिए कोई शिकायत रिकॉर्ड नहीं मिला। कृपया सही शिकायत आईडी / मोबाइल नंबर दर्ज करें।`
-              : `No grievance tracking record found for "${trimmed}". Please check your Grievance ID / Mobile No. and try again.`
-          );
-        }
-      }
-    } catch (err) {
-      // Fallback for mock 2210 even if API fails
-      if (trimmed === '2210') {
-        setData(generateMockData(trimmed));
-      } else {
         setError(
           lang === 'hi'
             ? `"${trimmed}" के लिए कोई शिकायत रिकॉर्ड नहीं मिला। कृपया सही शिकायत आईडी / मोबाइल नंबर दर्ज करें।`
             : `No grievance tracking record found for "${trimmed}". Please check your Grievance ID / Mobile No. and try again.`
         );
       }
+    } catch (err) {
+      setError(
+        lang === 'hi'
+          ? `"${trimmed}" के लिए कोई शिकायत रिकॉर्ड नहीं मिला। कृपया सही शिकायत आईडी / मोबाइल नंबर दर्ज करें।`
+          : `No grievance tracking record found for "${trimmed}". Please check your Grievance ID / Mobile No. and try again.`
+      );
     } finally {
       setLoading(false);
     }
@@ -286,32 +219,36 @@ const TrackGrievance = () => {
 
   const handleUpdateTrack = async (e) => {
     e.preventDefault();
-    if (!updateForm.remarks || !updateForm.actionTaken) {
-      alert('Please provide remarks and action taken.');
+    if (!updateForm.actionTaken) {
+      alert('Please provide the action taken.');
       return;
     }
 
     setIsUpdating(true);
     try {
-      const payload = {
-        complainId: data.grievanceId,
-        status: updateForm.status,
-        currentLevel: updateForm.currentLevel,
-        stage: {
-          level: updateForm.currentLevel,
-          name: updateForm.currentLevel === 2 ? 'Processing Level' : updateForm.currentLevel === 3 ? 'District Level' : 'State Level',
-          officer: updateForm.officer,
-          designation: updateForm.designation,
-          location: updateForm.location,
-          status: updateForm.status === 'Resolved' || updateForm.status === 'Approved' ? 'Completed' : 'In Progress',
-          remarks: updateForm.remarks,
-          actionTaken: updateForm.actionTaken
-        }
+      const stageData = {
+        level: updateForm.currentLevel,
+        name: updateForm.currentLevel === 2 ? 'Processing Level' : updateForm.currentLevel === 3 ? 'District Level' : 'State Level',
+        officer: updateForm.officer,
+        designation: updateForm.designation,
+        location: updateForm.location,
+        status: updateForm.status === 'Resolved' || updateForm.status === 'Approved' ? 'Completed' : 'In Progress',
+        remarks: updateForm.remarks,
+        actionTaken: updateForm.actionTaken
       };
 
-      const res = await updateComplaintTrackAPI(payload);
+      const formData = new FormData();
+      formData.append('complainId', data.grievanceId);
+      formData.append('status', updateForm.status);
+      formData.append('currentLevel', updateForm.currentLevel);
+      formData.append('stage', JSON.stringify(stageData));
+
+      if (updateForm.attachment) {
+        formData.append('attachment', updateForm.attachment);
+      }
+
+      const res = await updateComplaintTrackAPI(formData);
       if (res.success) {
-        setShowUpdateModal(false);
         handleSearch(data.grievanceId); // Refresh data
         alert('Tracking updated successfully!');
       }
@@ -366,14 +303,6 @@ const TrackGrievance = () => {
             </div>
             {data && (
               <div className="flex gap-2">
-                {isOfficer && (
-                  <button
-                    onClick={() => setShowUpdateModal(true)}
-                    className="bg-[#002b5e] text-white px-3 py-1.5 rounded-sm text-[11px] font-bold hover:bg-[#001f44] transition flex items-center gap-1.5 shadow-md border border-white/10"
-                  >
-                    <Shield size={13} /> {lang === 'hi' ? 'अपडेट स्टेटस' : 'Update Status'}
-                  </button>
-                )}
                 <button onClick={() => window.print()} className="bg-white/10 border border-white/20 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold hover:bg-white/20 transition flex items-center gap-1.5">
                   <Printer size={13} /> {lang === 'hi' ? 'प्रिंट' : 'Print'}
                 </button>
@@ -432,10 +361,20 @@ const TrackGrievance = () => {
                 <div className="flex items-center gap-2 font-bold text-[#002b5e] text-[13px] uppercase tracking-wide">
                   <FileText size={15} /> {lang === 'hi' ? 'आवेदन विवरण' : 'Application Summary'}
                 </div>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${overallBadge[data.currentStatus] || overallBadge.Pending}`}>
-                  {data.currentStatus === 'In Progress' ? <RefreshCw size={11} /> : data.currentStatus === 'Resolved' ? <CheckCircle size={11} /> : <Clock size={11} />}
-                  {data.currentStatus}
-                </span>
+                <div className="flex items-center gap-3">
+                  {duplicates && duplicates.length > 0 && (
+                    <button
+                      onClick={() => setShowDuplicatesModal(true)}
+                      className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 hover:bg-red-100 transition-colors"
+                    >
+                      <AlertCircle size={12} /> {duplicates.length} Duplicates Detected
+                    </button>
+                  )}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${overallBadge[data.currentStatus] || overallBadge.Pending}`}>
+                    {data.currentStatus === 'In Progress' ? <RefreshCw size={11} /> : data.currentStatus === 'Resolved' ? <CheckCircle size={11} /> : <Clock size={11} />}
+                    {data.currentStatus}
+                  </span>
+                </div>
               </div>
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-[12px]">
                 {[
@@ -490,6 +429,95 @@ const TrackGrievance = () => {
               </div>
             </div>
 
+            {/* ── Update Status Form ── */}
+            <div className="bg-white border border-gray-200 shadow-sm rounded-sm mb-6 overflow-hidden">
+              <div className="bg-[#f8fafc] border-b border-gray-200 px-5 py-3 font-bold text-[#002b5e] text-[13px] uppercase tracking-wide flex items-center gap-2">
+                <Shield size={15} className="text-[#e65100]" /> {lang === 'hi' ? 'शिकायत स्थिति अपडेट करें' : 'Update Grievance Status'}
+              </div>
+
+              <form onSubmit={handleUpdateTrack} className="p-6 space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Responsible Officer</label>
+                    <input
+                      type="text"
+                      placeholder="Officer Name"
+                      value={updateForm.officer}
+                      onChange={e => setUpdateForm({ ...updateForm, officer: e.target.value })}
+                      className="w-full border border-gray-300 rounded-sm px-4 py-2.5 text-[13px] font-bold focus:border-[#002b5e] outline-none transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Optional Attachment</label>
+                    <input
+                      type="file"
+                      onChange={e => setUpdateForm({ ...updateForm, attachment: e.target.files[0] })}
+                      className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:border-[#002b5e] outline-none file:mr-3 file:py-1 file:px-3 file:border-0 file:text-[11px] file:font-bold file:bg-[#002b5e] file:text-white hover:file:bg-[#001f44] cursor-pointer transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Current Status</label>
+                    <select
+                      value={updateForm.status}
+                      onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
+                      className="w-full border border-gray-300 rounded-sm px-4 py-2.5 text-[13px] font-bold focus:border-[#002b5e] outline-none bg-white transition-colors"
+                    >
+                      {statuses.length > 0 ? (
+                        statuses.map(s => (
+                          <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                          <option value="Rejected">Rejected</option>
+                          <option value="Approved">Approved</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Process Level</label>
+                    <select
+                      value={updateForm.currentLevel}
+                      onChange={e => setUpdateForm({ ...updateForm, currentLevel: parseInt(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-sm px-4 py-2.5 text-[13px] font-bold focus:border-[#002b5e] outline-none bg-white transition-colors"
+                    >
+                      <option value={2}>Level 2 (Processing)</option>
+                      <option value={3}>Level 3 (District)</option>
+                      <option value={4}>Level 4 (State)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Action Taken</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Verified with records, Physical Inspection done..."
+                    value={updateForm.actionTaken}
+                    onChange={e => setUpdateForm({ ...updateForm, actionTaken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-sm px-4 py-2.5 text-[13px] focus:border-[#002b5e] outline-none transition-colors"
+                  />
+                </div>
+
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="w-full sm:w-auto px-8 py-3 bg-[#002b5e] text-white rounded-sm text-[13px] font-bold uppercase hover:bg-[#001f44] flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-70"
+                  >
+                    {isUpdating ? <RefreshCw size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+                    Submit Update
+                  </button>
+                </div>
+              </form>
+            </div>
+
             {/* ── Stage Timeline ── */}
             <div className="bg-white border border-gray-200 shadow-sm rounded-sm mb-6 overflow-hidden">
               <div className="bg-gray-50 border-b border-gray-200 px-5 py-3 font-bold text-[#002b5e] text-[13px] uppercase tracking-wide flex items-center gap-2">
@@ -502,7 +530,7 @@ const TrackGrievance = () => {
                   <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 md:left-7"></div>
 
                   <div className="space-y-8">
-                    {data.stages.map((stage, idx) => {
+                    {[...data.stages].reverse().map((stage, idx) => {
                       const cfg = statusConfig[stage.status] || statusConfig.Pending;
                       const isActive = stage.level === data.currentLevel;
                       return (
@@ -569,6 +597,15 @@ const TrackGrievance = () => {
                               <span className="font-bold text-gray-500 not-italic text-[10px] uppercase">{lang === 'hi' ? 'टिप्पणी: ' : 'Remarks: '}</span>
                               {stage.remarks}
                             </div>
+
+                            {stage.attachment && (
+                              <div className="mt-2 flex items-center">
+                                <a href={`http://localhost:5000/media/${stage.attachment}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[11px] font-bold text-[#002b5e] hover:text-[#e65100] hover:underline bg-white/60 px-2 py-1 rounded border border-gray-200 shadow-sm transition-colors">
+                                  <Paperclip size={12} />
+                                  {lang === 'hi' ? 'संलग्नक देखें' : 'View Attachment'}
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -580,7 +617,7 @@ const TrackGrievance = () => {
 
             {/* ── Footer Note ── */}
             <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 flex items-start gap-3 text-[12px] text-amber-800">
-              <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+
               <p>
                 {lang === 'hi'
                   ? 'यदि आपकी शिकायत का समाधान 30 दिनों के भीतर नहीं होता है, तो आप प्रथम अपील दर्ज कर सकते हैं। अपील के लिए होम पेज पर जाएं।'
@@ -600,97 +637,63 @@ const TrackGrievance = () => {
           </div>
         )}
 
-        {/* ── Update Status Modal ── */}
-        {showUpdateModal && (
+        {/* ── Duplicates Modal ── */}
+        {showDuplicatesModal && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-sm shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-[#002b5e]">
+            <div className="bg-white rounded-sm shadow-2xl w-full max-w-5xl overflow-hidden border-t-4 border-red-500">
               <div className="bg-[#f8fafc] px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-black text-[#002b5e] uppercase tracking-wider text-[14px] flex items-center gap-2">
-                  <Shield size={18} className="text-[#e65100]" />
-                  {lang === 'hi' ? 'शिकायत स्थिति अपडेट करें' : 'Update Grievance Status'}
+                <h3 className="font-black text-red-600 uppercase tracking-wider text-[14px] flex items-center gap-2">
+                  <AlertCircle size={18} />
+                  Duplicate Entries Detected
                 </h3>
-                <button onClick={() => setShowUpdateModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowDuplicatesModal(false)} className="text-gray-400 hover:text-gray-600">
                   <XCircle size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleUpdateTrack} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase">Current Status</label>
-                    <select
-                      value={updateForm.status}
-                      onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
-                      className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] font-bold focus:border-[#002b5e] outline-none"
-                    >
-                      {statuses.length > 0 ? (
-                        statuses.map(s => (
-                          <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Resolved">Resolved</option>
-                          <option value="Rejected">Rejected</option>
-                          <option value="Approved">Approved</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase">Process Level</label>
-                    <select
-                      value={updateForm.currentLevel}
-                      onChange={e => setUpdateForm({ ...updateForm, currentLevel: parseInt(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] font-bold focus:border-[#002b5e] outline-none"
-                    >
-                      <option value={2}>Level 2 (Processing)</option>
-                      <option value={3}>Level 3 (District)</option>
-                      <option value={4}>Level 4 (State)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase">Action Taken</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Verified with records, Physical Inspection done..."
-                    value={updateForm.actionTaken}
-                    onChange={e => setUpdateForm({ ...updateForm, actionTaken: e.target.value })}
-                    className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:border-[#002b5e] outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase">Official Remarks</label>
-                  <textarea
-                    rows="3"
-                    placeholder="Provide detailed explanation of the action taken..."
-                    value={updateForm.remarks}
-                    onChange={e => setUpdateForm({ ...updateForm, remarks: e.target.value })}
-                    className="w-full border border-gray-300 rounded-sm px-3 py-2 text-[13px] focus:border-[#002b5e] outline-none"
-                  ></textarea>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowUpdateModal(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-sm text-[12px] font-bold uppercase hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating}
-                    className="flex-1 bg-[#002b5e] text-white px-4 py-2.5 rounded-sm text-[12px] font-bold uppercase hover:bg-[#001f44] flex items-center justify-center gap-2"
-                  >
-                    {isUpdating ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                    Submit Update
-                  </button>
-                </div>
-              </form>
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-600 text-[11px] uppercase tracking-wider">
+                      <th className="p-3 border-b border-gray-200">S.No.</th>
+                      <th className="p-3 border-b border-gray-200">Registration ID / Serial</th>
+                      <th className="p-3 border-b border-gray-200">Applicant Details</th>
+                      <th className="p-3 border-b border-gray-200">Complaint / Grievance Subject</th>
+                      <th className="p-3 border-b border-gray-200 text-center">Integrity Score</th>
+                      <th className="p-3 border-b border-gray-200 text-center">Date of Filing</th>
+                      <th className="p-3 border-b border-gray-200 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {duplicates.map((dup, idx) => (
+                      <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 text-[12px]">
+                        <td className="p-3 font-bold text-gray-500">{dup.sno}</td>
+                        <td className="p-3 font-bold text-[#002b5e]">{dup.complainId}</td>
+                        <td className="p-3 font-semibold text-gray-700">{dup.applicantName}</td>
+                        <td className="p-3 text-gray-600 max-w-xs truncate" title={dup.subject}>{dup.subject}</td>
+                        <td className="p-3 text-center">
+                          <span className="bg-red-100 text-red-700 font-bold px-2 py-1 rounded text-[10px]">
+                            {dup.integrityScore}% Match
+                          </span>
+                        </td>
+                        <td className="p-3 text-center text-gray-500 font-semibold">{dup.dateOfFiling}</td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => {
+                              setShowDuplicatesModal(false);
+                              setQuery(dup.complainId);
+                              handleSearch(dup.complainId);
+                            }}
+                            className="bg-[#002b5e] text-white px-3 py-1.5 rounded-sm font-bold text-[10px] hover:bg-[#001f44] transition-colors border border-black/10 uppercase"
+                          >
+                            Track
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

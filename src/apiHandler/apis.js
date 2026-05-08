@@ -262,6 +262,9 @@ export const trackComplaintAPI = async (id) => {
 };
 
 export const updateComplaintTrackAPI = async (payload) => {
+  if (payload instanceof FormData) {
+    return await postAuthFormDataAPI(URLS.COMPLAINTS.UPDATE_TRACK, payload);
+  }
   return await postAuthAPI(URLS.COMPLAINTS.UPDATE_TRACK, payload);
 };
 
