@@ -690,10 +690,10 @@ const ComplainForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!captchaData.code) {
-      showAlert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha', 'error');
-      return;
-    }
+    // if (!captchaData.code) {
+    //   showAlert(lang === 'hi' ? 'कृपया कैप्चा दर्ज करें' : 'Please enter captcha', 'error');
+    //   return;
+    // }
     if (
       !formData.CoreCaseInfo?.serialNumber ||
       !formData.CoreCaseInfo?.dateReceived ||
@@ -714,12 +714,12 @@ const ComplainForm = () => {
       return;
     }
 
-    const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
-    if (!isValid) {
-      showAlert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!', 'error');
-      captchaRef.current?.refresh();
-      return;
-    }
+    // const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
+    // if (!isValid) {
+    //   showAlert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!', 'error');
+    //   captchaRef.current?.refresh();
+    //   return;
+    // }
 
     // Navigate to summary page instead of showing modal
     navigate('/complain-summary', {
@@ -1031,10 +1031,10 @@ const ComplainForm = () => {
 
               <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="w-full md:w-auto min-w-[250px]">
-                  <Captcha
+                  {/* <Captcha
                     ref={captchaRef}
                     onCodeChange={(code, token) => setCaptchaData({ code, token })}
-                  />
+                  /> */}
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
