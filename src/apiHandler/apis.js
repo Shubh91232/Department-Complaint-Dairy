@@ -113,8 +113,33 @@ export const postAuthFormDataAPI = async (url, formData) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
     return data;
-  } catch (error) {
+    } catch (error) {
     console.error(`Error in Auth POST Form ${url}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Global PUT handler for Multipart Form Data with Authorization (Bearer token)
+ */
+export const putAuthFormDataAPI = async (url, formData) => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    
+    const headers = {}; // Fetch automatically sets Content-Type for FormData
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error(`Error in Auth PUT Form ${url}:`, error);
     throw error;
   }
 };
@@ -274,4 +299,33 @@ export const updateComplaintTrackAPI = async (payload) => {
 
 export const fetchComplaintStatusesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.STATUS_LIST);
+};
+
+export const deleteComplaintAPI = async (id) => {
+  return await deleteAuthAPI(URLS.COMPLAINTS.DELETE_COMPLAINT(id));
+};
+
+export const updateComplaintAPI = async (id, payload) => {
+  if (payload instanceof FormData) {
+    return await putAuthFormDataAPI(URLS.COMPLAINTS.UPDATE_COMPLAINT(id), payload);
+  }
+  // Standard PUT requires JSON
+  try {
+    const userData = JSON.parse(localStorage.getItem('agentUserData') || '{}');
+    const token = userData.accessToken;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const res = await fetch(URLS.COMPLAINTS.UPDATE_COMPLAINT(id), {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP error! status: ${res.status}`);
+    return data;
+  } catch (error) {
+    console.error('Error updating complaint:', error);
+    throw error;
+  }
 };

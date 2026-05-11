@@ -24,10 +24,11 @@ import {
   X,
   Shield,
   Loader2,
-  Activity
+  Activity,
+  Edit
 } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
-import { fetchDraftsAPI, fetchGrievanceHistoryAPI, deleteDraftAPI } from '../../apiHandler/apis';
+import { fetchDraftsAPI, fetchGrievanceHistoryAPI, deleteDraftAPI, deleteComplaintAPI } from '../../apiHandler/apis';
 
 const WorkHistory = () => {
   const { lang, t } = useLanguage();
@@ -136,18 +137,32 @@ const WorkHistory = () => {
       });
   }, [history, searchTerm, filterStatus, sortOrder]);
 
-  const handleDeleteRecord = (id) => {
+  const handleDeleteRecord = async (id) => {
     if (deleteConfirmId !== id) {
       setDeleteConfirmId(id);
       setTimeout(() => setDeleteConfirmId(null), 3000); // Reset after 3 seconds
       return;
     }
 
-    const updatedHistory = history.filter(item => (item.id || item._id) !== id);
-    setHistory(updatedHistory);
-    localStorage.setItem('grievanceHistory', JSON.stringify(updatedHistory));
-    setDeleteConfirmId(null);
-    showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक हटाया गया।' : 'Record successfully deleted.', 'success');
+    setIsDeleting(true);
+    try {
+      const res = await deleteComplaintAPI(id);
+      if (res.success) {
+        const updatedHistory = history.filter(item => (item.id || item._id) !== id);
+        setHistory(updatedHistory);
+        localStorage.setItem('grievanceHistory', JSON.stringify(updatedHistory));
+        setDeleteConfirmId(null);
+        showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक हटाया गया।' : 'Record successfully deleted.', 'success');
+      }
+    } catch (err) {
+      showAlert(lang === 'hi' ? 'हटाने में विफल: ' + err.message : 'Failed to delete: ' + err.message, 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditRecord = (item) => {
+    navigate('/complain', { state: { draftData: item, isEditingFinal: true } });
   };
 
   const handleResumeDraft = (draft) => {
@@ -441,7 +456,15 @@ const WorkHistory = () => {
                           </button>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <div className="flex justify-center">
+                          <div className="flex justify-center gap-2">
+                             <button 
+                               onClick={() => handleEditRecord(item)}
+                               className="p-2 rounded-sm transition-all border bg-white text-blue-600 border-blue-100 hover:bg-blue-50"
+                               title="Edit"
+                               disabled={isDeleting}
+                             >
+                               <Edit size={14} />
+                             </button>
                              <button 
                                onClick={() => handleDeleteRecord(item.id || item._id)}
                                className={`p-2 rounded-sm transition-all border ${
@@ -450,6 +473,7 @@ const WorkHistory = () => {
                                    : 'bg-white text-red-600 border-red-100 hover:bg-red-50'
                                }`}
                                title="Delete"
+                               disabled={isDeleting}
                              >
                                <Trash2 size={14} />
                              </button>
