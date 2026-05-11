@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, RefreshCw, User, Lock, PieChart as PieChartIcon, Search, Download, FileText, Bell, Book, Scale, Newspaper, ChevronRight, AlertCircle, CheckCircle, Landmark, Info, ExternalLink, TrendingUp, BarChart2, Activity, X, LogOut, UserCheck, History, Loader2, ChevronLeft, Eye, EyeOff, Shield } from 'lucide-react';
@@ -12,7 +12,7 @@ import userDetails from '../assets/user_details.json';
 import Header from './head_foot/head';
 import Footer from './head_foot/foot';
 import Captcha, { verifyCaptcha } from './complain_path/captcha';
-import { loginDepartmentAPI } from '../apiHandler/apis';
+import { loginDepartmentAPI, verifyTokenAPI } from '../apiHandler/apis';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -41,6 +41,43 @@ const Home = () => {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'error' });
+
+  useEffect(() => {
+    const checkTokenValidity = async () => {
+      const isLogged = localStorage.getItem('agentLogin') === 'true';
+      const userData = localStorage.getItem('agentUserData');
+      
+      if (isLogged && userData) {
+        try {
+          const response = await verifyTokenAPI();
+          if (response && response.success) {
+            // Token is valid, refresh user data in state and storage
+            localStorage.setItem('agentUserData', JSON.stringify(response.data));
+            setLoggedInUserData(response.data);
+          } else {
+            // Success false means token invalid or user not found
+            forceLogout();
+          }
+        } catch (err) {
+          console.error("Token verification failed:", err);
+          // If the error message indicates auth failure, force logout
+          if (err.message.toLowerCase().includes('unauthorized') || 
+              err.message.toLowerCase().includes('token invalid') || 
+              err.message.toLowerCase().includes('401')) {
+            forceLogout();
+          }
+        }
+      }
+    };
+
+    const forceLogout = () => {
+      localStorage.clear();
+      setLoggedInUserData(null);
+      setIsLoggedIn(false);
+    };
+
+    checkTokenValidity();
+  }, []);
 
   const showAlert = (message, type = 'error') => {
     setCustomAlert({ show: true, message, type });

@@ -175,6 +175,10 @@ export const loginDepartmentAPI = async (credentials) => {
   return await postAPI(URLS.AUTH.DEPARTMENT_LOGIN, credentials);
 };
 
+export const verifyTokenAPI = async () => {
+  return await getAuthAPI(URLS.AUTH.VERIFY_TOKEN);
+};
+
 export const fetchDepartmentsAPI = async () => {
   // Uses global GET handler with CACHE enabled (true)
   return await getAPI(URLS.META.DEPARTMENT_LIST, true);
