@@ -185,7 +185,17 @@ const ComplainSummary = () => {
       }
     } catch (err) {
       console.error("Submission Error:", err);
-      alert("An unexpected error occurred during submission.");
+      const errorMsg = err.message.toLowerCase();
+      if (errorMsg.includes('unauthorized') || errorMsg.includes('invalid token') || errorMsg.includes('401') || errorMsg.includes('jwt expired')) {
+        alert(lang === 'hi' ? 'सत्र समाप्त हो गया है। कृपया फिर से लॉग इन करें।' : 'Session expired. Please log in again.');
+        localStorage.clear();
+        setTimeout(() => {
+          navigate('/', { replace: true });
+          window.location.reload();
+        }, 500);
+      } else {
+        alert(err.message || "An unexpected error occurred during submission.");
+      }
     } finally {
       setIsSubmitting(false);
     }

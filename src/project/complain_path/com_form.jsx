@@ -5,7 +5,6 @@ import Header from '../head_foot/head';
 import Footer from '../head_foot/foot';
 import { UserCheck, User, MapPin, Phone, Smartphone, ChevronRight, Home, Check, RefreshCw, Database, X, Activity, ShieldAlert, Calendar, LayoutList, UploadCloud, Loader2, Maximize, Minimize, Eye, EyeOff, Shield, CheckCircle, Search, Clock, Printer, FileUp, Trash2, ArrowRight, ArrowLeft, FileSearch, ScanLine } from 'lucide-react';
 import userDetails from '../../assets/user_details.json';
-import Captcha, { verifyCaptcha } from './captcha';
 import { SERVER_URL, draftComplaintAPI, submitComplaintAPI, fetchDeptSchemesAPI, fetchComplaintCategoriesAPI, fetchLevelsAPI, fetchSourcesAPI, fetchDistrictsAPI, fetchBlocksAPI, fetchGPsAPI, deleteDraftAPI, fetchDraftByIdAPI } from '../../apiHandler/apis';
 
 import Step1Applicant from './com_form_components/Step1Applicant';
@@ -22,8 +21,6 @@ const ComplainForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState(1);
-  const captchaRef = React.useRef(null);
-  const [captchaData, setCaptchaData] = useState({ code: '', token: '' });
   const [showPreview, setShowPreview] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
@@ -682,7 +679,17 @@ const ComplainForm = () => {
       }
     } catch (err) {
       console.error('Draft Error:', err);
-      showAlert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message, 'error');
+      const errorMsg = err.message.toLowerCase();
+      if (errorMsg.includes('unauthorized') || errorMsg.includes('invalid token') || errorMsg.includes('401') || errorMsg.includes('jwt expired')) {
+        showAlert(lang === 'hi' ? 'सत्र समाप्त हो गया है। कृपया फिर से लॉग इन करें।' : 'Session expired. Please log in again.', 'error');
+        localStorage.clear();
+        setTimeout(() => {
+          navigate('/', { replace: true });
+          window.location.reload();
+        }, 1500);
+      } else {
+        showAlert(lang === 'hi' ? 'ड्राफ्ट सहेजने में त्रुटि: ' + err.message : 'Error saving draft: ' + err.message, 'error');
+      }
     } finally {
       setIsDrafting(false);
     }
@@ -713,13 +720,6 @@ const ComplainForm = () => {
       );
       return;
     }
-
-    // const isValid = await verifyCaptcha(captchaData.token, captchaData.code);
-    // if (!isValid) {
-    //   showAlert(lang === 'hi' ? 'अमान्य कैप्चा!' : 'Invalid Captcha!', 'error');
-    //   captchaRef.current?.refresh();
-    //   return;
-    // }
 
     // Navigate to summary page instead of showing modal
     navigate('/complain-summary', {
@@ -845,7 +845,18 @@ const ComplainForm = () => {
         showAlert(lang === 'hi' ? 'रिकॉर्ड सफलतापूर्वक मास्टर सूची में सहेजा गया।' : 'Record successfully saved to Master List.', 'success');
       }
     } catch (err) {
-      showAlert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message, 'error');
+      console.error('Submit Error:', err);
+      const errorMsg = err.message.toLowerCase();
+      if (errorMsg.includes('unauthorized') || errorMsg.includes('invalid token') || errorMsg.includes('401') || errorMsg.includes('jwt expired')) {
+        showAlert(lang === 'hi' ? 'सत्र समाप्त हो गया है। कृपया फिर से लॉग इन करें।' : 'Session expired. Please log in again.', 'error');
+        localStorage.clear();
+        setTimeout(() => {
+          navigate('/', { replace: true });
+          window.location.reload();
+        }, 1500);
+      } else {
+        showAlert(lang === 'hi' ? 'सबमिट करने में त्रुटि: ' + err.message : 'Error submitting case: ' + err.message, 'error');
+      }
     } finally {
       setIsSubmitting(false);
       submissionLock.current = false;
@@ -1029,28 +1040,28 @@ const ComplainForm = () => {
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="w-full md:w-auto min-w-[250px]">
-                  {/* <Captcha
-                    ref={captchaRef}
-                    onCodeChange={(code, token) => setCaptchaData({ code, token })}
-                  /> */}
-                </div>
-
-                <div className="flex gap-4 w-full md:w-auto">
+              <div className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-end gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                   <button
                     type="button"
                     onClick={saveAsDraft}
                     disabled={isDrafting}
-                    className="cursor-pointer flex-1 md:flex-none bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70"
+                    className="cursor-pointer bg-orange-50 text-orange-700 border border-orange-200 px-6 py-3 font-bold rounded-sm shadow-sm transition-all text-[13px] flex items-center justify-center gap-2 hover:bg-orange-100 disabled:opacity-70 active:scale-95"
                   >
                     {isDrafting ? <Loader2 size={18} className="animate-spin" /> : <Clock size={18} />}
                     {isDrafting ? (lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (lang === 'hi' ? 'ड्राफ्ट सहेजें' : 'Save Draft')}
                   </button>
-                  <button type="button" onClick={() => { setStep(1); window.scrollTo(0, 0); }} className="cursor-pointer flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 font-bold rounded-sm shadow-sm transition-colors text-[14px] flex items-center justify-center">
+                  <button 
+                    type="button" 
+                    onClick={() => { setStep(1); window.scrollTo(0, 0); }} 
+                    className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 font-bold rounded-sm shadow-sm transition-all text-[13px] flex items-center justify-center active:scale-95"
+                  >
                     {lang === 'hi' ? 'वापस जाएं' : 'Go Back'}
                   </button>
-                  <button type="submit" className="cursor-pointer flex-1 md:flex-none bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-colors text-[14px] flex items-center gap-2 uppercase tracking-wide justify-center">
+                  <button 
+                    type="submit" 
+                    className="cursor-pointer bg-[#002b5e] hover:bg-[#001c3d] text-white px-8 py-3 font-bold rounded-sm shadow-md transition-all text-[13px] flex items-center gap-2 uppercase tracking-wide justify-center active:scale-95"
+                  >
                     <Database size={18} />
                     {lang === 'hi' ? 'डेटा सत्यापित करें' : 'Verify Data Entry'}
                   </button>

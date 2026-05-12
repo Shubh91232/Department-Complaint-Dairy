@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ShieldAlert, ChevronRight, Search } from 'lucide-react';
 
 const CaseSpecifics = React.memo(({
@@ -36,6 +36,29 @@ const CaseSpecifics = React.memo(({
     c.toLowerCase().includes(categorySearch.toLowerCase())
   ), [categories, categorySearch]);
 
+  const deptRef = useRef(null);
+  const schemeRef = useRef(null);
+  const categoryRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (deptRef.current && !deptRef.current.contains(event.target)) {
+        setShowDeptOptions(false);
+      }
+      if (schemeRef.current && !schemeRef.current.contains(event.target)) {
+        setShowSchemeOptions(false);
+      }
+      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
+        setShowCategoryOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="bg-white p-5 rounded-sm shadow-sm border border-gray-200">
       <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
@@ -44,7 +67,7 @@ const CaseSpecifics = React.memo(({
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+          <div ref={deptRef}>
             <label className={labelClass}>{lang === 'hi' ? 'विभाग (Department)' : 'Department'} {requiredSpan}</label>
             <div className="relative">
               <div
@@ -112,7 +135,7 @@ const CaseSpecifics = React.memo(({
             </div>
           </div>
 
-          <div>
+          <div ref={schemeRef}>
             <label className={labelClass}>{lang === 'hi' ? 'योजना (Scheme)' : 'Scheme'} {requiredSpan}</label>
             <div className="relative">
               <div
@@ -198,7 +221,7 @@ const CaseSpecifics = React.memo(({
             </div>
           </div>
         </div>
-        <div>
+        <div ref={categoryRef}>
           <label className={labelClass}>{lang === 'hi' ? 'शिकायत की श्रेणी' : 'Complaint Category'} {requiredSpan}</label>
           <div className="relative">
             <div

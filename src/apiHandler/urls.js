@@ -11,6 +11,7 @@ export const URLS = {
     VERIFY_CAPTCHA: `${BASE_URL}/auth/captcha/verify`,
     DEPARTMENT_REGISTER: `${BASE_URL}/auth/department-register`,
     DEPARTMENT_LOGIN: `${BASE_URL}/auth/department-login`,
+    VERIFY_TOKEN: `${BASE_URL}/auth/verify-token`,
   },
   META: {
     DEPARTMENT_LIST: `${BASE_URL}/department_list`,
@@ -36,6 +37,8 @@ export const URLS = {
     TRACK: (id) => `${BASE_URL}/complaints/track/${id}`,
     UPDATE_TRACK: `${BASE_URL}/complaints/update-track`,
     STATUS_LIST: `${BASE_URL}/complaints/statuses`,
-    SEARCH: `${BASE_URL}/complaints/search`
+    SEARCH: `${BASE_URL}/complaints/search`,
+    DELETE_COMPLAINT: (id) => `${BASE_URL}/complaints/${id}`,
+    UPDATE_COMPLAINT: (id) => `${BASE_URL}/complaints/${id}`
   }
 };

@@ -7,7 +7,6 @@ const Receipt = ({ lang, receiptData }) => {
 
   return (
     <div className="animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto pb-20">
-      
       {/* Success Banner */}
       <div className="bg-green-600 rounded-sm p-8 mb-8 text-white shadow-lg flex flex-col md:flex-row items-center gap-6 print:hidden">
         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shrink-0">
@@ -26,7 +25,29 @@ const Receipt = ({ lang, receiptData }) => {
       </div>
 
       <div className="bg-white border-t-8 border-[#002b5e] shadow-2xl p-0 relative overflow-hidden print:border-0 print:shadow-none">
-
+        
+        {/* Action Buttons (Hidden on Print) */}
+        <div className="bg-gray-50 p-8 flex flex-col md:flex-row gap-4 border-t border-gray-200 print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="flex-1 bg-white border-2 border-gray-900 text-gray-900 py-4 font-black hover:bg-gray-900 hover:text-white transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[13px] shadow-sm"
+          >
+            <Printer size={18} /> {lang === 'hi' ? 'पावती प्रिंट करें' : 'Print Receipt'}
+          </button>
+          <button
+            onClick={() => navigate('/complain')}
+            className="flex-1 bg-[#e65100] text-white py-4 font-black shadow-lg hover:bg-[#bf4300] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
+          >
+            <FileText size={18} /> {lang === 'hi' ? 'नई प्रविष्टि' : 'Add New Entry'}
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="flex-1 bg-[#002b5e] text-white py-4 font-black shadow-lg hover:bg-[#001c3d] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
+          >
+            <Home size={18} /> {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'} <ArrowRight size={16} />
+          </button>
+        </div>
+              
         {/* Official Header */}
         <div className="bg-[#f8f9fa] border-b border-gray-200 p-8 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -149,27 +170,6 @@ const Receipt = ({ lang, receiptData }) => {
           </div>
         </div>
 
-        {/* Action Buttons (Hidden on Print) */}
-        <div className="bg-gray-50 p-8 flex flex-col md:flex-row gap-4 border-t border-gray-200 print:hidden">
-          <button
-            onClick={() => window.print()}
-            className="flex-1 bg-white border-2 border-gray-900 text-gray-900 py-4 font-black hover:bg-gray-900 hover:text-white transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[13px] shadow-sm"
-          >
-            <Printer size={18} /> {lang === 'hi' ? 'पावती प्रिंट करें' : 'Print Receipt'}
-          </button>
-          <button
-            onClick={() => navigate('/complain')}
-            className="flex-1 bg-[#e65100] text-white py-4 font-black shadow-lg hover:bg-[#bf4300] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
-          >
-            <FileText size={18} /> {lang === 'hi' ? 'नई प्रविष्टि' : 'Add New Entry'}
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 bg-[#002b5e] text-white py-4 font-black shadow-lg hover:bg-[#001c3d] flex items-center justify-center gap-3 uppercase tracking-widest text-[13px]"
-          >
-            <Home size={18} /> {lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'} <ArrowRight size={16} />
-          </button>
-        </div>
       </div>
     </div>
   );
