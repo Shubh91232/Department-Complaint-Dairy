@@ -271,3 +271,8 @@ export const updateComplaintTrackAPI = async (payload) => {
 export const fetchComplaintStatusesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.STATUS_LIST);
 };
+
+export const searchComplaintsAPI = async (filters) => {
+  const queryParams = new URLSearchParams(filters).toString();
+  return await getAPI(`${URLS.COMPLAINTS.SEARCH}?${queryParams}`);
+};

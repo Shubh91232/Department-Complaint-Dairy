@@ -35,6 +35,7 @@ export const URLS = {
     SAVE_DUPLICACY: `${BASE_URL}/complaints/saveDuplicacyDetails`,
     TRACK: (id) => `${BASE_URL}/complaints/track/${id}`,
     UPDATE_TRACK: `${BASE_URL}/complaints/update-track`,
-    STATUS_LIST: `${BASE_URL}/complaints/statuses`
+    STATUS_LIST: `${BASE_URL}/complaints/statuses`,
+    SEARCH: `${BASE_URL}/complaints/search`
   }
 };
