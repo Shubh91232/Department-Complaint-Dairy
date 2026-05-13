@@ -27,6 +27,7 @@ export const URLS = {
     DRAFT: `${BASE_URL}/complaints/draft`,
     DRAFTS: `${BASE_URL}/complaints/drafts`,
     DEPARTMENTS_LIST: `${BASE_URL}/complaints/departments`,
+    FINANCIAL_YEARS: `${BASE_URL}/complaints/financial-years`,
     SCHEMES_LIST: `${BASE_URL}/complaints/schemes`,
     CATEGORIES_LIST: `${BASE_URL}/complaints/categories`,
     HISTORY: `${BASE_URL}/complaints/history`,

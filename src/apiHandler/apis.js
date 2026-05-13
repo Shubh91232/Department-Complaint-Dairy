@@ -262,6 +262,10 @@ export const fetchDeptSchemesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.DEPARTMENTS_LIST, true); // Cache true as schemes rarely change
 };
 
+export const fetchFinancialYearsAPI = async () => {
+  return await getAPI(URLS.COMPLAINTS.FINANCIAL_YEARS, true); // Cache true
+};
+
 export const fetchComplaintCategoriesAPI = async () => {
   return await getAPI(URLS.COMPLAINTS.CATEGORIES_LIST, true); // Cache true
 };

@@ -219,6 +219,17 @@ const WorkHistory = () => {
     document.body.removeChild(link);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans text-[13px] text-gray-800 flex flex-col relative">
       {/* Custom Alert Toast */}
@@ -444,7 +455,7 @@ const WorkHistory = () => {
                           </span>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <div className="font-bold text-gray-700">{new Date(item.createdAt || item.timestamp).toLocaleDateString()}</div>
+                          <div className="font-bold text-gray-700">{formatDate(item.core_case_information?.date || item.createdAt || item.timestamp)}</div>
                           <div className="text-[10px] text-gray-400 font-bold">{new Date(item.createdAt || item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </td>
                         <td className="px-3 py-3 text-center">

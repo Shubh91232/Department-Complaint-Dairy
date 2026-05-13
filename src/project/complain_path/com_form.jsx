@@ -1027,18 +1027,18 @@ const ComplainForm = () => {
                     requiredSpan={requiredSpan}
                     autoSelectCategory={autoSelectCategory}
                   />
-
-                  {/* Enforcement & Status */}
-                  <EnforcementStatus
-                    lang={lang}
-                    formData={formData.EnforcementStatus}
-                    handleFormChange={(e) => handleFormChange(e, 'EnforcementStatus')}
-                    labelClass={labelClass}
-                    inputClass={inputClass}
-                    requiredSpan={requiredSpan}
-                  />
                 </div>
               </div>
+
+              {/* Enforcement & Status */}
+              <EnforcementStatus
+                lang={lang}
+                formData={formData.EnforcementStatus}
+                handleFormChange={(e) => handleFormChange(e, 'EnforcementStatus')}
+                labelClass={labelClass}
+                inputClass={inputClass}
+                requiredSpan={requiredSpan}
+              />
 
               <div className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-end gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
