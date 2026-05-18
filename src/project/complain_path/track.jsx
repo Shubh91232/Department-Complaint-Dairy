@@ -47,6 +47,8 @@ const mapResponseToData = (complaint, tracking) => {
       block: complaint.geographic_information?.block || 'N/A',
       panchayat: complaint.geographic_information?.gram_panchayat || 'N/A',
       dateOfFiling: complaint.core_case_information?.date || (complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A'),
+      investigatingLevel: complaint.enforcement_status?.investigating_type || 'N/A',
+      investigatingOfficer: complaint.enforcement_status?.responsible_officer || 'N/A',
       currentLevel: tracking.current_level || 1,
       currentStatus: tracking.current_status || 'Pending',
       stages: tracking.stages.map(s => ({
@@ -83,6 +85,8 @@ const mapResponseToData = (complaint, tracking) => {
     block: complaint.geographic_information?.block || 'N/A',
     panchayat: complaint.geographic_information?.gram_panchayat || 'N/A',
     dateOfFiling: complaint.core_case_information?.date || (complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A'),
+    investigatingLevel: complaint.enforcement_status?.investigating_type || 'N/A',
+    investigatingOfficer: complaint.enforcement_status?.responsible_officer || 'N/A',
     currentLevel: status === 'Pending' ? 1 : 2,
     currentStatus: status,
     stages: [
@@ -390,6 +394,8 @@ const TrackGrievance = () => {
                   { icon: <MapPin size={14} />, label: lang === 'hi' ? 'जिला' : 'District', val: data.district },
                   { icon: <MapPin size={14} />, label: lang === 'hi' ? 'ब्लॉक' : 'Block', val: data.block },
                   { icon: <MapPin size={14} />, label: lang === 'hi' ? 'ग्राम पंचायत' : 'Gram Panchayat', val: data.panchayat },
+                  { icon: <Shield size={14} />, label: lang === 'hi' ? 'जांच स्तर' : 'Investigating Level', val: data.investigatingLevel },
+                  { icon: <User size={14} />, label: lang === 'hi' ? 'संबंधित अधिकारी' : 'Investigating Officer', val: data.investigatingOfficer },
                   { icon: <MapPin size={14} />, label: lang === 'hi' ? 'पता' : 'Address', val: data.address, span: true },
                 ].map((f, i) => (
                   <div key={i} className={`flex items-start gap-2 ${f.span ? 'sm:col-span-2 lg:col-span-3' : ''}`}>
@@ -400,9 +406,9 @@ const TrackGrievance = () => {
                     </div>
                   </div>
                 ))}
-                <div className="sm:col-span-2 lg:col-span-3 mt-1 pt-3 border-t border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{lang === 'hi' ? 'शिकायत का विषय' : 'Subject of Grievance'}</p>
-                  <p className="font-semibold text-gray-700 italic">"{data.subject}"</p>
+                <div className="sm:col-span-2 lg:col-span-3 mt-2 pt-4 border-t border-gray-200">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{lang === 'hi' ? 'शिकायत का विषय' : 'Subject of Grievance'}</p>
+                  <p className="text-base md:text-lg font-bold text-[#002b5e] italic leading-relaxed">"{data.subject}"</p>
                 </div>
               </div>
             </div>
@@ -465,18 +471,10 @@ const TrackGrievance = () => {
                       onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
                       className="w-full border border-gray-300 rounded-sm px-4 py-2.5 text-[13px] font-bold focus:border-[#002b5e] outline-none bg-white transition-colors"
                     >
-                      {statuses.length > 0 ? (
-                        statuses.map(s => (
-                          <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Resolved">Resolved</option>
-                          <option value="Rejected">Rejected</option>
-                          <option value="Approved">Approved</option>
-                        </>
-                      )}
+                      {statuses.length === 0 && <option value="">Loading statuses...</option>}
+                      {statuses.map(s => (
+                        <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1.5">

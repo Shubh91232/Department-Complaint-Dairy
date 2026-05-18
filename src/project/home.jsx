@@ -52,8 +52,12 @@ const Home = () => {
           const response = await verifyTokenAPI();
           if (response && response.success) {
             // Token is valid, refresh user data in state and storage
-            localStorage.setItem('agentUserData', JSON.stringify(response.data));
-            setLoggedInUserData(response.data);
+            // MERGE to prevent losing the accessToken from localStorage
+            const existingData = JSON.parse(userData || '{}');
+            const updatedData = { ...existingData, ...response.data };
+            
+            localStorage.setItem('agentUserData', JSON.stringify(updatedData));
+            setLoggedInUserData(updatedData);
           } else {
             // Success false means token invalid or user not found
             forceLogout();

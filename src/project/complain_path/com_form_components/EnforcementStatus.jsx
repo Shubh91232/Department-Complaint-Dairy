@@ -1,10 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Plus, Trash2 } from 'lucide-react';
+import { fetchComplaintStatusesAPI } from '../../../apiHandler/apis';
 
 const EnforcementStatus = React.memo(({ lang, formData, handleFormChange, labelClass, inputClass, requiredSpan }) => {
-  const [stateInvestigators, setStateInvestigators] = useState([{ name: '', post: '', phone: '' }]);
-  const [districtMails, setDistrictMails] = useState([{ mail: '' }]);
-  const [departments, setDepartments] = useState([{ type: '', mail: '' }]);
+  const [statuses, setStatuses] = useState([]);
+  const [stateInvestigators, setStateInvestigators] = useState(() => {
+    try {
+      if (formData.stateInvestigators && formData.stateInvestigators !== '[]') return JSON.parse(formData.stateInvestigators);
+    } catch(e) {}
+    return [{ name: '', post: '', phone: '' }];
+  });
+  
+  const [districtMails, setDistrictMails] = useState(() => {
+    try {
+      if (formData.districtMails && formData.districtMails !== '[]') return JSON.parse(formData.districtMails);
+    } catch(e) {}
+    return [{ mail: '' }];
+  });
+  
+  const [departments, setDepartments] = useState(() => {
+    try {
+      if (formData.departments && formData.departments !== '[]') return JSON.parse(formData.departments);
+    } catch(e) {}
+    return [{ type: '', mail: '' }];
+  });
+
+  useEffect(() => {
+    const getStatuses = async () => {
+      try {
+        const res = await fetchComplaintStatusesAPI();
+        if (res.success) setStatuses(res.data);
+      } catch (err) {
+        console.error('Error fetching statuses:', err);
+      }
+    };
+    getStatuses();
+  }, []);
 
   // Sync to formData when local state changes (optional, but good for completeness)
   useEffect(() => {
@@ -66,14 +97,14 @@ const EnforcementStatus = React.memo(({ lang, formData, handleFormChange, labelC
           </div>
           <div>
             <label className={labelClass}>{lang === 'hi' ? 'वर्तमान स्थिति' : 'Current Status'} {requiredSpan}</label>
-            <select name="caseStatus" value={formData.caseStatus} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.caseStatus === 'Pending' ? 'text-red-600' :
+            <select name="caseStatus" value={formData.caseStatus || ''} onChange={handleFormChange} required className={`${inputClass} font-bold ${formData.caseStatus === 'Pending' ? 'text-red-600' :
               formData.caseStatus === 'Resolved' ? 'text-green-600' :
                 'text-blue-600'
               }`}>
-              <option value="Pending">{lang === 'hi' ? 'लंबित (Pending)' : 'Pending'}</option>
-              <option value="In Progress">{lang === 'hi' ? 'प्रक्रिया में (In Progress)' : 'In Progress'}</option>
-              <option value="Resolved">{lang === 'hi' ? 'निस्तारित (Resolved)' : 'Resolved'}</option>
-              <option value="Rejected">{lang === 'hi' ? 'अस्वीकृत (Rejected)' : 'Rejected'}</option>
+              <option value="">{lang === 'hi' ? 'चयन करें...' : 'Select...'}</option>
+              {statuses.map(s => (
+                <option key={s._id} value={s.name}>{lang === 'hi' ? s.label_hi : s.name}</option>
+              ))}
             </select>
           </div>
         </div>

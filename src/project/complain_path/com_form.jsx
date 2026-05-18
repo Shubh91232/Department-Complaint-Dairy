@@ -91,11 +91,15 @@ const ComplainForm = () => {
       description: '',
     },
     EnforcementStatus: {
+      investigatingType: '',
       responsibleOfficer: '',
       actionTaken: '',
       remarks: '',
       caseStatus: 'Pending',
       pendingLevel: '',
+      stateInvestigators: '[]',
+      districtMails: '[]',
+      departments: '[]'
     },
     AccountStatus: {
       accountFreeze: 'No',
@@ -218,6 +222,10 @@ const ComplainForm = () => {
         description: specifics.complain_details || draft.description || '',
       },
       EnforcementStatus: {
+        investigatingType: enforcement.investigating_type || '',
+        stateInvestigators: enforcement.state_investigators ? JSON.stringify(enforcement.state_investigators) : '[]',
+        districtMails: enforcement.district_mails ? JSON.stringify(enforcement.district_mails) : '[]',
+        departments: enforcement.departments ? JSON.stringify(enforcement.departments) : '[]',
         responsibleOfficer: enforcement.responsible_officer || specifics.responsible_officer || '',
         actionTaken: enforcement.action_taken || specifics.action_taken || '',
         remarks: enforcement.remarks || specifics.remarks || '',
@@ -634,6 +642,10 @@ const ComplainForm = () => {
       if (formData.case_information.complaintCategory) data.set('category_id', formData.case_information.complaintCategory);
       if (formData.case_information.description) data.set('complain_details', formData.case_information.description);
 
+      if (formData.EnforcementStatus.investigatingType) data.set('investigatingType', formData.EnforcementStatus.investigatingType);
+      if (formData.EnforcementStatus.stateInvestigators) data.set('stateInvestigators', formData.EnforcementStatus.stateInvestigators);
+      if (formData.EnforcementStatus.districtMails) data.set('districtMails', formData.EnforcementStatus.districtMails);
+      if (formData.EnforcementStatus.departments) data.set('departments', formData.EnforcementStatus.departments);
       if (formData.EnforcementStatus.responsibleOfficer) data.set('responsible_officer', formData.EnforcementStatus.responsibleOfficer);
       if (formData.EnforcementStatus.actionTaken) data.set('action_taken', formData.EnforcementStatus.actionTaken);
       if (formData.EnforcementStatus.caseStatus) data.set('current_status', formData.EnforcementStatus.caseStatus);
@@ -667,9 +679,10 @@ const ComplainForm = () => {
       });
 
       const res = await draftComplaintAPI(data);
-      if (res.success) {
-        const newId = res.data?._id;
-        const shortId = res.data?.draftId || `D-${newId.slice(-6).toUpperCase()}`;
+      if (res.success && res.data) {
+        const newId = res.data._id;
+        if (!newId) throw new Error("Draft ID missing from response");
+        const shortId = res.data.draftId || `D-${newId.slice(-6).toUpperCase()}`;
         setDraftId(newId);
         setShortDraftId(shortId);
         
@@ -787,6 +800,10 @@ const ComplainForm = () => {
       data.set('category_id', finalForm.case_information.complaintCategory);
       data.set('complain_details', finalForm.case_information.description);
 
+      data.set('investigatingType', finalForm.EnforcementStatus.investigatingType);
+      data.set('stateInvestigators', finalForm.EnforcementStatus.stateInvestigators);
+      data.set('districtMails', finalForm.EnforcementStatus.districtMails);
+      data.set('departments', finalForm.EnforcementStatus.departments);
       data.set('responsible_officer', finalForm.EnforcementStatus.responsibleOfficer);
       data.set('action_taken', finalForm.EnforcementStatus.actionTaken);
       data.set('current_status', finalForm.EnforcementStatus.caseStatus);
